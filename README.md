@@ -27,6 +27,11 @@ Claude: exports the save → Moneyball report → plan → lists players, bids, 
 - Tested with FM26 build 23583635. Game updates may need small changes in `bridge/agent/`.
 
 ## Setup
+```bash
+git clone https://github.com/ChristianStaubo/fm26-scout      # save exporter (analysis)
+git clone https://github.com/ChristianStaubo/fm26-manager    # this repo, next to it
+cd fm26-manager
+```
 1. `bridge/setup-macos.sh` — makes a re-signed **copy** of the game (Frida cannot attach to the
    original) and a Python venv with the pinned Frida. See `bridge/README.md`.
 2. Edit `config/club.json` (your club, save name pattern) and `config/tactic.json` (your
@@ -47,4 +52,4 @@ Or by hand: `node cli/fm.mjs status | screen | sell "Name" --club "Club" --dry-r
 - Every action is verified against the live UI; refusals are retried, uncertain actions never are.
 - Decisions and actions are logged to `local/runs/decisions.jsonl` (gitignored with saves/exports).
 
-[FM26 Scout]: ../fm26-scout
+[FM26 Scout]: https://github.com/ChristianStaubo/fm26-scout
