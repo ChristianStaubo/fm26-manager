@@ -1,0 +1,3 @@
+# Frida 17.19.0; PyPI release uploads completed 2026-09-25.
+# Verified at least seven days old before installation. macOS arm64 only.
+frida==17.19.0 --hash=sha256:9cd98b9d9c7df0510171589b445b68ae988496f63dc2ce784749df65c6073b7e

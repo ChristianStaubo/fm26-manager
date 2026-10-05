@@ -1,0 +1,32 @@
+{
+  "_about": "Season cycle: operate during transfer windows, holiday otherwise. Window dates are approximate (MM-DD); check the in-game calendar.",
+  "windows": [
+    {
+      "opens": "06-16",
+      "closes": "09-01"
+    },
+    {
+      "opens": "01-01",
+      "closes": "02-02"
+    }
+  ],
+  "holiday": {
+    "return": "after N days via 'Return from vacation after'; for a season: back on 05-28 (after the last league match, before the summer window)",
+    "return_on": "05-28",
+    "offers": "Only accept offers matching asking price",
+    "tick": [
+      "Only sell transfer listed players",
+      "Use current match tactics"
+    ],
+    "never_tick": [
+      "Use team selection where possible"
+    ],
+    "_never_tick": "Forcing the XI stops the assistant rotating tired players and causes injuries (user rule)."
+  },
+  "delegate_to_staff": [
+    "contract negotiations",
+    "finalizing signings",
+    "code of conduct",
+    "matches"
+  ]
+}

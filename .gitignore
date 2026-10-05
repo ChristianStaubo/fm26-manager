@@ -1,0 +1,8 @@
+# Private game data and local run state
+local/
+*.fm
+*.csv
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
