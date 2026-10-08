@@ -121,3 +121,12 @@ clause (the parser looks for a line mentioning "obligat…" with an amount; chec
 - **Flat no ("the offer … is unacceptable"): walk away.** No raising or retrying (user rule).
 - Pre-filled screens after an earlier negotiation keep old instalments/add-ons: extras = total − fee,
   measured on every screen; the stale GM line does not mean a new reply while Suggest Terms shows.
+
+## Loan-to-buy offers (detail page, `loan-offer-page`, 2026-07-22)
+View Offer on a loan approach opens a page with "Loan-to-buy Fees", "Mandatory Future Fee" and
+"Overall Cost if deal becomes permanent (Including Monthly Contributions)". Value to us = that
+overall cost + wage relief (their Playing Salary Percentage × his salary × weeks left in the season).
+A mandatory future fee makes it a sale (user rule): judged like an accept-or-reject bid against the
+bottom of his range (or his price-book minimum). Option-only loans stop for a decision. The loan
+message without a price-book entry now opens this page instead of stopping.
+Aston Villa for Milambo: £15.25M overall + ~£1.5M wage relief vs £16–18.5M → accepted.

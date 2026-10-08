@@ -147,7 +147,12 @@ export const loanOffer = {
     const o = {...loan, ...(book ? {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1]} : {}), negotiable: false, countersSoFar: 0};
     const decision = decideLoan(o);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
-    // Without a price book entry there is no value range on this message: the analyst decides.
+    // An obligation without a price book entry: the detail page has the range and the total.
+    if (loan.obligationFee && !book && !dryRun) {
+      await click('View Offer');
+      const page = await waitFor(x => loanOfferPage.match(x), {what: 'loan offer page', timeout: 15000});
+      return loanOfferPage.run(page);
+    }
     if (decision.action === 'escalate' || !book || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan approach for ${loan.player} (${loan.club}): ${decision.reason}`, entry); }
     await click(decision.action === 'accept' ? 'Accept' : 'Reject');
     await log({...entry, executed: true});
@@ -155,4 +160,41 @@ export const loanOffer = {
   },
 };
 
-export const HANDLERS = [incomingOffer, agentPayoff, bidResponse, loanOffer];
+// The loan offer's detail page (View Offer): "Loan-to-buy Fees", "Mandatory Future Fee", "Overall
+// Cost if deal becomes permanent (Including Monthly Contributions): £15.25M", the player's Salary and
+// Transfer Value, Playing Salary Percentage. Accept Offer / Reject Offer.
+// Value to us = overall cost + wage relief (their share of his wage until the season ends).
+// Mandatory future fee → judged as a sale (user rule); option-only → stop for a decision.
+// Aston Villa for Milambo, 2026-07-22: £15.25M + ~£1.5M relief vs £16-18.5M → accepted.
+export function readLoanPage(s) {
+  if (!s.hasText('Loan-to-buy Fees') && !s.hasText(/^Overall Cost if deal becomes permanent/)) return null;
+  const player = s.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean);
+  const overall = parseMoney(s.after(/^Overall Cost if deal becomes permanent/, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
+  const value = s.after('Transfer Value', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label;
+  const range = parseRange(value) || (parseMoney(value) !== null ? [parseMoney(value), parseMoney(value)] : null);
+  const wage = parseMoney(s.after('Salary', i => i.kind === 'button' && /p\/w/.test(i.label))?.label);
+  const pct = Number(/(\d+)%/.exec(s.after('Playing Salary Percentage', i => /\d+%/.test(i.label))?.label || '')?.[1] ?? 0) / 100;
+  const today = s.date(), end = today && new Date(Date.UTC(today.getUTCFullYear() + (today.getUTCMonth() >= 5 ? 1 : 0), 4, 31));
+  const weeks = today && end ? Math.max(0, Math.round((end - today) / 6048e5)) : 0;
+  return {player, club: s.after('To', i => i.kind === 'text')?.label, overall, range, wage, wageShare: pct, weeks,
+    wageRelief: Math.round((wage || 0) * pct * weeks), mandatory: s.hasText('Mandatory Future Fee')};
+}
+
+export const loanOfferPage = {
+  name: 'loan-offer-page',
+  match: s => s.buttons('Accept Offer').length === 1 && s.buttons('Reject Offer').length === 1 && !!readLoanPage(s),
+  async run(s, {dryRun = false} = {}) {
+    const l = readLoanPage(s), book = pricebook.lookup(l.player);
+    const entry = {action: 'loan-offer', date: isoDate(s.date()), loan: l};
+    if (!l.mandatory) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan for ${l.player} (${l.club}) has no obligation to buy: decide on wage relief and depth`, entry); }
+    const [vLow, vHigh] = book ? book.range : (l.range || [NaN, NaN]);
+    entry.decision = decideSale({guaranteed: (l.overall ?? NaN) + l.wageRelief, vLow, vHigh, negotiable: false, countersSoFar: 0,
+      ...(book ? {minimum: book.minimum, target: book.target} : {})});
+    if (entry.decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan-to-buy for ${l.player}: ${entry.decision.reason}`, entry); }
+    await click(entry.decision.action === 'accept' ? 'Accept Offer' : 'Reject Offer');
+    await log({...entry, executed: true});
+    return entry;
+  },
+};
+
+export const HANDLERS = [loanOfferPage, incomingOffer, agentPayoff, bidResponse, loanOffer];

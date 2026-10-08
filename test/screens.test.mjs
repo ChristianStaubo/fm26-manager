@@ -76,3 +76,16 @@ test('Loan approach with a mandatory future fee is an obligation to buy (Al-Ahli
   assert.equal(l.obligationFee, 43.5e6);
   assert.equal(l.optionFee, undefined);
 });
+
+test('Loan-to-buy detail page (Aston Villa for Milambo): value = overall + wage relief, judged as a sale', async () => {
+  const {readLoanPage} = await import('../tasks/transfers/incoming.mjs');
+  const {decideSale} = await import('../tasks/transfers/decide.mjs');
+  const {loadRules} = await import('../tasks/transfers/decide.mjs');
+  const s = loadScreen('loan-approach-obligation');
+  assert.deepEqual(handlerFor(s), ['loan-offer-page']);
+  const l = readLoanPage(s);
+  assert.equal(l.player, 'Antoni Milambo'); assert.equal(l.overall, 15.25e6); assert.deepEqual(l.range, [16e6, 18.5e6]);
+  assert.equal(l.mandatory, true); assert.ok(l.wageRelief > 1e6, `wage relief ${l.wageRelief}`);
+  const noEsc = {...loadRules(), escalate: {...loadRules().escalate, offer_v_high_over: Infinity}};
+  assert.equal(decideSale({guaranteed: l.overall + l.wageRelief, vLow: l.range[0], vHigh: l.range[1], negotiable: false, countersSoFar: 0}, noEsc).action, 'accept');
+});
