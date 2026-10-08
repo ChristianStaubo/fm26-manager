@@ -11,8 +11,9 @@ Details: `docs/ui-notes.md` (controls, overlays, quirks). Read it when anything 
 
 ## 1. Start of a session
 ```bash
-node cli/fm.mjs status
+node cli/fm.mjs doctor          # every check with a fix hint; --fix starts the bridge
 ```
+Where things are in the game: `docs/screens/README.md`.
 - `Bridge is not running` → the game copy must be running (not Steam's): `open ~/fm26-debug/fm.app`
   (or `$FM26_GAME_COPY`). Then start the bridge in the background:
   `~/fm26-debug/venv/bin/python bridge/server.py > /tmp/fm26-bridge/bridge.log 2>&1 &`
@@ -50,6 +51,10 @@ Exit code 2 = it stopped for you. Read `reason`, `why`, `screen.texts`, `screen.
 - Never retry an action whose result is uncertain; look at the screen first.
 - Don't change tactics, staff or settings unless asked.
 - If the user's real clicks stop working: `fm input-reset`.
+
+## Stuck?
+`fm stuck "<goal> | <what you tried> | <what happened>"` saves the screen, overlays and your
+recent commands to `local/runs/friction/`. As the player: run it and stop, don't improvise.
 
 ## Troubleshooting
 | Symptom | Fix |
