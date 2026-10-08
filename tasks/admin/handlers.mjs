@@ -103,10 +103,19 @@ export const HANDLERS = [
   delegate('delegate-finalizing', /^Delegate 'Finalizing player signings/, 'GM finalizes signings'),
   // Squad code of conduct (fines): let the assistant choose.
   delegate('code-of-conduct', /^Ask .+ to Pick$/, 'assistant sets code of conduct'),
-  // "<Player> wants to discuss personal matters": player morale is out of scope (user, 2026-10-04);
-  // answer with the one-click option and move on.
-  // "Ask <leader> to Resolve Issue" had no effect when clicked (31 tries); "Decline" works.
-  {...delegate('player-issue', /^Decline$/, 'declined to discuss (morale out of scope)'),
+  // "<Player> wants to discuss personal matters": go on holiday for a day and let the assistant
+  // handle the conversation, as it does all season (user, 2026-10-09). This replaces auto-Decline
+  // (2026-10-04; 34 declines in 2026 while morale and results fell).
+  // "Ask <leader> to Resolve Issue" had no effect when clicked (31 tries).
+  {name: 'player-issue',
     // Titles vary ("wants to discuss personal matters", "asks to discuss future"); the buttons don't.
-    match: s => s.buttons(/^Discuss Issue with /).length === 1 && s.buttons('Decline').length === 1},
+    match: s => s.buttons(/^Discuss Issue with /).length === 1 && s.buttons('Decline').length === 1,
+    async run(s, {dryRun = false} = {}) {
+      const entry = {action: 'player-issue', date: isoDate(s.date()), detail: 'holiday 1 day: assistant handles the conversation', headline: s.texts().find(t => / wants to | asks to /.test(t))};
+      if (dryRun) return {...entry, dryRun: true};
+      const {holiday} = await import('../progression/holiday.mjs');
+      await holiday({days: 1});
+      await log(entry);
+      return entry;
+    }},
 ];

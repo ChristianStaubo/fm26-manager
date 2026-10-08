@@ -6,7 +6,7 @@ Routine NeedAction screens that need no judgment go to staff (`handlers.mjs`):
 |---|---|---|
 | Confirm Transfer (signing agreed) | button "Delegate 'Finalizing player signings…'" | delegate to the General Manager |
 | Code of conduct | "Skip Code of Conduct" + "Ask <assistant> to Pick" | assistant picks |
-| "<Player> wants to discuss personal matters" (e.g. unhappy about his asking price) | text + "Decline" | Decline (morale is out of scope; "Ask <leader> to Resolve Issue" did nothing when clicked). Afterwards: "Actioned — You declined to speak to …" |
+| "<Player> wants to discuss personal matters" (e.g. unhappy about his asking price) | text + "Decline" | holiday for 1 day: the assistant handles the conversation (user, 2026-10-09; it used to auto-Decline, 34 times in 2026 while morale and results fell) |
 
 | Press conference (state `PressConference`, e.g. new-signing unveiling) | game state, not a button | `press.mjs` (`fm press`, and `fm run` on its own): open the announcing message → click its delegate button if offered (future unveilings go to staff) → the message's **Attend Press Conference** → Start → first (most positive) answer to each question → Leave |
 
