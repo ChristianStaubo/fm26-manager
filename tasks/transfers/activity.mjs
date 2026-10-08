@@ -4,6 +4,8 @@ import {goTo, click, waitFor, Screen, parseMoney} from '../../ui/index.mjs';
 
 export async function transferActivity() {
   await goTo('Recruitment');
+  // The Recruitment page builds its sub-tabs after the click: wait for the tab first.
+  await waitFor(x => x.buttons('Transfer Activity').length === 1, {what: 'Transfer Activity tab'});
   await click('Transfer Activity');
   const s = await waitFor(x => x.hasText('Potential Transfer Budget Impact') && x.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label), {what: 'Transfer Activity list'}).catch(() => Screen.read());
   // Left list: one toggle per deal, label "<Player> <Status>".

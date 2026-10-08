@@ -44,7 +44,7 @@ When stuck / setup
   stuck "<what you tried>"       save a friction report (screen, overlays, recent commands), then STOP
   friction [--all]               list open friction reports
   friction resolve <id> "<fix>"  mark a report fixed (fixer only)
-  friction fixture <id> <name>   save the report's screen as test/screens/<name>.json
+  friction fixture <id> <name>   save the report's screen as test/screens/<name>.json.gz
 
 Bridge
   reload                         reload the agent after editing bridge/agent/*.js

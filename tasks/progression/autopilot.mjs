@@ -6,7 +6,7 @@
 import {getState} from '../../bridge/client.mjs';
 import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../ui/index.mjs';
 import {control, withLock} from './continue.mjs';
-import {inWindow} from './season.mjs';
+import {windowEnd} from './season.mjs';
 import {HANDLERS as TRANSFER_HANDLERS} from '../transfers/incoming.mjs';
 import {HANDLERS as ADMIN_HANDLERS} from '../admin/handlers.mjs';
 import {handBackContract} from '../contracts/personal-terms.mjs';
@@ -21,19 +21,21 @@ export function summarize(s) {
     buttons: [...new Set(s.items.filter(i => i.kind === 'button' && i.enabled && main(i) && i.label && !/^\d+'/.test(i.label)).map(i => i.label.slice(0, 80)))].slice(0, 30)};
 }
 
-/** run({until?: 'YYYY-MM-DD', maxDecisions?, dryRun?}) — without `until`, stops when the window closes. */
+/** run({until?: 'YYYY-MM-DD', maxDecisions?, dryRun?}) — without `until`, stops when the current
+ *  (or, before it opens, the coming) transfer window closes. */
 export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null;
+    let handoffs = 0, lastAction = null, closes = null;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     for (;;) {
       const r = await control({maxSteps: stopAt ? 3 : 10});
       if (['error', 'unavailable'].includes(r.reason)) return stop(r.reason, {error: r.error});
       const s = await Screen.read(), today = s.date();
       if (stopAt && today && today >= stopAt) return stop('until', {date: isoDate(today)});
-      if (!stopAt && today && !inWindow(today)) return stop('window-closed', {date: isoDate(today)});
+      if (!stopAt && today && !closes) closes = windowEnd(today);
+      if (closes && today > closes) return stop('window-closed', {date: isoDate(today), closed: isoDate(closes)});
       if (r.reason === 'handoff') {
         const st = await getState();
         if (st.automationState === 'ready' && ++handoffs <= 3) continue;

@@ -7,6 +7,15 @@ export function inWindow(date, windows = loadSeason().windows) {
   const md = date.toISOString().slice(5, 10);
   return windows.some(w => w.opens <= w.closes ? md >= w.opens && md <= w.closes : md >= w.opens || md <= w.closes);
 }
+/** Close date of the window `date` is in, else of the next window. Deals agreed before a
+ *  window opens (they complete on its first day) belong to that window: `fm run` keeps going. */
+export function windowEnd(date, windows = loadSeason().windows) {
+  const y = date.getUTCFullYear(), day = d => new Date(`${d}T00:00:00Z`);
+  return windows.flatMap(w => [y - 1, y, y + 1].map(yy => {
+    const opens = day(`${yy}-${w.opens}`), closes = day(`${w.opens <= w.closes ? yy : yy + 1}-${w.closes}`);
+    return {opens, closes};
+  })).filter(w => w.closes >= date).sort((a, b) => a.closes - b.closes)[0].closes;
+}
 /** Next window opening strictly after `date`. */
 export function nextWindowOpen(date, windows = loadSeason().windows) {
   const y = date.getUTCFullYear();

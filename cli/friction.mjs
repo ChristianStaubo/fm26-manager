@@ -2,6 +2,7 @@
 // The player runs `fm stuck "<what I was trying>"` and stops; the fixer reads the report,
 // fixes the owning layer, turns the screen into a test fixture and resolves the report.
 import {mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
+import {gzipSync} from 'node:zlib';
 import {execSync} from 'node:child_process';
 import {getState} from '../bridge/client.mjs';
 import {Screen, overlays, describe, isoDate} from '../ui/index.mjs';
@@ -53,19 +54,23 @@ export async function resolve(id, fix) {
   return {id, status: r.status, fix};
 }
 
-// Keep only visible nodes and their ancestors: enough for Screen, overlays and handlers.
+// Keep only visible, on-screen nodes and their ancestors: enough for Screen, overlays and
+// handlers (carousels park thousands of off-screen nodes).
 export function trimTree(tree) {
   const byId = new Map(tree.nodes.map(n => [n.id, n])), keep = new Set();
-  for (const n of tree.nodes) if (n.visible) for (let a = n; a && !keep.has(a.id); a = byId.get(a.parent)) keep.add(a.id);
+  const root = tree.nodes.find(n => n.parent === null), [w, h] = root ? [root.bounds[2], root.bounds[3]] : [1680, 1050];
+  const onScreen = n => n.visible && n.bounds[2] > 0 && n.bounds[3] > 0 && n.bounds[0] >= 0 && n.bounds[0] < w && n.bounds[1] >= 0 && n.bounds[1] < h;
+  for (const n of tree.nodes) if (onScreen(n)) for (let a = n; a && !keep.has(a.id); a = byId.get(a.parent)) keep.add(a.id);
   return {...tree, nodes: tree.nodes.filter(n => keep.has(n.id))};
 }
 
-// Copy a report's screen into test/screens/<name>.json (committed; replayed by tests).
+// Copy a report's screen into test/screens/<name>.json.gz (committed; replayed by tests).
 export async function fixture(id, name) {
   if (!id || !name) throw new Error('fm friction fixture <id> <name>');
   const tree = JSON.parse(await readFile(new URL(`${id}.tree.json`, DIR), 'utf8'));
   await mkdir(SCREENS, {recursive: true});
   const trimmed = trimTree(tree);
-  await writeFile(new URL(`${name}.json`, SCREENS), JSON.stringify(trimmed));
-  return {saved: `test/screens/${name}.json`, nodes: trimmed.nodes.length, of: tree.nodes.length};
+  const gz = gzipSync(JSON.stringify(trimmed));
+  await writeFile(new URL(`${name}.json.gz`, SCREENS), gz);
+  return {saved: `test/screens/${name}.json.gz`, nodes: trimmed.nodes.length, of: tree.nodes.length, bytes: gz.length};
 }

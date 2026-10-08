@@ -16,7 +16,8 @@ States: `CanContinue`, `NeedAction`, `Processing`/`Waiting`/`Saving`/`NewsAggreg
 Continue loop + handlers for routine NeedAction screens:
 `tasks/transfers/incoming.mjs` (offers for our players, agent payoffs) and
 `tasks/admin/handlers.mjs` (delegate signing finalization, code of conduct). Without `--until`
-it stops when the transfer window closes (`season.json`). Exit 2 + `screen` summary = needs you.
+it stops when the current transfer window closes, or the coming one if it has not opened yet:
+deals agreed before 16 June complete on the window's first day and still need handling (`season.json`). Exit 2 + `screen` summary = needs you.
 
 ## Holiday (`holiday.mjs`, `fm holiday [--until YYYY-MM-DD]`)
 Outside transfer windows the manager goes on holiday. Route: **date button (top right) →
