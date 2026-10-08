@@ -18,3 +18,10 @@ test('Pending new-signing press conference (message open) → Attend button in t
   assert.equal(s.continueLabel(), 'Attend Press Conference');
   assert.deepEqual({inRoom: false, attend: true}, (({inRoom, attend}) => ({inRoom, attend}))(locate(s)));
 });
+
+test('A leftover hover tooltip is reported as a tooltip, not a dropdown (recover clicks Portal)', async () => {
+  const {overlays} = await import('../ui/overlays.mjs');
+  const open = overlays(loadScreen('stray-tooltip'));
+  assert.deepEqual(open.map(o => o.kind), ['tooltip']);
+  assert.match(open[0].text, /attribute/);
+});

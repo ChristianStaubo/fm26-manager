@@ -42,6 +42,7 @@ What works, recorded from a player's click:
 | Modal dialog | `GenericModalDialog` panel; title in `dialog-title` | Known titles answered from `KNOWN_DIALOGS` (ui/overlays.mjs); **unknown → stop and ask** |
 | Context menu | `floating-element-root` + `EntryElement`s | click the header entry (Escape does NOT close it) |
 | Dropdown / preset list | `floating-element-root` | `closeDropdowns` (Escape does NOT close it) |
+| Hover tooltip (attribute description…) | `floating-element-root` holding text only | click `Portal` (Escape and `closeDropdowns` do NOT close it) |
 | Card dialog (Set Transfer Status, vacation) | button named `CancelButton` | click Cancel |
 | Global search | `TextField` inside `GlobalSearchCard` | `closeSearch` (the card's `BaseCardTemplateImpl.OnClicked`, i.e. click outside) |
 | Agent chat | "End Chat" button | End Chat |

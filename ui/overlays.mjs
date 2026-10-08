@@ -16,8 +16,14 @@ export function overlays(s) {
     const text = name => clean(s.tree.nodes.find(n => n.name === name && visible(n))?.text);
     out.push({kind: 'dialog', title: text('dialog-title'), description: text('dialog-description')});
   }
-  if (s.tree.nodes.some(n => n.name === 'floating-element-root' && visible(n)))
-    out.push({kind: 'popup', menu: s.tree.nodes.some(n => n.type === 'EntryElement' && visible(n))});
+  if (s.tree.nodes.some(n => n.name === 'floating-element-root' && visible(n))) {
+    const menu = s.tree.nodes.some(n => n.type === 'EntryElement' && visible(n));
+    // A hover tooltip (e.g. an attribute description) also lives in the floating root: text only,
+    // no rows or controls. closeDropdowns and Escape leave it open.
+    const floating = s.floatingItems() || [];
+    const tooltip = !menu && floating.length > 0 && floating.every(i => i.kind === 'text');
+    out.push(tooltip ? {kind: 'tooltip', text: clean(s.floatingItems()?.find(i => i.kind === 'text')?.label).slice(0, 80)} : {kind: 'popup', menu});
+  }
   // Card dialogs (Set Transfer Status, vacation, …) have named Cancel/Confirm buttons.
   if (s.buttons().some(b => b.name === 'CancelButton')) out.push({kind: 'panel'});
   // Only the global search card; pages such as Messages have their own search box.
@@ -45,6 +51,7 @@ export async function recover({attempts = 6} = {}) {
         return ui.click(x.tree, head);
       }, {recoverOnOcclusion: false});
     } else if (has('popup')) await ui.closeDropdowns();          // dropdown/preset lists ignore Escape
+    else if (has('tooltip')) await click('Portal', {recoverOnOcclusion: false}); // leaving the page closes it (2026-06-17)
     else if (has('chat')) await click('End Chat', {recoverOnOcclusion: false});
     else if (has('panel')) await click('Cancel', {name: 'CancelButton', recoverOnOcclusion: false});
     else if (has('search')) await ui.closeSearch();                 // card's click-outside handler
