@@ -3,6 +3,7 @@
 // the autopilot so the model can look (see .claude/skills/fm-operate).
 import {clickWhere, isoDate, parseMoney} from '../../ui/index.mjs';
 import {log, history} from '../log.mjs';
+import {registrationHandler} from './registration.mjs';
 import {NeedsAnalyst} from '../../ui/index.mjs';
 
 // Invitations (friendly proposals, U18/U23 competition invitations, …): always accept
@@ -69,6 +70,8 @@ const outgoingConfirm = {
 };
 
 export const HANDLERS = [
+  // "<Club> squad to be decided": register every eligible 21+ player, then submit (registration.mjs).
+  registrationHandler,
   outgoingConfirm,
   invitation,
   // Board "Season expectations" (Response Required): keep the board's preselected objectives and

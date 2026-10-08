@@ -30,3 +30,15 @@ button label as the match. Prefer "delegate to staff" buttons.
   this, a friendly stopped `fm run` on Tactics / "Review Team Selection" (state handoff); our
   tools do not pick teams or play matches. If one appears anyway, delegate it again in
   Responsibilities rather than playing it.
+
+## Squad registration (`fm register`, handler `squad-registration`, 2026-07-24)
+The "<Club> squad to be decided" message embeds the registration list. "Squad selection is fully
+compliant" does NOT mean everyone is registered: it left out Broholm, Lopez, Bird, Kayode, Onyeka,
+Cox with 9 places free. Each row: a small selection checkbox + a large switch (registered).
+`fm register ["<name>" …]` switches players on (default: every unregistered 21+ player), then
+Confirm → "Please Confirm: Submit completed squad list?" → Confirm. Changes allowed until the
+deadline (1 Sep). The message's own "Respond" button is covered by the list (occluded): use Confirm.
+**Known gap:** rows lower in the list are occluded ("BindableSwitchElement IsNation") — they need
+scrolling into view, which the tools cannot do yet. The list also redraws after each switch
+("UI content changed"): re-run for the rest. Cox, Kayode, Onyeka registered by tool; Lopez, Bird,
+Broholm needed scrolling.
