@@ -38,6 +38,9 @@ export async function recover({attempts = 6} = {}) {
   for (let i = 0; i < attempts; i++) {
     const s = await Screen.read(), open = overlays(s);
     if (!open.length) return {clean: true, steps: i};
+    // Hover tooltips come and go (FMPedia button, attributes) and only block what they cover:
+    // one Portal click, then a page with only a tooltip counts as clean.
+    if (open.every(o => o.kind === 'tooltip') && i > 0) return {clean: true, steps: i, tooltip: open[0].text};
     const has = k => open.find(o => o.kind === k);
     if (has('dialog')) {
       const d = has('dialog'), answer = KNOWN_DIALOGS[d.title];

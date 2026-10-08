@@ -1,8 +1,34 @@
 // Routine NeedAction screens that need no judgment: always delegate to staff.
 // To add one: write {name, match, run} below and list it in HANDLERS. Unknown screens stop
 // the autopilot so the model can look (see .claude/skills/fm-operate).
-import {clickWhere, isoDate} from '../../ui/index.mjs';
+import {clickWhere, isoDate, parseMoney} from '../../ui/index.mjs';
 import {log} from '../log.mjs';
+
+// Invitations (friendly proposals, U18/U23 competition invitations, …): always accept
+// (user, 2026-10-08). Friendly details are read for the log only.
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// "X have offered Brentford a friendly match at <ground> on Monday July 13th 2026. Brentford will receive a fee of £55,000 …"
+export function readFriendly(text) {
+  const m = / friendly match .* on \w+ (\w+) (\d{1,2})(?:st|nd|rd|th) (\d{4})/.exec(text || '');
+  if (!m || MONTHS.indexOf(m[1]) < 0) return null;
+  return {date: new Date(Date.UTC(+m[3], MONTHS.indexOf(m[1]), +m[2])), fee: parseMoney(/fee of (£[\d,.]+[KM]?)/.exec(text)?.[1]) ?? 0, club: /^(.+?) have offered/.exec(text)?.[1]};
+}
+
+const invitation = {
+  name: 'accept-invitation',
+  // Friendlies: Accept/Reject Invitation. Youth league entries ("U18 Division 2 invitation":
+  // keep entering next season?): Accept/Decline under a title ending in "invitation".
+  match: s => (s.buttons('Accept Invitation').length === 1 && s.buttons('Reject Invitation').length === 1)
+    || (s.buttons('Accept').length === 1 && s.buttons('Decline').length === 1 && s.hasText(/ invitation$/)),
+  async run(s, {dryRun = false} = {}) {
+    const f = readFriendly(s.texts().find(t => !!readFriendly(t)));
+    const entry = {action: 'accept-invitation', date: isoDate(s.date()), ...(f ? {kind: 'friendly', club: f.club, matchDate: isoDate(f.date), fee: f.fee} : {kind: s.texts().find(t => / invitation$/.test(t)) || 'invitation'})};
+    if (dryRun) return {...entry, dryRun: true};
+    await clickWhere(x => x.buttons('Accept Invitation')[0] || x.buttons('Accept')[0], 'Accept');
+    await log(entry);
+    return entry;
+  },
+};
 
 const delegate = (name, pattern, describe) => ({
   name,
@@ -17,6 +43,7 @@ const delegate = (name, pattern, describe) => ({
 });
 
 export const HANDLERS = [
+  invitation,
   // Board "Season expectations" (Response Required): keep the board's preselected objectives and
   // Confirm (user rule: no change of ambition unless asked). The Confirm button sits at the end
   // of the message, past the objectives (2026-06-25).

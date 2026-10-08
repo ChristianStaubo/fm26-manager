@@ -27,8 +27,11 @@ const missing = what => new Error(`UI content changed (no ${what} yet)`); // ret
 
 // ---- Basic actions ------------------------------------------------------------------
 // Click a button by exact label (and optionally its element name, when labels repeat).
+// An open message lists its inbox item twice (NewsItemButton, same label): those are one item, take
+// the first. Other repeated labels still need --name.
+const dedupeInbox = list => list.length > 1 && list.every(b => b.name === 'NewsItemButton') ? [list[0]] : list;
 export const click = (label, {name, recoverOnOcclusion} = {}) =>
-  act(s => { const b = one(s.buttons(label).filter(b => !name || b.name === name), `button "${label}"`); return ui.click(s.tree, s.node(b.id)); }, {recoverOnOcclusion});
+  act(s => { const b = one(dedupeInbox(s.buttons(label).filter(b => !name || b.name === name)), `button "${label}"`); return ui.click(s.tree, s.node(b.id)); }, {recoverOnOcclusion});
 // Click whatever select(screen) returns (a button, or a context menu → opened).
 export const clickWhere = (select, what = 'control', opts) =>
   act(s => { const b = select(s); if (!b) throw missing(what); return b.kind === 'menu' ? ui.menu(s.tree, s.node(b.id)) : ui.click(s.tree, s.node(b.id)); }, opts);

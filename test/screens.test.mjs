@@ -31,3 +31,18 @@ test('Board season expectations (Response Required) → keep defaults and Confir
   assert.equal(s.continueLabel(), 'Response Required');
   assert.deepEqual(handlerFor(s), ['season-expectations']);
 });
+
+test('Friendly proposal (Accept/Reject Invitation) → accept-invitation', async () => {
+  const {readFriendly} = await import('../tasks/admin/handlers.mjs');
+  const s = loadScreen('friendly-proposal');
+  assert.deepEqual(handlerFor(s), ['accept-invitation']);
+  const f = readFriendly(s.texts().find(t => !!readFriendly(t)));
+  assert.ok(f.date instanceof Date && f.fee > 0);
+});
+test('readFriendly parses date and fee from the proposal text', async () => {
+  const {readFriendly} = await import('../tasks/admin/handlers.mjs');
+  const f = readFriendly('Paris FC have offered Brentford a friendly match at Stade Jean-Bouin (France) on Monday July 13th 2026. Brentford will receive a fee of £55,000 if they accept the offer.');
+  assert.equal(f.date.toISOString().slice(0, 10), '2026-07-13');
+  assert.equal(f.fee, 55000);
+  assert.equal(f.club, 'Paris FC');
+});

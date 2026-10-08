@@ -15,6 +15,7 @@ Conference" does nothing when clicked; leaving the room without starting does no
 delegating applies to future conferences only. If an older unveiling message sits above the
 pending one, the handler opens the wrong one and stops on a timeout (no harm; open it by hand).
 
+| Invitations: friendly proposals (Accept/Reject Invitation), youth league entries ("U18 Division 2 invitation", Accept/Decline) | those buttons; Accept/Decline only under a title ending in "invitation" | always accept (user, 2026-10-08): `accept-invitation` |
 | Board "Season expectations" (Response Required) | text "The board are ready to discuss season expectations…" + Confirm | keep the board's preselected objectives, Confirm (`season-expectations`). The Confirm button sits below the objectives; the separate "Board request meeting…" message did not block Continue (2026-06-25) |
 
 Seen but not automated (the autopilot stops; decide, act, continue):
