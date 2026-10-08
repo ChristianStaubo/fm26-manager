@@ -40,7 +40,9 @@
     "_price_book": "fm sell (no --price) reads the live value range, records our minimum and target in local/runs/price-book.json (analysis/evaluate_offer.py --price; minimum never below minimum_vs_v_low x v_low, target never below v_high) and lists the player with asking price Unspecified (user, 2026-10-08). Bids for a player in the price book: accept if guaranteed >= minimum, counter towards target (at most max_counters), reject below minimum once counters are spent; lowballs rejected. Asking prices (--price, --deter) only when re-pricing an already-listed player.",
     "keep_if_minimum_over": 1.0,
     "_keep": "fm sell refuses (keep him) when our minimum exceeds this x v_high: the analysis says he is worth more to us than the market pays (McKnight: range 24K-200K, replacing his output costs ~11M). --min overrides.",
-    "_loans": "Loan offers for our players (user, 2026-10-08): with an OBLIGATION to buy, it is a sale: guaranteed = loan fee + monthly fees over the loan + obligation fee, decided like a transfer bid (price-book minimum if listed). Never reject only because it is a loan. With only an OPTION to buy (e.g. Valdimarsson: 1.8M after 25 games, optional): a plain loan, decided on wage relief and depth (escalate)."
+    "_loans": "Loan offers for our players (user, 2026-10-08): with an OBLIGATION to buy, it is a sale: guaranteed = loan fee + monthly fees over the loan + obligation fee, decided like a transfer bid (price-book minimum if listed). Never reject only because it is a loan. With only an OPTION to buy (e.g. Valdimarsson: 1.8M after 25 games, optional): a plain loan, decided on wage relief and depth (escalate).",
+    "list_players": false,
+    "_list_players": "User (2026-10-09), after listing 5-6 first-teamers all season and finishing the first half 19th: do NOT transfer-list players (it hurts morale and ships the first team out). Consider bids as they come: every bid is judged against our Moneyball minimum for that player (evaluate_offer.py --price on the bid's value range), keep him when he is worth more to us than the market pays. fm sell only with --force."
   },
   "agent_payoff": {
     "counter_at": 0.7,

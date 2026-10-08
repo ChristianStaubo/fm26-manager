@@ -23,7 +23,12 @@ Add `--dry-run` to fill everything in and cancel — do this the first time on a
 Clubs are as shown in the game ("LOSC Lille", "Sheffield United").
 
 ## Decisions
-- **Listing** (`fm sell`): reads his live value range, prices him with the analysis (our
+- **We do not transfer-list players** (user, 2026-10-09: listing 5-6 first-teamers wrecked morale
+  and the team sat 19th by December). `fm sell` refuses without `--force`. Instead every incoming
+  bid is priced with our Moneyball numbers on arrival (minimum/target from the bid's value range)
+  and accepted, countered or rejected against that minimum; a player worth more to us than the
+  market pays is kept.
+- **Listing** (only with `--force`, when the user asks) (`fm sell`): reads his live value range, prices him with the analysis (our
   **minimum** and **target**), records both in the price book and lists him with asking price
   **Unspecified** (user rule). It refuses with "Keep <name>" when our minimum is above the top of
   his value (worth more to us than the market pays) and on depth blockers; `--min N` / `--force`

@@ -53,6 +53,13 @@ export const incomingOffer = {
     // Listed through the price book: decide against our minimum, with the range recorded at listing.
     const book = pricebook.lookup(offer.player);
     if (book) Object.assign(offer, {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1], priceBook: true});
+    // Not listed (user policy 2026-10-09: we don't list; we judge bids as they come): price him now
+    // with our Moneyball numbers from the bid's value range — importance, cheapest replacement for
+    // his output, contract, age. Worth more to us than the market → minimum above his top → kept.
+    else if (Number.isFinite(offer.vLow) && Number.isFinite(offer.vHigh)) {
+      const p = pricebook.price(offer.player, [offer.vLow, offer.vHigh], isoDate(d.date()));
+      Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep});
+    }
     const decision = decideSale(offer);
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }

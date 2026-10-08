@@ -26,6 +26,11 @@ with the user's football guidance and evidence from this save.
 
 ## Sales
 
+- **Don't transfer-list players** (user, 2026-10-09). Listing several first-teamers at once hurt
+  morale and results (19th by December 2026). Wait for bids and judge each with the Moneyball
+  numbers; sell only when the money beats what the player is worth to us AND his position keeps
+  two specialists (squad policy above).
+
 Evaluate guaranteed proceeds and payment timing separately from contingent
 bonuses. Include loyalty payments, wage contributions, and other selling
 costs. Check the player's wage, contract length, playing time, performance,

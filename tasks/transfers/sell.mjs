@@ -26,6 +26,8 @@ async function cancel() {
 }
 
 export async function listPlayer(name, club, {price, deter = false, min, force = false, dryRun = false} = {}) {
+  if (!loadRules().selling.list_players && !force)
+    throw new NeedsAnalyst(`We don't transfer-list players (user policy, rules.json selling.list_players): bids are judged as they come. Pass --force only if the user asked to list ${name}.`);
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   try { await actionPath(['Transfer', 'Set Transfer Status']); }
