@@ -32,7 +32,8 @@ export async function holiday({days, until, dryRun = false} = {}) {
   const s = await Screen.read();
   const settings = s.items.filter(i => i.kind === 'toggle').map(i => ({label: i.label || s.items[s.items.indexOf(i) + 1]?.label, checked: i.checked}));
   const result = {action: 'holiday', from: isoDate(today), days: n, returns: isoDate(new Date(today.getTime() + n * 86400000)), settings};
-  if (dryRun) { await click('Cancel', {name: 'CancelButton'}); return {...result, dryRun: true}; }
+  // Wait for the card to close: returning while it closes leaves a 'panel' overlay for the next command.
+  if (dryRun) { await click('Cancel', {name: 'CancelButton'}); await waitFor(x => !x.buttons().some(b => b.name === 'CancelButton'), {what: 'vacation dialog closed'}); return {...result, dryRun: true}; }
   await click('Confirm Vacation');
   await log(result);
   return result;
