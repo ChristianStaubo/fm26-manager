@@ -112,3 +112,12 @@ parses them. **Obligation to buy = a sale** (user rule): summed and decided by `
 (needs a price-book entry for the range; otherwise it stops with the numbers). Plain loans and
 options-to-buy stop for a decision with the parsed numbers. Not yet seen live: an obligation
 clause (the parser looks for a line mentioning "obligat…" with an amount; check it the first time).
+
+## Buying: replies we know (fm buy, 2026-07-13, Ribeiro)
+- Counter ("have negotiated the offer" / "responded to the latest offer"): demand written into the
+  form; Accept Demands if within max, else raise / one final offer at max.
+- Accepted ("prepared to accept" / "is acceptable … Finalize the offer"): Make Offer — never above
+  max (on-screen total incl. pre-filled extras).
+- **Flat no ("the offer … is unacceptable"): walk away.** No raising or retrying (user rule).
+- Pre-filled screens after an earlier negotiation keep old instalments/add-ons: extras = total − fee,
+  measured on every screen; the stale GM line does not mean a new reply while Suggest Terms shows.

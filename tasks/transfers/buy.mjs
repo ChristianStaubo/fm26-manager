@@ -36,7 +36,12 @@ export function offerState(s) {
   // 2026-07-13), which read as 'countered' and made fm buy reach for Accept Demands.
   const state = /An offer has been made/i.test(gm) || s.hasText(/An offer has been made/) ? 'made'
     : s.buttons('Suggest Terms').length ? 'editing'
-    : /prepared to accept/i.test(gm) ? 'accepted'
+    // A flat no: nothing written into the form, no Accept Demands ("LOSC believe the offer for
+    // Alexsandro Ribeiro is unacceptable", 2026-07-13). Raise and suggest again.
+    : /is unacceptable|have rejected/i.test(gm) ? 'rejected'
+    // "… are prepared to accept the latest offer", or "LOSC feel the offer … is acceptable and are
+    // pleased at such swift negotiations. Finalize the offer …" (2026-07-13).
+    : /prepared to accept|(?<!un)acceptable/i.test(gm) ? 'accepted'
     : /negotiated the offer|responded to the latest offer/i.test(gm) ? 'countered'
     : 'unknown';
   return {state, gm, upfront: money('Current Transfer Budget Cost:'), total: money('Future & Potential Total Cost with Additional Fees:')};
@@ -46,7 +51,7 @@ const dealValue = o => (o.upfront ?? 0) + ((o.total ?? o.upfront ?? 0) - (o.upfr
 
 async function suggest() {
   await click('Suggest Terms');
-  return offerState(await waitFor(x => ['countered', 'accepted', 'made'].includes(offerState(x).state) && !x.buttons('Suggest Terms').length, {what: 'club response', timeout: 10000}));
+  return offerState(await waitFor(x => ['countered', 'accepted', 'made', 'rejected'].includes(offerState(x).state) && !x.buttons('Suggest Terms').length, {what: 'club response', timeout: 10000}));
 }
 async function finalize() {
   await click('Make Offer');
@@ -61,9 +66,9 @@ async function finalize() {
  * asks for more than `max`, makes one final offer worth exactly `max` (keeping their add-ons),
  * then withdraws if still refused. Returns {outcome: 'agreed'|'accepted-demands'|'walked-away', history}.
  */
-export async function negotiate({firstFee, max, step, rounds = 6}) {
+export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, final = false}) {
   const history = [];
-  let fee = firstFee, finalOffer = false;
+  let fee = firstFee, finalOffer = final;
   for (let round = 1; round <= rounds; round++) {
     let reply = offerState(await Screen.read());
     if (reply.state === 'editing') {
@@ -71,8 +76,14 @@ export async function negotiate({firstFee, max, step, rounds = 6}) {
       reply = await suggest();
       history.push({round, offered: set.set, ...reply});
     } else history.push({round, ...reply});
+    // Never commit above the walk-away, whatever the club says (Ribeiro was 'acceptable' at £35M
+    // total against a £30M max, 2026-07-13): leave instead.
+    if (reply.state === 'accepted' && dealValue(reply) > max) break;
     if (reply.state === 'accepted') { await finalize(); return {outcome: 'agreed', history}; }
     if (reply.state === 'made') return {outcome: 'agreed', history};
+    // A flat "the offer is unacceptable": walk away, no raising or retrying (user, 2026-10-08:
+    // LOSC rejected Ribeiro every time; a club that says no to the offer is left alone).
+    if (reply.state === 'rejected') break;
     if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
     if (dealValue(reply) <= max) {
       // Accept Demands submits the offer directly ("An offer has been made" → Exit Talks).
@@ -93,7 +104,9 @@ export async function negotiate({firstFee, max, step, rounds = 6}) {
     await setFee('Fee', fee);
     await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
   }
-  await click('Withdraw Offer');
+  // After a counter we withdraw; after a flat rejection there is no offer to withdraw: just leave.
+  if ((await Screen.read()).buttons('Withdraw Offer').length) await click('Withdraw Offer');
+  else await recover().then(() => click('Portal'));
   return {outcome: 'walked-away', history};
 }
 
@@ -115,7 +128,6 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   // (Ribeiro, 2026-07-13: £18.25M + £14.5M instalments + £155K/appearance); editing a field
   // brings Suggest Terms back.
   const s = await waitFor(x => x.buttons('Suggest Terms').length === 1 || x.buttons('Make Offer').length === 1, {what: 'offer screen'});
-  const prefilled = !s.buttons('Suggest Terms').length;
   // Leave without bidding: Cancel where the screen has one, else navigate away (the pre-filled
   // page has no Cancel; leaving it registered no bid, 2026-07-13).
   const leave = async () => { if ((await Screen.read()).buttons('Cancel').some(b => b.name === 'StandardButton')) await click('Cancel', {name: 'StandardButton'}); else await recover().then(() => click('Portal')); };
@@ -124,9 +136,12 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   const keenToSell = s.hasText(/keen to offload|looking to sell|placed him on the transfer list/i);
   const walkAway = max ?? defaultMax(facts);
   let fee = Math.min(open ?? openingBid(facts, {keenToSell}), walkAway);
-  // Pre-filled extras stay in the offer: set the fee so the TOTAL is our opening bid.
+  // Pre-filled extras stay in the offer: set the fee so the TOTAL is our opening bid. Measure them
+  // on every screen (total − fee): the pre-filled page sometimes shows Suggest Terms too, and
+  // taking it for a fresh one turned an £18.9M opening into ~£35M (Ribeiro, 2026-07-13).
   const st = offerState(s), feeBox = parseMoney(s.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label);
-  const extras = prefilled && st.total != null && feeBox != null ? Math.max(0, st.total - feeBox) : 0;
+  const extras = st.total != null && feeBox != null ? Math.max(0, st.total - feeBox) : 0;
+  const prefilled = extras > 0 || !s.buttons('Suggest Terms').length;
   if (extras) fee = Math.max(0, fee - extras);
   const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway, ...(prefilled ? {prefilled: {fee: feeBox, total: st.total, extras}} : {})};
   if (dryRun) {
@@ -136,8 +151,8 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
     await waitFor(x => !x.buttons('Suggest Terms').length && !x.buttons('Make Offer').length, {what: 'offer screen closed'});
     return {...base, dryRun: true, wouldOpenAt: fee};
   }
-  if (prefilled) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
-  const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds});
+  if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
+  const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras});
   await log({...base, ...r});
   return {...base, ...r};
 }

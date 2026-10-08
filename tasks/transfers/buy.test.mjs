@@ -17,3 +17,10 @@ test('a counter without Suggest Terms is a counter; an offer made always wins', 
   assert.equal(offerState(screen('LOSC have negotiated the offer for X.', ['Accept Demands', 'Withdraw Offer'])).state, 'countered');
   assert.equal(offerState(screen('An offer has been made for X.', ['Suggest Terms'])).state, 'made');
 });
+test('"offer is unacceptable" is a flat rejection (Ribeiro, LOSC, 2026-07-13)', () => {
+  assert.equal(offerState(screen('LOSC believe the offer for Alexsandro Ribeiro is unacceptable.', ['Make Offer'])).state, 'rejected');
+});
+test('"is acceptable … Finalize the offer" is accepted; "unacceptable" stays rejected', () => {
+  assert.equal(offerState(screen('LOSC feel the offer for Alexsandro Ribeiro is acceptable and are pleased at such swift negotiations.', ['Make Offer'])).state, 'accepted');
+  assert.equal(offerState(screen('LOSC believe the offer for Alexsandro Ribeiro is unacceptable.', ['Make Offer'])).state, 'rejected');
+});
