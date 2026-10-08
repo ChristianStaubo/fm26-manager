@@ -13,6 +13,7 @@ import {buyPlayer} from '../tasks/transfers/buy.mjs';
 import {delegateRenewal} from '../tasks/contracts/renew.mjs';
 import {transferActivity} from '../tasks/transfers/activity.mjs';
 import {pressConference} from '../tasks/admin/press.mjs';
+import * as pricebook from '../tasks/transfers/pricebook.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
@@ -35,8 +36,11 @@ Act
   press [--dry-run]              hold the pending press conference (positive answers), then leave
 
 Transfers
-  sell "<name>" --club <club> [--price N] [--deter] [--dry-run]
-                                 transfer-list; asking = top of value (--deter: 1.2x, not really for sale)
+  sell "<name>" --club <club> [--min N] [--force] [--dry-run]
+                                 transfer-list, asking price Unspecified; records our minimum/target
+                                 (price book) for the bid handler. --min overrides the minimum.
+       [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
+  prices                         the price book: listed players with our minimum and target
   buy "<name>" --club <club> [--open N] [--max N] [--dry-run]
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
   renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
@@ -90,8 +94,9 @@ try {
       break;
     case 'run': { const r = await run({until: flags.until, dryRun}); outcome({reason: r.reason}); out(r); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break; }
     case 'holiday': out(await holiday({until: flags.until, days: num(flags.days), dryRun})); break;
+    case 'prices': out(Object.values(pricebook.load().players)); break;
     case 'press': out(await pressConference({dryRun})); break;
-    case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, dryRun})); break;
+    case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun})); break;
     case 'buy': out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;

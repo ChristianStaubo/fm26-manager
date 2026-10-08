@@ -174,8 +174,10 @@ def evaluate(rows, offer, tactic, club=CLUB):
                                value=int(c['p']['value']), wage_pw=int(c['p']['wage'] or 0),
                                output=round(c['output'], 3), rank=f"{c['rank']}/{c['pool']}")
 
-    # Pricing
-    value = int(p['value'])
+    # Pricing. The live in-game range (offer['value_range'], read by fm sell before listing) beats
+    # the save's stored value, which can be wrong (Thiago exported as £1K while valued £63M).
+    vr = offer.get('value_range')
+    value = int(sum(vr) / 2) if vr else int(p['value'])
     y = years_left(p, today)
     factors = dict(contract=contract_factor(y), age=age_factor(int(p['age'])), importance=IMPORTANCE[importance])
     target = value * factors['contract'] * factors['age'] * factors['importance']
@@ -233,14 +235,24 @@ def main():
     src.add_argument('--csv')
     ap.add_argument('--club', default=CLUB)
     ap.add_argument('--tactic', default=str(sr.ROOT / 'config' / 'tactic.json'))
+    ap.add_argument('--price', action='store_true',
+                    help='price only (no offer): {"player", "date", "value_range": [low, high]} → minimum and target')
     a = ap.parse_args()
     offer = json.loads(Path(a.offer).read_text() if a.offer else sys.stdin.read())
+    if a.price:
+        offer.setdefault('upfront', 0)
     csv_path = a.csv or sr.export_save(a.save)
     tactic = json.loads(Path(a.tactic).read_text(encoding='utf-8')) if Path(a.tactic).exists() else None
     if tactic:
         sr.apply_tactic(tactic)
     rows = sr.load(csv_path)
-    print(json.dumps(evaluate(rows, offer, tactic, a.club), indent=2, ensure_ascii=False, default=str))
+    r = evaluate(rows, offer, tactic, a.club)
+    if a.price:
+        pr = r['pricing']
+        r = dict(player=r.get('player'), importance=r.get('importance'), role=r.get('role'),
+                 floor=pr['floor'], target=pr['target'], factors=pr['factors'], signals=pr['signals'],
+                 blockers=r.get('blockers'), market_replacement=r.get('market_replacement'))
+    print(json.dumps(r, indent=2, ensure_ascii=False, default=str))
 
 
 if __name__ == '__main__':

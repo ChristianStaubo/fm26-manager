@@ -11,8 +11,9 @@ Read first: `tasks/transfers/README.md` (flows, screens, quirks) and `tasks/tran
 
 ## Commands
 ```bash
-node cli/fm.mjs sell "Keane Lewis-Potter" --club Brentford            # asking price = top of value (--deter: 1.2 ×)
-node cli/fm.mjs sell "Thiago" --club Brentford --price 63m           # explicit (rounded down to the step)
+node cli/fm.mjs sell "Kevin Schade" --club Brentford                 # list, asking Unspecified; records our minimum
+node cli/fm.mjs prices                                               # price book: listed players, minimum, target
+node cli/fm.mjs sell "Thiago" --club Brentford --price 63m           # re-price a player listed before (sticky price)
 node cli/fm.mjs buy "Marius Broholm" --club "LOSC Lille" --max 17m   # negotiate now (Suggest Terms) up to £17M
 node cli/fm.mjs offers                                               # bids in progress + budget impact
 node cli/fm.mjs renew "Rico Henry" --club Brentford                  # Director of Football negotiates
@@ -21,9 +22,15 @@ Add `--dry-run` to fill everything in and cancel — do this the first time on a
 Clubs are as shown in the game ("LOSC Lille", "Sheffield United").
 
 ## Decisions
-- **Selling** follows rules.json automatically in `fm run` (counter 1.2 ×, accept ≥ 1.05 ×,
-  reject lowballs, max 3 counters). It stops for you on key players, valuations ≥ £20M,
-  unreadable offers. Then decide with skill **fm-moneyball** (importance, depth, replacement):
+- **Listing** (`fm sell`): reads his live value range, prices him with the analysis (our
+  **minimum** and **target**), records both in the price book and lists him with asking price
+  **Unspecified** (user rule). It refuses with "Keep <name>" when our minimum is above the top of
+  his value (worth more to us than the market pays) and on depth blockers; `--min N` / `--force`
+  override after you have decided. Players listed before keep their old asking price: `--price`.
+- **Bids for price-book players** are decided in `fm run` against our minimum: accept at or
+  above it, counter towards the target (max 3), reject below it once counters are spent. No stop.
+- **Other bids** follow rules.json (counter 1.2 ×, accept ≥ 1.05 ×, reject lowballs, max 3
+  counters). They stop for you on key players, valuations ≥ £20M, unreadable offers. Then decide with skill **fm-moneyball** (importance, depth, replacement):
   - accept/reject: `fm click "Accept Offer"` / `fm click "Reject Offer"` on the offer detail page
     (open it with `fm click "View Offer"` from the message);
   - counter: set the up-front fee, then `fm click "Negotiate Offer"`. Use the fee helper from

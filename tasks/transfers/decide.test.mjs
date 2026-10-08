@@ -73,3 +73,20 @@ test('lowball for a big-name player is rejected without escalating (Everton £1K
   assert.equal(d.action, 'reject');
   assert.equal(d.reason, 'lowball');
 });
+
+// Price book: listed with an Unspecified asking price; our minimum decides (user, 2026-10-08).
+const listed = o => decideSale({vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0, monthsLeft: 24, ...o});
+test('price book: a bid at or above our minimum is accepted, even for a £60M player (no escalation)', () => {
+  assert.equal(listed({guaranteed: 55e6, upfront: 55e6}).action, 'accept');
+});
+test('price book: below the minimum → counter at the target first, then halfway, then reject', () => {
+  const c1 = listed({guaranteed: 45e6, upfront: 45e6});
+  assert.equal(c1.action, 'counter'); assert.equal(c1.guaranteedAsk, 68.5e6);
+  const c2 = listed({guaranteed: 50e6, upfront: 50e6, countersSoFar: 1});
+  assert.equal(c2.action, 'counter'); assert.equal(c2.guaranteedAsk, 61.65e6);
+  assert.equal(listed({guaranteed: 52e6, upfront: 52e6, countersSoFar: 3}).action, 'reject');
+});
+test('price book: non-negotiable below the minimum is rejected; lowballs still rejected first', () => {
+  assert.equal(listed({guaranteed: 50e6, upfront: 50e6, negotiable: false}).action, 'reject');
+  assert.equal(listed({guaranteed: 1e6, upfront: 1e6}).reason, 'lowball');
+});

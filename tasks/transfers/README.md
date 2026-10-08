@@ -18,11 +18,14 @@ payoffs, used by the autopilot), `decide.mjs` + `rules.json` (the numbers). Log:
 - Revenue for the club is an explicit goal of the experiment.
 
 ## Planned change to selling (user, 2026-10-04 — not implemented yet)
-Asking price when listing = **top of the valuation** (`rules.json` `selling.asking_price` 1.0,
-user 2026-10-08): if we list a player we want to sell him, and a listed player already draws
-lower bids, so a price above the valuation just means no bids. `--deter` (1.2 ×) only for players
-listed but not really for sale. `first_counter` (1.2 ×) is for answering bids, not for listing.
-Not tried yet: listing with Asking Price "Unspecified" and accepting bids within a range.
+**Price book** (user, 2026-10-08): `fm sell` reads the player's live value range (only visible
+before he is listed), prices him with `analysis/evaluate_offer.py --price` (importance, cheapest
+replacement with his output, contract, age), stores **minimum** and **target** in
+`local/runs/price-book.json` (`fm prices`), and lists him with the asking price **Unspecified**.
+The bid handler decides against the minimum (see rules.json `_price_book`). Refuses with
+"Keep <name>" when our minimum is above the top of his range (McKnight: £24K–£200K, but his
+output costs ~£11M to replace). `--price` (asking = that amount) and `--deter` (1.2 × v_high)
+are only for re-pricing players listed before (sticky asking prices, below).
 
 ## Selling a player — `fm sell "<name>" --club <club> [--price N] [--deter] [--dry-run]`
 Profile → Actions → Transfer → **Set Transfer Status** (card dialog) → status dropdown

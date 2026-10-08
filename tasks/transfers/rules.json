@@ -34,7 +34,12 @@
     "sell_on_pct": 20,
     "asking_price": 1.0,
     "asking_price_deter": 1.2,
-    "_asking_price": "Asking price when transfer-listing, x v_high. 1.0 when we want to sell: the top of the valuation is what a buyer will pay, and a listed player already draws lower bids (user, 2026-10-08). asking_price_deter (fm sell --deter) only for players listed but not really for sale. first_counter is for answering bids, not for listing."
+    "_asking_price": "Asking price when transfer-listing, x v_high. 1.0 when we want to sell: the top of the valuation is what a buyer will pay, and a listed player already draws lower bids (user, 2026-10-08). asking_price_deter (fm sell --deter) only for players listed but not really for sale. first_counter is for answering bids, not for listing.",
+    "list_unspecified": true,
+    "minimum_vs_v_low": 1.0,
+    "_price_book": "fm sell (no --price) reads the live value range, records our minimum and target in local/runs/price-book.json (analysis/evaluate_offer.py --price; minimum never below minimum_vs_v_low x v_low, target never below v_high) and lists the player with asking price Unspecified (user, 2026-10-08). Bids for a player in the price book: accept if guaranteed >= minimum, counter towards target (at most max_counters), reject below minimum once counters are spent; lowballs rejected. Asking prices (--price, --deter) only when re-pricing an already-listed player.",
+    "keep_if_minimum_over": 1.0,
+    "_keep": "fm sell refuses (keep him) when our minimum exceeds this x v_high: the analysis says he is worth more to us than the market pays (McKnight: range 24K-200K, replacing his output costs ~11M). --min overrides."
   },
   "agent_payoff": {
     "counter_at": 0.7,

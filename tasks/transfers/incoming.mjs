@@ -5,6 +5,7 @@ import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, pa
 import {decideSale, decidePayoff} from './decide.mjs';
 import {negotiate, offerValueRange, defaultMax, buyStep} from './buy.mjs';
 import {log, history} from '../log.mjs';
+import * as pricebook from './pricebook.mjs';
 
 const monthsBetween = (a, b) => (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
 
@@ -43,6 +44,9 @@ export const incomingOffer = {
     const d = await waitFor(x => x.buttons('Reject Offer').length === 1 && x.hasText('Fee:'), {what: 'offer details'});
     const offer = readOffer(d, {headClub, shortName, coach});
     offer.countersSoFar = (await history()).filter(e => e.action === 'incoming-offer' && e.offer?.player === offer.player && e.offer?.club === offer.club && e.decision?.action === 'counter' && e.executed).length;
+    // Listed through the price book: decide against our minimum, with the range recorded at listing.
+    const book = pricebook.lookup(offer.player);
+    if (book) Object.assign(offer, {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1], priceBook: true});
     const decision = decideSale(offer);
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }

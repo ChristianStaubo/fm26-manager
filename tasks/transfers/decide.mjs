@@ -17,11 +17,6 @@ const tidy = v => roundTo(v, v >= 1e6 ? 50000 : v >= 1e5 ? 5000 : 1000);
 export function decideSale(o, policy = loadRules()) {
   const p = policy.selling, esc = policy.escalate;
   if (![o.guaranteed, o.vLow, o.vHigh].every(Number.isFinite)) return {action: 'escalate', reason: 'offer or valuation unreadable'};
-  // Rejecting a lowball never loses a player, so it needs no analyst even for big names
-  // (Everton bid £1K, non-negotiable, for Thiago, valued £63M: 2026-06-25).
-  if (o.guaranteed < o.vLow * p.lowball_reject_below) return {action: 'reject', reason: 'lowball'};
-  if (o.vHigh >= esc.offer_v_high_over) return {action: 'escalate', reason: `valuation above ${esc.offer_v_high_over}`};
-  if (o.keyPlayer && esc.key_starter) return {action: 'escalate', reason: 'key player'};
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;
   const floor = expiring ? o.vLow * p.floor.contract_under_12_months : o.vHigh * p.floor.default;
   const instalments = Math.max(0, o.guaranteed - (o.upfront ?? o.guaranteed));
@@ -30,6 +25,22 @@ export function decideSale(o, policy = loadRules()) {
     return {action: 'counter', upfront: ask - instalments, guaranteedAsk: ask};
   };
 
+  // Rejecting a lowball never loses a player, so it needs no analyst even for big names
+  // (Everton bid £1K, non-negotiable, for Thiago, valued £63M: 2026-06-25).
+  if (o.guaranteed < o.vLow * p.lowball_reject_below) return {action: 'reject', reason: 'lowball'};
+  // Listed through the price book: the analysis was done at listing time (fm sell), so no
+  // escalation; our minimum decides. o.minimum / o.target come from pricebook.lookup.
+  if (Number.isFinite(o.minimum)) {
+    if (o.guaranteed >= o.minimum) return {action: 'accept', reason: `>= our minimum ${o.minimum}`};
+    if (o.negotiable && o.countersSoFar < p.max_counters) {
+      // First counter at the target; later ones step halfway towards the minimum.
+      const aim = o.countersSoFar === 0 ? o.target : Math.max(o.minimum, (o.target + o.minimum) / 2);
+      return {...counter(aim, p.min_raise_over_offer), reason: `below our minimum ${o.minimum}: counter ${o.countersSoFar + 1}`};
+    }
+    return {action: 'reject', reason: `below our minimum ${o.minimum}${o.negotiable ? ', counters spent' : ', non-negotiable'}`};
+  }
+  if (o.vHigh >= esc.offer_v_high_over) return {action: 'escalate', reason: `valuation above ${esc.offer_v_high_over}`};
+  if (o.keyPlayer && esc.key_starter) return {action: 'escalate', reason: 'key player'};
   if (!o.negotiable) {
     const bar = expiring ? floor : o.vHigh * p.non_negotiable_accept_at;
     return o.guaranteed >= bar ? {action: 'accept', reason: `non-negotiable, ${o.guaranteed} >= ${Math.round(bar)}`}
