@@ -11,10 +11,16 @@ with the user's football guidance and evidence from this save.
   secured before departure. A shortlisted player is not a secured replacement.
 - Assess goalkeepers beyond the raw player count: injuries, pending departures,
   loans, registration, quality of cover, and availability matter.
-- Aim for starter and credible cover for every role in the chosen tactic.
-  Account for fixture load and players who cover multiple positions; do not
-  count one versatile player as independent cover for several simultaneous
-  absences. A rigid two-per-position roster is not required.
+- **Lean squad (user, 2026-10-08):** about **two players per position**, plus a few
+  versatile players who cover several, so each position has **three** options
+  counting them. Don't sign beyond that: a bigger squad wastes wages and
+  registration places (25 max; under-21s are free). When a sale leaves a position
+  with fewer than two, replace; when it has three or more, the extra player is a
+  sell candidate.
+- Count versatile cover honestly: one versatile player is not independent cover
+  for several simultaneous absences. Account for fixture load (European nights).
+- Squad registration: the in-game assistant can pick the registered 25
+  (user's preference); check afterwards that new signings are in it.
 - Check domestic and European registration rules in-game, including homegrown
   implications, before sales or purchases. Do not infer eligibility from names.
 
