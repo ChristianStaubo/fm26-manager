@@ -21,10 +21,12 @@ function startBridge() {
 
 export async function doctor({fix = false} = {}) {
   const checks = [], add = (name, ok, detail, fixHint) => { checks.push({name, ok, detail, ...(ok ? {} : {fix: fixHint})}); return ok; };
-  const setup = 'run bridge/setup-macos.sh (copies the game, creates the venv; /private/tmp copies vanish on reboot)';
+  const setup = 'run bridge/setup-macos.sh (copies the game, creates the venv; macOS prunes /private/tmp after idle days and on reboot)';
 
   add('game copy', !!GAME, GAME, setup);
-  add('frida venv', !!PYTHON, PYTHON, setup);
+  // /private/tmp is pruned by macOS after a few idle days: files vanish, the folder stays.
+  const frida = PYTHON && (() => { try { return execSync(`"${PYTHON}" -c "import frida; print(frida.__version__)"`, {stdio: ['ignore', 'pipe', 'ignore']}).toString().trim(); } catch { return null; } })();
+  if (!add('frida venv', !!frida, frida ? `${PYTHON} (frida ${frida})` : PYTHON || 'missing', setup)) return {ok: false, checks};
   const steam = pgrep('steamapps/common/Football Manager 26/fm.app');
   const game = GAME ? pgrep(`${GAME}/Contents/MacOS`) : [];
   if (!add('game running (copy)', game.length > 0, game.length ? `pid ${game[0]}` : 'not running',
@@ -44,7 +46,10 @@ export async function doctor({fix = false} = {}) {
   let state;
   try { state = await getState(); } catch (e) { add('bridge socket', false, e.message, `read ${RUNTIME_DIR}/bridge.log; restart the bridge`); return {ok: false, checks}; }
   add('bridge socket', true, 'answers');
-  if (!add('save loaded', state.available && state.active, state.stateName || 'no game', 'ask the user to load the save (claude-*.fm)')) return {ok: false, checks};
+  // After a fresh attach the bridge only knows the Continue call once Continue was pressed.
+  const learn = /press Continue/i.test(state.reason || '');
+  if (!add('save loaded', state.available && state.active, state.stateName || state.reason || 'no game',
+    learn ? 'fm click Continue (once per bridge start: teaches the bridge the Continue call)' : 'ask the user to load the save (claude-*.fm)')) return {ok: false, checks};
   add('continue ready', state.actionReady || state.stateName !== 'CanContinue',`${state.stateName}, actionReady=${state.actionReady}`,
     'fm click Continue once (teaches the bridge the Continue call)');
   const s = await Screen.read(), open = overlays(s);
