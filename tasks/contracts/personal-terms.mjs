@@ -40,9 +40,18 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, tries: []};
   if (avg && demand > avg * rules.max_salary_vs_average) {
+    // Over the wage cap: walk away. Cancel Negotiations asks for confirmation in a dialog titled
+    // "Cancel Negotiations"; its Cancel button keeps the talks alive (Camara, 2026-07-16), so
+    // confirm with the other button.
     await click('Cancel Negotiations');
-    await log({...entry, outcome: 'escalated'});
-    throw new NeedsAnalyst(`${player} wants £${demand}/week (> ${rules.max_salary_vs_average}× squad average £${avg}); decide`, entry);
+    const d = await waitFor(x => x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'Cancel Negotiations dialog'});
+    const confirm = d.buttons().filter(b => d.within(b.id, 'GenericModalDialog') && b.label !== 'Cancel');
+    if (confirm.length !== 1) throw new NeedsAnalyst(`Cancel Negotiations dialog: expected one confirm button, found ${confirm.map(b => b.label).join(' | ') || 'none'}`, entry);
+    await clickWhere(x => x.buttons(confirm[0].label).find(b => x.within(b.id, 'GenericModalDialog')), 'confirm cancel negotiations');
+    await settle(1000);
+    const out = {...entry, outcome: 'walked-away', reason: `wants £${demand}/week > ${rules.max_salary_vs_average}× squad average £${avg}`};
+    await log(out);
+    return out;
   }
   for (const f of factors) {
     await click('Reset', {name: 'button-secondary-label'}); await settle(800);

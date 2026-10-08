@@ -22,3 +22,11 @@ agent's demands) → Salary at 85% (then 95%, 100%) → lower the Agent Fee only
 disabled (agent fee above the allowed maximum) → Suggest Terms → Finalize Deal → Exit Talks.
 Keeps all bonuses and clauses (agents are firm on those). Stops for a decision when the demand
 exceeds 2× the squad's average salary (`rules.json` → `contracts`).
+
+## Personal terms handed back to us (2026-07-16, Camara)
+"Enter Contract Negotiations" can land on Recruitment → Transfer Activity with the deal selected
+(not the contract form): a **"Contract £8M" link** (transfer-link-button) opens the negotiation;
+Cancel Offer / Withdraw Offer are **disabled** at this stage. Over the wage cap (rules.json
+contracts.max_salary_vs_average) the handler walks away: Cancel Negotiations → a confirmation
+dialog titled "Cancel Negotiations" whose **Cancel keeps the talks alive** → confirm with the other
+button. The walk-away path is written but NOT yet verified live (the form route needs the link step).

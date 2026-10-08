@@ -39,7 +39,9 @@ export async function openPlayer(name, club) {
 // Facts from a player profile header.
 export function profileFacts(s) {
   const contract = s.items.find(i => i.name === 'ContractDetails')?.label || '';
-  const valueText = s.items.find(i => i.kind === 'button' && parseRange(i.label))?.label;
+  // Only a button that IS a range ("£6.4M - £7.6M"): the news ticker is a button too, and its text
+  // can hold two amounts around " - " (Camara read as [85M, 31.5M], 2026-07-16).
+  const valueText = s.items.find(i => i.kind === 'button' && /^£[\d.,]+[KMB]? - £[\d.,]+[KMB]?$/.test(i.label))?.label;
   // A transfer-listed player shows his asking price (one amount) where the value range was.
   const asking = valueText ? null : s.items.find(i => i.kind === 'button' && i.name === 'SIButton' && /^£[\d.]+[KM]?$/.test(i.label) && Math.abs(i.bounds[0] - (s.items.find(x => x.name === 'ContractDetails')?.bounds[0] ?? -1)) < 5);
   return {wage: parseMoney(contract), contract, valueRange: parseRange(valueText), valueText, askingPrice: asking ? parseMoney(asking.label) : null};
