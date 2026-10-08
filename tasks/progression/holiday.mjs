@@ -16,10 +16,12 @@ export async function holiday({days, until, dryRun = false} = {}) {
   const back = until ? new Date(until + 'T00:00:00Z') : nextDate(today, cfg.return_on);
   const n = days ?? daysBetween(today, back);
   await clickWhere(s => s.items.find(i => i.kind === 'button' && /^\d{1,2}\/\d{1,2}\/\d{4}\b/.test(i.label)), 'date button');
+  // The Portal rebuilds after the date click: a Calendar tab seen a moment before can be gone when
+  // clicked ("Expected one button Calendar, found 0", 2026-08-06). clickWhere retries until it's there.
   await waitFor(s => s.buttons('Calendar').length > 0, {what: 'Portal'});
-  await click('Calendar');
+  await clickWhere(s => s.buttons('Calendar')[0], 'Calendar tab');
   await waitFor(s => s.buttons('Go On Vacation').length === 1, {what: 'Go On Vacation button'});
-  await click('Go On Vacation');
+  await clickWhere(s => s.buttons('Go On Vacation')[0], 'Go On Vacation');
   await waitFor(s => s.buttons('Confirm Vacation').length === 1, {what: 'vacation dialog'});
 
   await toggle(radio('Return from vacation after'), true, 'return-after radio');
