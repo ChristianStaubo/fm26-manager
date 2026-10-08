@@ -8,6 +8,13 @@ Routine NeedAction screens that need no judgment go to staff (`handlers.mjs`):
 | Code of conduct | "Skip Code of Conduct" + "Ask <assistant> to Pick" | assistant picks |
 | "<Player> wants to discuss personal matters" (e.g. unhappy about his asking price) | text + "Decline" | Decline (morale is out of scope; "Ask <leader> to Resolve Issue" did nothing when clicked). Afterwards: "Actioned — You declined to speak to …" |
 
+| Press conference (state `PressConference`, e.g. new-signing unveiling) | game state, not a button | `press.mjs` (`fm press`, and `fm run` on its own): open the announcing message → click its delegate button if offered (future unveilings go to staff) → the message's **Attend Press Conference** → Start → first (most positive) answer to each question → Leave |
+
+Press conference quirks (2026-06-17, Broholm unveiling): the Continue-slot "Attend Press
+Conference" does nothing when clicked; leaving the room without starting does not clear it;
+delegating applies to future conferences only. If an older unveiling message sits above the
+pending one, the handler opens the wrong one and stops on a timeout (no harm; open it by hand).
+
 Seen but not automated (the autopilot stops; decide, act, continue):
 - **Board season expectations** ("Response Required", objectives with options, Confirm): keep the
   board's defaults unless the user wants a different ambition; press Confirm.

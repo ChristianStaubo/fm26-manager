@@ -12,6 +12,7 @@ import {listPlayer} from '../tasks/transfers/sell.mjs';
 import {buyPlayer} from '../tasks/transfers/buy.mjs';
 import {delegateRenewal} from '../tasks/contracts/renew.mjs';
 import {transferActivity} from '../tasks/transfers/activity.mjs';
+import {pressConference} from '../tasks/admin/press.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
@@ -31,6 +32,7 @@ Act
   continue [steps]               press Continue up to N times (stops when an action is needed)
   run [--until YYYY-MM-DD] [--dry-run]   autopilot (handles routine screens, stops for decisions)
   holiday [--until YYYY-MM-DD | --days N] [--dry-run]
+  press [--dry-run]              hold the pending press conference (positive answers), then leave
 
 Transfers
   sell "<name>" --club <club> [--price N] [--dry-run]   transfer-list with asking price
@@ -87,6 +89,7 @@ try {
       break;
     case 'run': { const r = await run({until: flags.until, dryRun}); outcome({reason: r.reason}); out(r); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break; }
     case 'holiday': out(await holiday({until: flags.until, days: num(flags.days), dryRun})); break;
+    case 'press': out(await pressConference({dryRun})); break;
     case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), dryRun})); break;
     case 'buy': out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
     case 'offers': out(await transferActivity()); break;

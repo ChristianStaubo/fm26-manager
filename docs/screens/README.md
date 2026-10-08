@@ -26,12 +26,13 @@ When a fix teaches us a screen, add or update its row here in the same commit.
 | Transfer activity (our bids) | Recruitment → Transfer Activity | `fm offers` | verified 2026-10 |
 | Calendar → Go On Vacation | date button → Portal → Calendar → Go On Vacation | `fm holiday` | verified 2026-10 |
 | League table | Portal → Stages | none (read with `fm screen`) | verified 2026-10 (route only) |
-| Inbox / messages | todo | none | todo |
 | Squad list | todo | none | todo |
 | Finances | todo | none | todo |
 | Scouting / shortlist | todo | none | todo |
 | Board expectations ("Response Required") | Continue slot | none: keep defaults, Confirm (`tasks/admin/README.md`) | verified 2026-10 |
 | Squad registration | Continue slot | none: use recommended | seen 2026-10 |
+| Press conference | Portal → Messages → announcing message → its **Attend Press Conference** (not the Continue slot) → Press Room → Start Press Conference → answers → Leave Press Conference (Continue slot) | `fm press`, `fm run` | verified 2026-06-17 |
+| Inbox message list | Portal → Messages; items are `NewsItemButton`s labelled "<sender> <time> <subject>" (can appear twice: `fm click` refuses duplicates) | none | verified 2026-06-17 |
 
 ## Routine NeedAction screens (autopilot handlers)
 See `tasks/admin/README.md`, `tasks/transfers/README.md`, `tasks/contracts/README.md`. Each

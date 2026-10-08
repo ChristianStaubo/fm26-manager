@@ -10,6 +10,7 @@ import {windowEnd} from './season.mjs';
 import {HANDLERS as TRANSFER_HANDLERS} from '../transfers/incoming.mjs';
 import {HANDLERS as ADMIN_HANDLERS} from '../admin/handlers.mjs';
 import {handBackContract} from '../contracts/personal-terms.mjs';
+import {pressConference} from '../admin/press.mjs';
 
 export const HANDLERS = [...TRANSFER_HANDLERS, handBackContract, ...ADMIN_HANDLERS];
 
@@ -38,6 +39,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
       if (closes && today > closes) return stop('window-closed', {date: isoDate(today), closed: isoDate(closes)});
       if (r.reason === 'handoff') {
         const st = await getState();
+        // Press conferences block Continue; answer them (tasks/admin/press.mjs).
+        if (st.stateName === 'PressConference' && !dryRun) {
+          if (lastAction === 'press') return stop('needs-analyst', {why: 'press conference still pending after handling it', screen: summarize(s)});
+          lastAction = 'press';
+          try { decisions.push(await pressConference()); continue; }
+          catch (e) { return stop(e instanceof NeedsAnalyst ? 'needs-analyst' : 'error', {handler: 'press-conference', why: e.message, details: e.details, screen: summarize(await Screen.read())}); }
+        }
         if (st.automationState === 'ready' && ++handoffs <= 3) continue;
         return stop('unfamiliar-state', {state: st.stateName, screen: summarize(s)});
       }
