@@ -17,6 +17,9 @@ const tidy = v => roundTo(v, v >= 1e6 ? 50000 : v >= 1e5 ? 5000 : 1000);
 export function decideSale(o, policy = loadRules()) {
   const p = policy.selling, esc = policy.escalate;
   if (![o.guaranteed, o.vLow, o.vHigh].every(Number.isFinite)) return {action: 'escalate', reason: 'offer or valuation unreadable'};
+  // Rejecting a lowball never loses a player, so it needs no analyst even for big names
+  // (Everton bid £1K, non-negotiable, for Thiago, valued £63M: 2026-06-25).
+  if (o.guaranteed < o.vLow * p.lowball_reject_below) return {action: 'reject', reason: 'lowball'};
   if (o.vHigh >= esc.offer_v_high_over) return {action: 'escalate', reason: `valuation above ${esc.offer_v_high_over}`};
   if (o.keyPlayer && esc.key_starter) return {action: 'escalate', reason: 'key player'};
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;

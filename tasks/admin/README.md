@@ -15,9 +15,9 @@ Conference" does nothing when clicked; leaving the room without starting does no
 delegating applies to future conferences only. If an older unveiling message sits above the
 pending one, the handler opens the wrong one and stops on a timeout (no harm; open it by hand).
 
+| Board "Season expectations" (Response Required) | text "The board are ready to discuss season expectations…" + Confirm | keep the board's preselected objectives, Confirm (`season-expectations`). The Confirm button sits below the objectives; the separate "Board request meeting…" message did not block Continue (2026-06-25) |
+
 Seen but not automated (the autopilot stops; decide, act, continue):
-- **Board season expectations** ("Response Required", objectives with options, Confirm): keep the
-  board's defaults unless the user wants a different ambition; press Confirm.
 - **Registration** (squad registration for competitions): use the recommended registration.
 
 Adding one: `{name, match: screen => bool, run(screen) }` in `handlers.mjs`, using a stable

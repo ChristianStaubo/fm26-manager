@@ -67,3 +67,9 @@ test('holiday return: next 28 May and day count (4 Aug 2025 → 297 days)', () =
   assert.equal(back.toISOString().slice(0, 10), '2026-05-28');
   assert.equal(daysBetween(from, back), 297);
 });
+
+test('lowball for a big-name player is rejected without escalating (Everton £1K for Thiago, £63M)', () => {
+  const d = decideSale({guaranteed: 1000, upfront: 1000, vLow: 63e6, vHigh: 63e6, negotiable: false, countersSoFar: 0, monthsLeft: 60, keyPlayer: true});
+  assert.equal(d.action, 'reject');
+  assert.equal(d.reason, 'lowball');
+});

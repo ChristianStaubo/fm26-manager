@@ -25,3 +25,9 @@ test('A leftover hover tooltip is reported as a tooltip, not a dropdown (recover
   assert.deepEqual(open.map(o => o.kind), ['tooltip']);
   assert.match(open[0].text, /attribute/);
 });
+
+test('Board season expectations (Response Required) → keep defaults and Confirm', () => {
+  const s = loadScreen('board-season-expectations');
+  assert.equal(s.continueLabel(), 'Response Required');
+  assert.deepEqual(handlerFor(s), ['season-expectations']);
+});

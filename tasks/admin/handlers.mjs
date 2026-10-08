@@ -17,6 +17,11 @@ const delegate = (name, pattern, describe) => ({
 });
 
 export const HANDLERS = [
+  // Board "Season expectations" (Response Required): keep the board's preselected objectives and
+  // Confirm (user rule: no change of ambition unless asked). The Confirm button sits at the end
+  // of the message, past the objectives (2026-06-25).
+  {...delegate('season-expectations', /^Confirm$/, 'kept board expectations (defaults)'),
+    match: s => s.hasText('Season expectations') && s.hasText(/^The board are ready to discuss season expectations/) && s.buttons('Confirm').length === 1},
   // "Confirm Transfer" after a signing is agreed: hand finalizing to the General Manager.
   delegate('delegate-finalizing', /^Delegate 'Finalizing player signings/, 'GM finalizes signings'),
   // Squad code of conduct (fines): let the assistant choose.

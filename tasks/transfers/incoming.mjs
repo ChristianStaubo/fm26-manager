@@ -19,7 +19,12 @@ function readOffer(d, {headClub, shortName, coach}) {
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
     keyPlayer: /\b(key|star|important|regular starter)\b/i.test(coach),
   };
-  [offer.vLow, offer.vHigh] = parseRange(d.after('Transfer Value', i => parseRange(i.label) !== null)?.label) || [NaN, NaN];
+  // The value is a range ("£49M - £60M"), or one amount when the player is listed (his asking
+  // price) or valued exactly: Thiago, listed, showed "£63M" (2026-06-25). One amount = [v, v].
+  const value = d.after('Transfer Value', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label;
+  const range = parseRange(value), single = parseMoney(value);
+  [offer.vLow, offer.vHigh] = range || (single !== null ? [single, single] : [NaN, NaN]);
+  if (!range && single !== null) offer.valueSingle = true;
   const expires = parseDate(d.after('Contract Expires', i => parseDate(i.label) !== null)?.label), today = d.date();
   if (expires && today) offer.monthsLeft = monthsBetween(today, expires);
   return offer;

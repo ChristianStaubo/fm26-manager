@@ -87,3 +87,9 @@ Negotiate → Compensation box (presets + ±; **typed values become £0 here**) 
 - The confirmation text after Make Offer varies; `fm buy` checks the Withdraw entry instead.
 - `fm offers` (Recruitment → Transfer Activity) is the source of truth for bids in progress and
   the potential budget impact.
+
+## Incoming offers: valuation shown as one amount
+A listed player's offer page shows **one amount** under Transfer Value (his asking price), not a
+range: Thiago (listed) showed "£63M". `readOffer` treats it as `[v, v]` (`valueSingle: true`).
+Lowballs (guaranteed < `lowball_reject_below` × v_low) are rejected **before** the big-player
+escalation: rejecting never loses a player (Everton £1K for Thiago, 2026-06-25).
