@@ -26,7 +26,7 @@ Portal → Calendar → Go On Vacation** (it is not in the FM menu). Dialog:
   `season.json` `holiday.return_on` (28 May: season over, stats complete, before the window).
 - Transfer offers radio: "Only accept offers matching asking price".
 - Tick "Only sell transfer listed players" and "Use current match tactics".
-- **Never tick "Use team selection where possible"**: it stops the assistant rotating tired
+- **"Use team selection where possible" is TICKED since 2026-10-09** (user: our signings must play). Before, it was never ticked: it stops the assistant rotating tired
   players and causes injuries (user rule).
 The first vacation of a save returned a few days later than planned (1 June vs 28 May): check
 the return date shown in the dialog. Whether holiday stops for incoming offers is not yet known.

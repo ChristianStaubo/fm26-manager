@@ -37,6 +37,6 @@ A cheap **player** (`.claude/agents/fm-player.md`, Sonnet) plays one segment and
 - Unknown dialog or screen: read it, decide, and if it is routine add a handler/known dialog
   and document it in the domain README (that is how the next session avoids it).
 - One operator at a time; ask the user not to click while you act.
-- User rules: contracts are negotiated by staff; never tick "Use team selection where
-  possible" on holiday; negotiation numbers live in `tasks/transfers/rules.json`.
+- User rules: contracts are negotiated by staff; on holiday TICK "Use team selection where possible"
+  (user, 2026-10-09: the chosen XI must play; watch injuries); negotiation numbers live in `tasks/transfers/rules.json`.
 - Keep saves, exports and logs out of git.

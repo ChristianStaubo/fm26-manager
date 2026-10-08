@@ -1,5 +1,6 @@
 // Go on vacation: Portal date button → Calendar → "Go On Vacation" → options → Confirm.
-// Settings come from season.json (holiday.*). Never tick "Use team selection where possible".
+// Settings come from season.json (holiday.*). "Use team selection where possible" is TICKED since
+// 2026-10-09 (user: the chosen XI must play); it used to be never ticked (rotation/injuries).
 import {Screen, waitFor, click, clickWhere, toggle, setNumber, recover, isoDate} from '../../ui/index.mjs';
 import {loadSeason, nextDate, daysBetween} from './season.mjs';
 import {log} from '../log.mjs';

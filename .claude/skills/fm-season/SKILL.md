@@ -29,7 +29,7 @@ Windows and holiday settings: `tasks/progression/season.json`. Skills: **fm-oper
 ## Rules from the user
 - Unfamiliar one-off manager decisions (captaincy, friendlies, …) outside transfers: go on holiday;
   the assistant settles them (`fm holiday --season`, or `--days 1` mid-window).
-- Holiday: never tick "Use team selection where possible" (injuries).
+- Holiday: tick "Use team selection where possible" (user, 2026-10-09: our signings must play; watch injuries, revert if they pile up).
 - Contracts are negotiated by staff (DoF); we never haggle wages unless a bid requires it.
 - Selling style and numbers: `tasks/transfers/rules.json`; revenue is a stated goal.
 - Ask the user before big irreversible moves not in the agreed plan (e.g. selling a key starter).
