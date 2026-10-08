@@ -73,7 +73,7 @@
       1.0
     ],
     "_salary_factors": "Personal terms for signings: keep the agent's bonuses/clauses, offer this share of the demanded salary in turn (user rule: agents give a little on salary, are firm on the rest).",
-    "max_salary_vs_average": 2.0,
-    "_max_salary": "Stop for a decision when the demanded salary exceeds this multiple of the squad average (contract screen 'Avg.')."
+    "_max_salary": "Personal terms: accept a demand up to this x our FIRST-TEAM median wage (top 25 earners, analysis/wage_bands.py; ~£51K in July 2026), negotiating via salary_factors; above it, stop for a decision. The contract screen's 'Avg.' includes youth/reserves (squad median £7K) and is no longer used (user, 2026-10-08: Camara's £36-44.5K is a normal first-team wage).",
+    "max_salary_vs_first_team_median": 1.3
   }
 }

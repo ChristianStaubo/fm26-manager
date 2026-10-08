@@ -11,6 +11,13 @@
 import {Screen, waitFor, click, clickWhere, setFee, settle, parseMoney, NeedsAnalyst, isoDate} from '../../ui/index.mjs';
 import {loadRules} from '../transfers/decide.mjs';
 import {log} from '../log.mjs';
+import {execFileSync} from 'node:child_process';
+
+// First-team wage bands (analysis/wage_bands.py): the contract screen's "Avg." includes youth.
+function firstTeamBands() {
+  try { return JSON.parse(execFileSync('python3', ['analysis/wage_bands.py'], {cwd: new URL('../..', import.meta.url).pathname, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000})); }
+  catch { return null; }
+}
 
 const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && parseMoney(i.label) !== null);
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
@@ -32,26 +39,28 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
   const rules = loadRules().contracts;
   factors ??= rules.salary_factors;
   await click('Enter Contract Negotiations');
-  let s = await waitFor(x => x.buttons(/^(Finalize Promises|Negotiate Contract)$/).length > 0, {what: 'contract negotiation'});
-  if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => x.buttons('Negotiate Contract').length > 0, {what: 'promises accepted'}); }
-  await click('Negotiate Contract');
-  s = await waitFor(x => amountAfter(x, 'Salary') && x.hasText('Payroll Budget Impact'), {what: 'contract form'});
+  // FM26 may land on Recruitment → Transfer Activity with the deal selected instead of the talks
+  // (Camara, 2026-07-16): its "Contract £8M" link (transfer-link-button) opens them.
+  // Where it lands varies: promises, a "Negotiate Contract" step, the contract form itself
+  // (Camara, 2026-07-16), or Transfer Activity with the deal's "Contract £…" link.
+  const form = x => !!amountAfter(x, 'Salary') && x.hasText('Payroll Budget Impact');
+  const link = x => x.buttons().find(b => b.name === 'transfer-link-button' && /^Contract £/.test(b.label));
+  const steps = x => x.buttons(/^(Finalize Promises|Negotiate Contract)$/).length > 0;
+  let s = await waitFor(x => form(x) || steps(x) || !!link(x), {what: 'contract negotiation', timeout: 15000});
+  if (!form(s) && !steps(s)) { await clickWhere(link, 'Contract link'); s = await waitFor(x => form(x) || steps(x), {what: 'contract negotiation (via deal)', timeout: 15000}); }
+  if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || x.buttons('Negotiate Contract').length > 0, {what: 'promises accepted'}); }
+  if (!form(s)) { await click('Negotiate Contract'); s = await waitFor(form, {what: 'contract form'}); }
   const demand = parseMoney(amountAfter(s, 'Salary').label);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, tries: []};
-  if (avg && demand > avg * rules.max_salary_vs_average) {
-    // Over the wage cap: walk away. Cancel Negotiations asks for confirmation in a dialog titled
-    // "Cancel Negotiations"; its Cancel button keeps the talks alive (Camara, 2026-07-16), so
-    // confirm with the other button.
-    await click('Cancel Negotiations');
-    const d = await waitFor(x => x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'Cancel Negotiations dialog'});
-    const confirm = d.buttons().filter(b => d.within(b.id, 'GenericModalDialog') && b.label !== 'Cancel');
-    if (confirm.length !== 1) throw new NeedsAnalyst(`Cancel Negotiations dialog: expected one confirm button, found ${confirm.map(b => b.label).join(' | ') || 'none'}`, entry);
-    await clickWhere(x => x.buttons(confirm[0].label).find(b => x.within(b.id, 'GenericModalDialog')), 'confirm cancel negotiations');
-    await settle(1000);
-    const out = {...entry, outcome: 'walked-away', reason: `wants £${demand}/week > ${rules.max_salary_vs_average}× squad average £${avg}`};
-    await log(out);
-    return out;
+  // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
+  // with the form open for a decision (Cancel Negotiations asks to confirm; its Cancel keeps talks).
+  const bands = firstTeamBands();
+  const cap = bands ? bands.median * rules.max_salary_vs_first_team_median : Infinity;
+  Object.assign(entry, {firstTeamMedian: bands?.median ?? null, cap: Number.isFinite(cap) ? Math.round(cap) : null});
+  if (demand > cap) {
+    await log({...entry, outcome: 'escalated'});
+    throw new NeedsAnalyst(`${player} wants £${demand}/week, above our cap £${Math.round(cap)} (${rules.max_salary_vs_first_team_median}× first-team median £${bands.median}); decide`, entry);
   }
   for (const f of factors) {
     await click('Reset', {name: 'button-secondary-label'}); await settle(800);

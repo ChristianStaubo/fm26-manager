@@ -24,9 +24,13 @@ Keeps all bonuses and clauses (agents are firm on those). Stops for a decision w
 exceeds 2× the squad's average salary (`rules.json` → `contracts`).
 
 ## Personal terms handed back to us (2026-07-16, Camara)
-"Enter Contract Negotiations" can land on Recruitment → Transfer Activity with the deal selected
-(not the contract form): a **"Contract £8M" link** (transfer-link-button) opens the negotiation;
-Cancel Offer / Withdraw Offer are **disabled** at this stage. Over the wage cap (rules.json
-contracts.max_salary_vs_average) the handler walks away: Cancel Negotiations → a confirmation
-dialog titled "Cancel Negotiations" whose **Cancel keeps the talks alive** → confirm with the other
-button. The walk-away path is written but NOT yet verified live (the form route needs the link step).
+- Wage cap: **first-team median × 1.3** (top 25 earners, `analysis/wage_bands.py`; £51.5K → £66.9K
+  in July 2026). The contract screen's "Avg." mixes in youth/reserves (squad median £7K) and made a
+  normal £36–44.5K first-team demand look like 2× average (user, 2026-10-08). Above the cap: stop
+  for a decision with the form left open.
+- Entering talks lands in different places: promises, a "Negotiate Contract" step, **the contract
+  form directly**, or Recruitment → Transfer Activity with the deal's **"Contract £…" link**
+  (Cancel/Withdraw Offer are disabled there). The handler waits for any of them.
+- Verified live: Camara's agent was "satisfied" at £38.5K p/w → Finalize Deal → Exit Talks.
+- "Cancel Negotiations" asks for confirmation in a dialog of the same name; its **Cancel keeps the
+  talks alive**.
