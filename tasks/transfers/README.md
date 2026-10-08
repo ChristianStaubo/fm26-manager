@@ -93,3 +93,11 @@ A listed player's offer page shows **one amount** under Transfer Value (his aski
 range: Thiago (listed) showed "£63M". `readOffer` treats it as `[v, v]` (`valueSingle: true`).
 Lowballs (guaranteed < `lowball_reject_below` × v_low) are rejected **before** the big-player
 escalation: rejecting never loses a player (Everton £1K for Thiago, 2026-06-25).
+
+## Asking price is sticky (2026-06-25, Kevin Schade)
+Once a player has had an asking price, the game keeps it: delisting ("No status set" →
+Confirm) and listing again shows the old price, and the Asking Price presets offer only amounts
+(£1K … £300M), never "Unspecified". The profile header keeps showing that stored price (not the
+value range) even while he is not listed, so `fm sell` without `--price` would take it for his
+value: **pass `--price` when re-pricing a player who was listed before.** "Unspecified" is
+probably only available to players never listed (not yet verified).
