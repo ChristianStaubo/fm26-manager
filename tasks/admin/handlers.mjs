@@ -4,7 +4,7 @@
 import {clickWhere, isoDate, parseMoney} from '../../ui/index.mjs';
 import {log, history} from '../log.mjs';
 import {registrationHandler} from './registration.mjs';
-import {NeedsAnalyst} from '../../ui/index.mjs';
+import {NeedsAnalyst, click, recover, waitFor, settle} from '../../ui/index.mjs';
 
 // Invitations (friendly proposals, U18/U23 competition invitations, …): always accept
 // (user, 2026-10-08). Friendly details are read for the log only.
@@ -69,7 +69,27 @@ const outgoingConfirm = {
   },
 };
 
+// "<Club> squad numbers to be decided" (2026-07-25): Respond → Ask Assistant to Assign → Confirm
+// Squad Numbers → "Submit the current set of squad numbers?" Yes (KNOWN_DIALOGS, via recover).
+const numbersPage = s => s.buttons('Ask Assistant to Assign').length === 1 && s.buttons('Confirm Squad Numbers').length === 1;
+const squadNumbers = {
+  name: 'squad-numbers',
+  match: s => numbersPage(s) || (s.hasText(/squad numbers to be decided$/) && s.buttons('Respond').length === 1),
+  async run(s, {dryRun = false} = {}) {
+    const entry = {action: 'squad-numbers', date: isoDate(s.date()), detail: 'assistant assigned squad numbers'};
+    if (dryRun) return {...entry, dryRun: true};
+    if (!numbersPage(s)) { await click('Respond'); await waitFor(numbersPage, {what: 'squad numbers page'}); }
+    await click('Ask Assistant to Assign'); await settle(1000);
+    await click('Confirm Squad Numbers');
+    await waitFor(x => x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'submit squad numbers dialog'});
+    await recover();
+    await log(entry);
+    return entry;
+  },
+};
+
 export const HANDLERS = [
+  squadNumbers,
   // "<Club> squad to be decided": register every eligible 21+ player, then submit (registration.mjs).
   registrationHandler,
   outgoingConfirm,

@@ -42,3 +42,11 @@ deadline (1 Sep). The message's own "Respond" button is covered by the list (occ
 scrolling into view, which the tools cannot do yet. The list also redraws after each switch
 ("UI content changed"): re-run for the rest. Cox, Kayode, Onyeka registered by tool; Lopez, Bird,
 Broholm needed scrolling.
+
+## Squad numbers (`squad-numbers`, 2026-07-25)
+"<Club> squad numbers to be decided": Respond → **Ask Assistant to Assign** → Confirm Squad Numbers →
+"Please Confirm: Submit the current set of squad numbers?" → **Yes** (answered by `recover` from
+KNOWN_DIALOGS, which now matches a dialog's question as well as its title). This dialog's Yes/No
+sit outside the GenericModalDialog node (notifications-modal-dialog-…), so click them by label.
+Registration (user, 2026-07-25): letting the assistant pick registered everyone 21+ incl. Lopez,
+Bird and Broholm.

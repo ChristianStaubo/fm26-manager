@@ -5,9 +5,12 @@ import {click, act} from './controls.mjs';
 
 export class NeedsAnalyst extends Error { constructor(message, details) { super(message); this.details = details; } }
 
-// Confirmation dialogs answered automatically: title → button. Add new ones here.
+// Confirmation dialogs answered automatically: title or question → button. Add new ones here.
+// Generic titles ("Please Confirm") are matched by their question (dialog-description) instead.
 export const KNOWN_DIALOGS = {
   'DOF to negotiate contract?': 'Yes',   // asking the Director of Football to negotiate a renewal
+  'Submit the current set of squad numbers?': 'Yes',   // squad numbers (assistant assigned them)
+  'Submit completed squad list?': 'Confirm',           // squad registration
 };
 
 export function overlays(s) {
@@ -43,7 +46,7 @@ export async function recover({attempts = 6} = {}) {
     if (open.every(o => o.kind === 'tooltip') && i > 0) return {clean: true, steps: i, tooltip: open[0].text};
     const has = k => open.find(o => o.kind === k);
     if (has('dialog')) {
-      const d = has('dialog'), answer = KNOWN_DIALOGS[d.title];
+      const d = has('dialog'), answer = KNOWN_DIALOGS[d.title] ?? KNOWN_DIALOGS[d.description];
       if (!answer) throw new NeedsAnalyst(`Unknown dialog: ${d.title}`, d);
       await click(answer, {recoverOnOcclusion: false});
     } else if (has('popup')?.menu) {
