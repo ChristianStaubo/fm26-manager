@@ -11,7 +11,7 @@ Read first: `tasks/transfers/README.md` (flows, screens, quirks) and `tasks/tran
 
 ## Commands
 ```bash
-node cli/fm.mjs sell "Keane Lewis-Potter" --club Brentford            # asking price 1.2 × top of value
+node cli/fm.mjs sell "Keane Lewis-Potter" --club Brentford            # asking price = top of value (--deter: 1.2 ×)
 node cli/fm.mjs sell "Thiago" --club Brentford --price 63m           # explicit (rounded down to the step)
 node cli/fm.mjs buy "Marius Broholm" --club "LOSC Lille" --max 17m   # negotiate now (Suggest Terms) up to £17M
 node cli/fm.mjs offers                                               # bids in progress + budget impact

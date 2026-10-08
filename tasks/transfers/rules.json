@@ -32,7 +32,9 @@
     "_small_deal": "Below this, handlers act automatically: one counter, then accept any reply >= v_low.",
     "sell_on_pct_for_age_under": 23,
     "sell_on_pct": 20,
-    "_planned_change": "User (2026-10-04): asking prices at 1.2 × value are probably too high. Planned: list players as 'Transfer listed' WITHOUT an asking price to invite bids, then accept bids within a range of the valuation. Not implemented yet."
+    "asking_price": 1.0,
+    "asking_price_deter": 1.2,
+    "_asking_price": "Asking price when transfer-listing, x v_high. 1.0 when we want to sell: the top of the valuation is what a buyer will pay, and a listed player already draws lower bids (user, 2026-10-08). asking_price_deter (fm sell --deter) only for players listed but not really for sale. first_counter is for answering bids, not for listing."
   },
   "agent_payoff": {
     "counter_at": 0.7,

@@ -3,16 +3,21 @@ import {Screen, waitFor, click, choose, setFee, parseMoney, openPlayer, actionPa
 import {loadRules} from './decide.mjs';
 import {log} from '../log.mjs';
 
-// Default asking price: rules.selling.first_counter × the top of the player's valuation.
-export const defaultAskingPrice = facts => Math.round(facts.valueRange[1] * loadRules().selling.first_counter);
+// Default asking price: rules.selling.asking_price × the top of the player's valuation (1.0: we
+// want to sell). --deter uses asking_price_deter for players listed but not really for sale.
+export const defaultAskingPrice = (facts, {deter = false} = {}) => {
+  const {asking_price, asking_price_deter} = loadRules().selling;
+  return Math.round(facts.valueRange[1] * (deter ? asking_price_deter : asking_price));
+};
 
 /**
  * listPlayer('Thiago', 'Brentford', {price?, dryRun?})
  * Profile → Actions → Transfer → Set Transfer Status → "Transfer listed" + asking price → Confirm.
+ * Default asking price: the top of the valuation (see defaultAskingPrice).
  * The asking price is set with presets and ± steps and never exceeds `price` (steps are £1M at
  * £60M), so £64.8M becomes £64M.
  */
-export async function listPlayer(name, club, {price, dryRun = false} = {}) {
+export async function listPlayer(name, club, {price, deter = false, dryRun = false} = {}) {
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   try { await actionPath(['Transfer', 'Set Transfer Status']); }
@@ -34,7 +39,7 @@ export async function listPlayer(name, club, {price, dryRun = false} = {}) {
     if (!facts.askingPrice) { await click('Cancel', {name: 'CancelButton'}); throw new NeedsAnalyst(`No valuation shown for ${name}; pass --price`, facts); }
     facts.valueRange = [facts.askingPrice, facts.askingPrice]; // exact valuation
   }
-  const asking = price ?? defaultAskingPrice(facts);
+  const asking = price ?? defaultAskingPrice(facts, {deter});
   await choose(status, 'Transfer listed', {what: 'transfer status'});
   const fee = await setFee('Asking Price', asking, {mode: 'atMost'});
   const result = {action: 'list-player', name, club, date: isoDate(profile.date()), facts, askingWanted: asking, askingSet: fee.set};

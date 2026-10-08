@@ -18,13 +18,15 @@ payoffs, used by the autopilot), `decide.mjs` + `rules.json` (the numbers). Log:
 - Revenue for the club is an explicit goal of the experiment.
 
 ## Planned change to selling (user, 2026-10-04 — not implemented yet)
-Asking prices at 1.2 × value look too high. Better: set players to **Transfer listed without an
-asking price** (Set Transfer Status → Transfer listed, leave Asking Price "Unspecified"), let
-clubs bid, and **accept bids within a range of the valuation** (the range to be decided).
+Asking price when listing = **top of the valuation** (`rules.json` `selling.asking_price` 1.0,
+user 2026-10-08): if we list a player we want to sell him, and a listed player already draws
+lower bids, so a price above the valuation just means no bids. `--deter` (1.2 ×) only for players
+listed but not really for sale. `first_counter` (1.2 ×) is for answering bids, not for listing.
+Not tried yet: listing with Asking Price "Unspecified" and accepting bids within a range.
 
-## Selling a player — `fm sell "<name>" --club <club> [--price N] [--dry-run]`
+## Selling a player — `fm sell "<name>" --club <club> [--price N] [--deter] [--dry-run]`
 Profile → Actions → Transfer → **Set Transfer Status** (card dialog) → status dropdown
-"Transfer listed" → **Asking Price** box → Confirm. Default price = 1.2 × v_high, set with
+"Transfer listed" → **Asking Price** box → Confirm. Default price = v_high (`--deter`: 1.2 ×), set with
 `setFee(mode: 'atMost')`, so the result is the largest reachable value ≤ the target (£1M steps
 at ~£60M: £64.8M → £64M). The other tab, "Loan Status", is not used.
 

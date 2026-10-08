@@ -30,7 +30,7 @@ minutes, goals, xg, xg_p90, value, wage, contract_expires, on_loan_at, loan_ends
 - Caveat: only the leagues loaded in the save have stats.
 
 ## 3. Plan (show the user, then execute with fm-transfers)
-| Sell (asking price = 1.2 × top of value) | Keep / renew | Buy (opening bid, walk-away max) |
+| Sell (asking price = top of value) | Keep / renew | Buy (opening bid, walk-away max) |
 State the reason with numbers for each line, the money in/out, wage bill change, and the squad
 after the window (two senior players per position, three goalkeepers).
 
