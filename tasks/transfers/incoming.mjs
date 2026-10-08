@@ -18,6 +18,8 @@ function readOffer(d, {headClub, shortName, coach}) {
     negotiable: !d.hasText('Non-Negotiable') && d.hasText('Negotiable'),
     guaranteed: parseMoney(d.after('Fee:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
+    // Everything incl. instalments and add-ons; add-ons count as fee (rules.json addon_weight).
+    total: parseMoney(d.after('Future & Potential Total Cost with Additional Fees:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
     keyPlayer: /\b(key|star|important|regular starter)\b/i.test(coach),
   };
   // The value is a range ("£49M - £60M"), or one amount when the player is listed (his asking

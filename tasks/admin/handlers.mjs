@@ -43,6 +43,9 @@ const delegate = (name, pattern, describe) => ({
   },
 });
 
+// Loans: "Valdimarsson set to move on loan to Strasbourg"; sales: "Yarmoliuk close to signing for
+// Newcastle" (2026-07-07, with a "Delegate 'Finalizing player sales…'" button).
+const OUTGOING = /^(.+?) (?:set to (?:move|join|leave)|close to signing for) /;
 // An agreed outgoing deal asks for a final "Confirm Transfer" (Accept / Delay Transfer / Cancel):
 // "<Player> set to move on loan to <Club>". Accept only deals our log shows we agreed to; anything
 // else (e.g. a deal agreed before this tooling, or by staff) stops for a decision.
@@ -51,10 +54,10 @@ const outgoingConfirm = {
   // Our own signings show the same buttons plus "Delegate 'Finalizing player signings…'"
   // (delegate-finalizing handles those); outgoing ones read "<Player> set to move/join/leave".
   match: s => s.buttons('Accept').length === 1 && s.buttons('Delay Transfer').length === 1 && s.buttons('Cancel').length === 1
-    && !s.buttons(/^Delegate 'Finalizing player signings/).length && s.texts().some(t => / set to (move|join|leave)/.test(t)),
+    && !s.buttons(/^Delegate 'Finalizing player signings/).length && s.texts().some(t => OUTGOING.test(t)),
   async run(s, {dryRun = false} = {}) {
-    const headline = s.texts().find(t => / set to (move|join|leave)/.test(t)) || '';
-    const player = / ?(.+?) set to (move|join|leave)/.exec(headline)?.[1];
+    const headline = s.texts().find(t => OUTGOING.test(t)) || '';
+    const player = OUTGOING.exec(headline)?.[1]?.trim();
     const agreed = player && (await history()).some(e => /accept/i.test(JSON.stringify([e.decision, e.label, e.action])) && JSON.stringify(e).includes(player));
     const entry = {action: 'confirm-outgoing', date: isoDate(s.date()), headline, player, agreed: !!agreed};
     if (!agreed) throw new NeedsAnalyst(`Confirm Transfer for ${player || 'unknown player'}: no record of us agreeing this deal. Read it (fm deal "${player}") and decide: fm click Accept / Cancel`, entry);

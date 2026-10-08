@@ -1,8 +1,8 @@
 {
   "_about": "Numeric transfer playbook. Prices are multiples of the in-game Transfer Value range: v_low and v_high are its bottom and top. Guaranteed = up-front + instalments. Calibrate from local/runs negotiation logs.",
   "valuation": {
-    "addon_weight": 0.5,
-    "_addon_weight": "Appearance/success add-ons count at this fraction of face value.",
+    "addon_weight": 1.0,
+    "_addon_weight": "Add-ons count at this fraction of face value. 1.0 (user, 2026-10-08): they are usually hit, treat them as part of the fee. Offers are judged on value = guaranteed + addon_weight x add-ons (the offer page's 'Future & Potential Total Cost with Additional Fees').",
     "net_costs": [
       "solidarity_pct",
       "money_still_owed",
@@ -22,12 +22,12 @@
       "default": 1.0,
       "key_player": 1.2,
       "contract_under_12_months": 0.8,
-      "_floor": "Walk-away minimum x v_high (expiring contracts: x v_low). After max_counters, accept at or above floor, else reject."
+      "_floor": "Walk-away minimum after max_counters: default and contract_under_12_months are x v_LOW; key_player is x v_high. Value includes add-ons."
     },
     "lowball_reject_below": 0.5,
     "_lowball": "Guaranteed below this x v_low: reject rather than counter (a big jump lost Wrexham on 2026-07-01).",
     "non_negotiable_accept_at": 1.0,
-    "_non_negotiable": "Accept-or-reject only: accept at or above this x v_high if depth is fine.",
+    "_non_negotiable": "Accept-or-reject offers: accept when value (add-ons included) >= this x v_LOW, i.e. the bottom of his range (user, 2026-10-08: our floor sits below the value, not at its top).",
     "small_deal_v_high_under": 500000,
     "_small_deal": "Below this, handlers act automatically: one counter, then accept any reply >= v_low.",
     "sell_on_pct_for_age_under": 23,

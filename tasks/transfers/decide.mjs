@@ -14,11 +14,16 @@ const tidy = v => roundTo(v, v >= 1e6 ? 50000 : v >= 1e5 ? 5000 : 1000);
  *         monthsLeft, keyPlayer}
  * → {action: 'accept'|'reject'|'counter'|'escalate', upfront?, reason}
  */
-export function decideSale(o, policy = loadRules()) {
+export function decideSale(offer, policy = loadRules()) {
+  let o = offer;
   const p = policy.selling, esc = policy.escalate;
   if (![o.guaranteed, o.vLow, o.vHigh].every(Number.isFinite)) return {action: 'escalate', reason: 'offer or valuation unreadable'};
+  // Judge the offer on its value: guaranteed money plus add-ons at addon_weight (o.total is the
+  // offer page's "Future & Potential Total Cost with Additional Fees").
+  const w = policy.valuation?.addon_weight ?? 1;
+  o = {...o, guaranteed: o.guaranteed + w * Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed)};
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;
-  const floor = expiring ? o.vLow * p.floor.contract_under_12_months : o.vHigh * p.floor.default;
+  const floor = expiring ? o.vLow * p.floor.contract_under_12_months : o.keyPlayer ? o.vHigh * p.floor.key_player : o.vLow * p.floor.default;
   const instalments = Math.max(0, o.guaranteed - (o.upfront ?? o.guaranteed));
   const counter = (target, minRaise = 1) => {
     const ask = tidy(Math.max(target, o.guaranteed * minRaise));
@@ -42,7 +47,7 @@ export function decideSale(o, policy = loadRules()) {
   if (o.vHigh >= esc.offer_v_high_over) return {action: 'escalate', reason: `valuation above ${esc.offer_v_high_over}`};
   if (o.keyPlayer && esc.key_starter) return {action: 'escalate', reason: 'key player'};
   if (!o.negotiable) {
-    const bar = expiring ? floor : o.vHigh * p.non_negotiable_accept_at;
+    const bar = expiring ? floor : o.vLow * p.non_negotiable_accept_at;
     return o.guaranteed >= bar ? {action: 'accept', reason: `non-negotiable, ${o.guaranteed} >= ${Math.round(bar)}`}
       : {action: 'reject', reason: `non-negotiable, ${o.guaranteed} < ${Math.round(bar)}`};
   }

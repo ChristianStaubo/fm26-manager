@@ -25,9 +25,9 @@ test('reply below 1.05 x v_high gets a second counter at 1.10 x', () => {
   assert.equal(r.action, 'counter');
   assert.equal(r.guaranteedAsk, 9250000);
 });
-test('after max counters: accept at or above the floor, reject below', () => {
-  assert.equal(sale({guaranteed: 8.4e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3}).action, 'accept');
-  assert.equal(sale({guaranteed: 8.0e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3}).action, 'reject');
+test('after max counters: accept at or above the floor (bottom of the range), reject below', () => {
+  assert.equal(sale({guaranteed: 7.6e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3}).action, 'accept');
+  assert.equal(sale({guaranteed: 7.5e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3}).action, 'reject');
 });
 test('expiring contracts lower the floor to 0.8 x v_low', () => {
   assert.equal(sale({guaranteed: 6.2e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3, monthsLeft: 11}).action, 'accept');
@@ -40,9 +40,9 @@ test('small deals: one counter, then accept anything at or above v_low', () => {
   assert.equal(sale({guaranteed: 120000, vLow: 110000, vHigh: 210000, countersSoFar: 1}).action, 'accept');
   assert.equal(sale({guaranteed: 100000, vLow: 110000, vHigh: 210000, countersSoFar: 1}).action, 'reject');
 });
-test('non-negotiable offers: accept at v_high, else reject (Birmingham £24.5M for Osman goes to escalation first)', () => {
-  assert.equal(sale({negotiable: false, guaranteed: 1.2e6, vLow: 0.75e6, vHigh: 1.2e6}).action, 'accept');
-  assert.equal(sale({negotiable: false, guaranteed: 1.0e6, vLow: 0.75e6, vHigh: 1.2e6}).action, 'reject');
+test('non-negotiable offers: accept at the bottom of the range, else reject (Birmingham £24.5M for Osman goes to escalation first)', () => {
+  assert.equal(sale({negotiable: false, guaranteed: 0.75e6, vLow: 0.75e6, vHigh: 1.2e6}).action, 'accept');
+  assert.equal(sale({negotiable: false, guaranteed: 0.7e6, vLow: 0.75e6, vHigh: 1.2e6}).action, 'reject');
   assert.equal(sale({negotiable: false, guaranteed: 24.5e6, vLow: 20e6, vHigh: 30e6}).action, 'escalate');
 });
 test('key players and unreadable offers escalate', () => {
@@ -101,4 +101,11 @@ test('loan with only an option to buy is a plain loan → escalate', async () =>
   const {decideLoan} = await import('./decide.mjs');
   const d = decideLoan({loanFee: 2.6e6, monthlyFee: 29e3, months: 10, optionFee: 1.8e6, vLow: 2.2e6, vHigh: 5.2e6});
   assert.equal(d.asSale, false); assert.equal(d.action, 'escalate');
+});
+
+test('add-ons count as fee: Newcastle for Yarmoliuk (35.75M guaranteed, 48.5M total, range 44-49M) is accepted', () => {
+  const noEscalation = {...policy, escalate: {...policy.escalate, offer_v_high_over: Infinity}};
+  const o = {negotiable: false, guaranteed: 35.75e6, upfront: 25.5e6, total: 48.5e6, vLow: 44e6, vHigh: 49e6, countersSoFar: 0, monthsLeft: 36};
+  assert.equal(decideSale(o, noEscalation).action, 'accept');
+  assert.equal(decideSale({...o, total: 35.75e6}, noEscalation).action, 'reject');
 });
