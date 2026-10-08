@@ -12,6 +12,9 @@ import {listPlayer} from '../tasks/transfers/sell.mjs';
 import {buyPlayer} from '../tasks/transfers/buy.mjs';
 import {delegateRenewal} from '../tasks/contracts/renew.mjs';
 import {transferActivity} from '../tasks/transfers/activity.mjs';
+import {journal} from './journal.mjs';
+import {doctor} from './doctor.mjs';
+import * as friction from './friction.mjs';
 
 const HELP = `fm <command> [args] [--flags]
 
@@ -36,6 +39,13 @@ Transfers
   renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
 
+When stuck / setup
+  doctor [--fix]                 check game, bridge, save, overlays; --fix starts the bridge
+  stuck "<what you tried>"       save a friction report (screen, overlays, recent commands), then STOP
+  friction [--all]               list open friction reports
+  friction resolve <id> "<fix>"  mark a report fixed (fixer only)
+  friction fixture <id> <name>   save the report's screen as test/screens/<name>.json
+
 Bridge
   reload                         reload the agent after editing bridge/agent/*.js
   input-reset                    remove virtual keyboard devices (if real clicks stop working)
@@ -49,6 +59,7 @@ for (let i = 0; i < argv.length; i++) {
   else pos.push(argv[i]);
 }
 const [cmd, a1, a2] = pos;
+const outcome = journal(argv);
 const num = v => v === undefined ? undefined : Number(String(v).replace(/[£,_]/g, '').replace(/m$/i, 'e6').replace(/k$/i, 'e3'));
 const dryRun = !!flags['dry-run'];
 const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
@@ -67,7 +78,14 @@ try {
       break;
     }
     case 'continue': out(await withLock('continue', () => control({maxSteps: Number(a1 || 10)}))); break;
-    case 'run': { const r = await run({until: flags.until, dryRun}); out(r); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break; }
+    case 'doctor': { const r = await doctor({fix: !!flags.fix}); out(r); process.exitCode = r.ok ? 0 : 1; break; }
+    case 'stuck': out(await friction.stuck(pos.slice(1).join(' '))); break;
+    case 'friction':
+      if (a1 === 'resolve') out(await friction.resolve(a2, pos.slice(3).join(' ')));
+      else if (a1 === 'fixture') out(await friction.fixture(a2, pos[3]));
+      else out(await friction.list({all: !!flags.all}));
+      break;
+    case 'run': { const r = await run({until: flags.until, dryRun}); outcome({reason: r.reason}); out(r); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break; }
     case 'holiday': out(await holiday({until: flags.until, days: num(flags.days), dryRun})); break;
     case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), dryRun})); break;
     case 'buy': out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
@@ -82,6 +100,7 @@ try {
     default: console.log(HELP); if (cmd && cmd !== 'help') process.exitCode = 1;
   }
 } catch (e) {
+  outcome({error: e.message});
   if (e instanceof fm.NeedsAnalyst) { out({needsAnalyst: e.message, details: e.details}); process.exitCode = 2; }
   else { console.error(e.message); process.exitCode = 1; }
 }

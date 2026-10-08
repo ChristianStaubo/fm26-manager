@@ -8,7 +8,7 @@
   "scripts": {
     "fm": "node cli/fm.mjs",
     "bridge": "python3 bridge/server.py",
-    "test": "node --test tasks/**/*.test.mjs"
+    "test": "node --test tasks/*/*.test.mjs test/*.test.mjs"
   },
   "engines": {"node": ">=20"}
 }
