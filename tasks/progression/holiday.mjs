@@ -38,3 +38,39 @@ export async function holiday({days, until, dryRun = false} = {}) {
   await log(result);
   return result;
 }
+
+// ---- A whole stretch on holiday ------------------------------------------------------------
+// FM ends a vacation early when something needs the manager (captaincy, 2026-08-02; …). Going on
+// holiday again lets the assistant settle it (user, 2026-10-08), so: holiday to the return date,
+// and when a leg ends early, note where and why, then go again. Stops at the return date, on an
+// unknown dialog (recover refuses it), or when two legs in a row make no progress.
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function waitUntilIdle({quietPolls = 3, every = 5000, maxMs = 3 * 3600e3} = {}) {
+  const {getState} = await import('../../bridge/client.mjs');
+  const end = Date.now() + maxMs;
+  for (let quiet = 0; quiet < quietPolls && Date.now() < end; ) {
+    await sleep(every);
+    const st = await getState().catch(() => ({automationState: 'busy'}));
+    quiet = st.automationState === 'busy' || st.actionInFlight ? 0 : quiet + 1;
+  }
+}
+
+export async function holidaySeason({until, maxLegs = 40, onLeg = () => {}} = {}) {
+  const {summarize} = await import('./autopilot.mjs');
+  const start = (await Screen.read()).date();
+  const back = until ? new Date(until + 'T00:00:00Z') : nextDate(start, loadSeason().holiday.return_on);
+  const legs = [];
+  let stalls = 0;
+  for (let leg = 1; leg <= maxLegs; leg++) {
+    const from = (await Screen.read()).date();
+    if (from >= back) return {action: 'holiday-season', reason: 'returned', from: isoDate(start), to: isoDate(from), legs};
+    await holiday({until: isoDate(back)});
+    await waitUntilIdle();
+    const s = await Screen.read(), to = s.date();
+    const entry = {action: 'holiday-leg', leg, from: isoDate(from), to: isoDate(to), continue: s.continueLabel(), screen: summarize(s).texts.slice(0, 6)};
+    legs.push(entry); await log(entry); onLeg(entry);
+    stalls = to && from && to > from ? 0 : stalls + 1;
+    if (stalls >= 2) return {action: 'holiday-season', reason: 'stuck', from: isoDate(start), to: isoDate(to), legs};
+  }
+  return {action: 'holiday-season', reason: 'max-legs', legs};
+}

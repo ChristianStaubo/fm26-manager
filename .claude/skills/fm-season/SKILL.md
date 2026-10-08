@@ -18,7 +18,8 @@ Windows and holiday settings: `tasks/progression/season.json`. Skills: **fm-oper
    stops for purchases follow-ups and judgment calls. Resolve, then `fm run` again.
    Re-check the plan if a key player leaves or a target is lost.
 3. **Window closes** (`fm run` returns `window-closed`):
-   `node cli/fm.mjs holiday` — back on 28 May (season over, stats complete).
+   `node cli/fm.mjs holiday --season` — back on 28 May (season over, stats complete). It re-starts
+   the holiday whenever FM ends it early for a manager decision (the assistant settles those).
    Summer window: holiday ends 28 May → step 4 → step 1. January window: holiday
    `--until` 1 January, then a short window cycle, then holiday again to 28 May.
 4. **Season report** (28 May): league position (Portal → Stages), transfer profit from
@@ -26,6 +27,8 @@ Windows and holiday settings: `tasks/progression/season.json`. Skills: **fm-oper
    what to change in rules.json. Show it to the user.
 
 ## Rules from the user
+- Unfamiliar one-off manager decisions (captaincy, friendlies, …) outside transfers: go on holiday;
+  the assistant settles them (`fm holiday --season`, or `--days 1` mid-window).
 - Holiday: never tick "Use team selection where possible" (injuries).
 - Contracts are negotiated by staff (DoF); we never haggle wages unless a bid requires it.
 - Selling style and numbers: `tasks/transfers/rules.json`; revenue is a stated goal.

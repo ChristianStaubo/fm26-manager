@@ -7,7 +7,7 @@ import {getState, request, ui} from '../bridge/client.mjs';
 import * as fm from '../ui/index.mjs';
 import {control, withLock} from '../tasks/progression/continue.mjs';
 import {run} from '../tasks/progression/autopilot.mjs';
-import {holiday} from '../tasks/progression/holiday.mjs';
+import {holiday, holidaySeason} from '../tasks/progression/holiday.mjs';
 import {listPlayer} from '../tasks/transfers/sell.mjs';
 import {buyPlayer} from '../tasks/transfers/buy.mjs';
 import {delegateRenewal} from '../tasks/contracts/renew.mjs';
@@ -36,6 +36,8 @@ Act
   continue [steps]               press Continue up to N times (stops when an action is needed)
   run [--until YYYY-MM-DD] [--dry-run]   autopilot (handles routine screens, stops for decisions)
   holiday [--until YYYY-MM-DD | --days N] [--dry-run]
+  holiday --season [--until YYYY-MM-DD]   holiday to the return date, going again whenever FM ends it
+                                 early (the assistant settles pending decisions); long-running
   register ["<name>" …] [--dry-run]  squad registration (open the "squad to be decided" message first):
                                  register the named players, or every unregistered 21+ player; submit
   press [--dry-run]              hold the pending press conference (positive answers), then leave
@@ -106,7 +108,10 @@ try {
       else out(await friction.list({all: !!flags.all}));
       break;
     case 'run': { const r = await run({until: flags.until, dryRun}); outcome({reason: r.reason}); out(r); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break; }
-    case 'holiday': out(await holiday({until: flags.until, days: num(flags.days), dryRun})); break;
+    case 'holiday':
+      if (flags.season) { const r = await holidaySeason({until: flags.until, onLeg: l => console.error(`leg ${l.leg}: ${l.from} → ${l.to} (${l.continue})`)}); outcome({reason: r.reason}); out(r); process.exitCode = r.reason === 'returned' ? 0 : 2; }
+      else out(await holiday({until: flags.until, days: num(flags.days), dryRun}));
+      break;
     case 'prices': out(Object.values(pricebook.load().players)); break;
     case 'register': out(await register(pos.slice(1), {dryRun})); break;
     case 'press': out(await pressConference({dryRun})); break;
