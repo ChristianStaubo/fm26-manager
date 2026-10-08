@@ -30,6 +30,11 @@ Clubs are as shown in the game ("LOSC Lille", "Sheffield United").
   override after you have decided. Players listed before keep their old asking price: `--price`.
 - **Bids for price-book players** are decided in `fm run` against our minimum: accept at or
   above it, counter towards the target (max 3), reject below it once counters are spent. No stop.
+- **Loan offers** for our players (user rule): with an **obligation to buy** it is a sale; add
+  up loan fee + monthly fees + obligation fee and decide it like a bid (`decideLoan` in
+  decide.mjs; price-book minimum if listed). Never reject it only for being a loan. With only an
+  **option** to buy it is a plain loan: decide on wage relief and depth. No handler reads loan
+  screens yet: capture one with `fm stuck` before answering it.
 - **Other bids** follow rules.json (counter 1.2 ×, accept ≥ 1.05 ×, reject lowballs, max 3
   counters). They stop for you on key players, valuations ≥ £20M, unreadable offers. Then decide with skill **fm-moneyball** (importance, depth, replacement):
   - accept/reject: `fm click "Accept Offer"` / `fm click "Reject Offer"` on the offer detail page

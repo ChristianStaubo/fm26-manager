@@ -90,3 +90,15 @@ test('price book: non-negotiable below the minimum is rejected; lowballs still r
   assert.equal(listed({guaranteed: 50e6, upfront: 50e6, negotiable: false}).action, 'reject');
   assert.equal(listed({guaranteed: 1e6, upfront: 1e6}).reason, 'lowball');
 });
+
+// Loans (user, 2026-10-08): an obligation to buy makes it a sale.
+test('loan with obligation to buy is decided as a sale of the summed fees', async () => {
+  const {decideLoan} = await import('./decide.mjs');
+  const d = decideLoan({loanFee: 2e6, monthlyFee: 100e3, months: 10, obligationFee: 54e6, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0});
+  assert.equal(d.asSale, true); assert.equal(d.guaranteed, 57e6); assert.equal(d.action, 'accept');
+});
+test('loan with only an option to buy is a plain loan → escalate', async () => {
+  const {decideLoan} = await import('./decide.mjs');
+  const d = decideLoan({loanFee: 2.6e6, monthlyFee: 29e3, months: 10, optionFee: 1.8e6, vLow: 2.2e6, vHigh: 5.2e6});
+  assert.equal(d.asSale, false); assert.equal(d.action, 'escalate');
+});

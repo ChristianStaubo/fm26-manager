@@ -60,6 +60,22 @@ export function decideSale(o, policy = loadRules()) {
     : {action: 'reject', reason: `counters exhausted, below floor ${Math.round(floor)}`};
 }
 
+/**
+ * Loan offer for one of our players (user rule, 2026-10-08).
+ * loan: {loanFee, monthlyFee, months, obligationFee?, optionFee?, ...offer fields for decideSale}
+ * With an obligation to buy it is a sale: everything guaranteed is summed and decided by
+ * decideSale (price-book minimum included). Option-only or no buy clause: a plain loan → escalate.
+ */
+export function decideLoan(l, policy = loadRules()) {
+  const fees = (l.loanFee || 0) + (l.monthlyFee || 0) * (l.months || 0);
+  if (Number.isFinite(l.obligationFee) && l.obligationFee > 0) {
+    const guaranteed = fees + l.obligationFee;
+    const d = decideSale({...l, guaranteed, upfront: l.loanFee || 0}, policy);
+    return {...d, asSale: true, guaranteed, reason: `loan with obligation to buy = sale of ${guaranteed}: ${d.reason}`};
+  }
+  return {action: 'escalate', asSale: false, reason: l.optionFee ? `loan with an option (not obligation) to buy ${l.optionFee}: decide on wage relief and depth` : 'plain loan: decide on wage relief and depth'};
+}
+
 /** Agent payoff demand. reply is the agent's answer to our counter, if any. */
 export function decidePayoff({ask, reply}, policy = loadRules()) {
   const p = policy.agent_payoff;
