@@ -31,10 +31,13 @@ const gmLine = s => s.buttons(/General Manager/)[0]?.label || '';
 export function offerState(s) {
   const gm = gmLine(s);
   const money = label => parseMoney(s.after(label, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
+  // Suggest Terms on screen = our edit is pending: the General Manager line can still show an
+  // earlier reply ("LOSC have negotiated the offer…" from June on Ribeiro's pre-filled screen,
+  // 2026-07-13), which read as 'countered' and made fm buy reach for Accept Demands.
   const state = /An offer has been made/i.test(gm) || s.hasText(/An offer has been made/) ? 'made'
+    : s.buttons('Suggest Terms').length ? 'editing'
     : /prepared to accept/i.test(gm) ? 'accepted'
     : /negotiated the offer|responded to the latest offer/i.test(gm) ? 'countered'
-    : s.buttons('Suggest Terms').length ? 'editing'
     : 'unknown';
   return {state, gm, upfront: money('Current Transfer Budget Cost:'), total: money('Future & Potential Total Cost with Additional Fees:')};
 }
