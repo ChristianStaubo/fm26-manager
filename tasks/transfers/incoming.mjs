@@ -134,7 +134,9 @@ export function readLoan(s) {
     unusedMonthlyFee: money('Unused Monthly Fee'), months, duration,
     salaryPct: s.after('Playing Salary Percentage', i => i.kind === 'text')?.label,
     playingTime: s.after('Agreed Playing Time', i => i.kind === 'text')?.label,
-    obligationFee: clause(/[Oo]bligat/), optionFee: clause(/[Oo]ption to buy|[Ff]uture [Ff]ee/)};
+    // A "mandatory future fee" is an obligation to buy (Al-Ahli for Schade, £43.5M, 2026-07): the
+    // future fee only counts as an option when nothing calls it mandatory/obligatory.
+    obligationFee: clause(/[Oo]bligat|[Mm]andatory/), optionFee: clause(/[Oo]ption(al)? to buy|[Oo]ptional .*fee|^(?!.*[Mm]andatory).*[Ff]uture [Ff]ee/)};
 }
 
 export const loanOffer = {

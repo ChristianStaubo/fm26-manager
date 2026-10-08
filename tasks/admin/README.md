@@ -24,3 +24,9 @@ Seen but not automated (the autopilot stops; decide, act, continue):
 
 Adding one: `{name, match: screen => bool, run(screen) }` in `handlers.mjs`, using a stable
 button label as the match. Prefer "delegate to staff" buttons.
+
+## Delegated to staff in the game (Club → Responsibilities)
+- **Friendly matches** (user, 2026-07-13 in-game): the assistant arranges and plays them. Before
+  this, a friendly stopped `fm run` on Tactics / "Review Team Selection" (state handoff); our
+  tools do not pick teams or play matches. If one appears anyway, delegate it again in
+  Responsibilities rather than playing it.

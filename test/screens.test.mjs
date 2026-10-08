@@ -64,3 +64,15 @@ test('Loan approach without a buy clause (Leicester for Milambo) → loan-offer,
   assert.equal(l.obligationFee, undefined);
   assert.equal(decideLoan(l).action, 'escalate');
 });
+
+test('Loan approach with a mandatory future fee is an obligation to buy (Al-Ahli for Schade, 2026-07)', async () => {
+  const {readLoan} = await import('../tasks/transfers/incoming.mjs');
+  const {Screen} = await import('../ui/screen.mjs');
+  const lines = ['Al-Ahli make loan approach for Schade', 'Fee', '£500K', 'Duration', 'End of season', 'Playing Monthly Fee', '£75K',
+    'Mandatory Future Fee', '£43.5M', 'Agreed Playing Time', 'Regular Starter'];
+  const nodes = [{id: 0, parent: null, visible: true, bounds: [0, 0, 1680, 1050]},
+    ...lines.map((text, k) => ({id: k + 1, parent: 0, visible: true, text, bounds: [540, 100 + k * 20, 300, 18]}))];
+  const l = readLoan(new Screen({nodes}));
+  assert.equal(l.obligationFee, 43.5e6);
+  assert.equal(l.optionFee, undefined);
+});
