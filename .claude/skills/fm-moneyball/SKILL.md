@@ -38,3 +38,5 @@ after the window (two senior players per position, three goalkeepers).
 Inputs: offer terms (`fm screen` on View Offer), player output rank, depth after sale, contract
 months left, replacement options. Output: accept / reject / counter (with up-front fee) and why.
 The defaults in `tasks/transfers/rules.json` apply unless there is a football reason not to.
+
+Thin market (a role lists no candidates)? Loosen the search: `python3 analysis/squad_report.py --max-value 35 --min-output 54 --min-minutes 900`. The report's budget line comes from the save; the live budget is `node cli/fm.mjs offers`.

@@ -107,20 +107,33 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (top.includes('Make An Offer')) await actionPath(['Make An Offer']);
   else if (sub.includes('Make An Offer')) await actionPath(['Transfer', 'Make An Offer']);
   else throw new NeedsAnalyst(`No "Make An Offer" for ${name}`, {top, transfer: sub});
-  const s = await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'offer screen'});
+  // A fresh offer screen has Suggest Terms. After an earlier negotiation for the same player the
+  // screen comes back PRE-FILLED with that offer (fee, instalments, add-ons) and only Make Offer
+  // (Ribeiro, 2026-07-13: £18.25M + £14.5M instalments + £155K/appearance); editing a field
+  // brings Suggest Terms back.
+  const s = await waitFor(x => x.buttons('Suggest Terms').length === 1 || x.buttons('Make Offer').length === 1, {what: 'offer screen'});
+  const prefilled = !s.buttons('Suggest Terms').length;
+  // Leave without bidding: Cancel where the screen has one, else navigate away (the pre-filled
+  // page has no Cancel; leaving it registered no bid, 2026-07-13).
+  const leave = async () => { if ((await Screen.read()).buttons('Cancel').some(b => b.name === 'StandardButton')) await click('Cancel', {name: 'StandardButton'}); else await recover().then(() => click('Portal')); };
   facts.valueRange ??= offerValueRange(s);
-  if (!facts.valueRange && (open === undefined || max === undefined)) { await click('Cancel', {name: 'StandardButton'}); throw new NeedsAnalyst(`No valuation for ${name}; pass --open and --max`, facts); }
+  if (!facts.valueRange && (open === undefined || max === undefined)) { await leave(); throw new NeedsAnalyst(`No valuation for ${name}; pass --open and --max`, facts); }
   const keenToSell = s.hasText(/keen to offload|looking to sell|placed him on the transfer list/i);
   const walkAway = max ?? defaultMax(facts);
-  const fee = Math.min(open ?? openingBid(facts, {keenToSell}), walkAway);
-  const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway};
+  let fee = Math.min(open ?? openingBid(facts, {keenToSell}), walkAway);
+  // Pre-filled extras stay in the offer: set the fee so the TOTAL is our opening bid.
+  const st = offerState(s), feeBox = parseMoney(s.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label);
+  const extras = prefilled && st.total != null && feeBox != null ? Math.max(0, st.total - feeBox) : 0;
+  if (extras) fee = Math.max(0, fee - extras);
+  const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway, ...(prefilled ? {prefilled: {fee: feeBox, total: st.total, extras}} : {})};
   if (dryRun) {
-    // Never just leave the offer screen: an abandoned offer screen can register as a bid.
-    await setFee('Fee', fee);
-    await click('Cancel', {name: 'StandardButton'});
-    await waitFor(x => !x.buttons('Suggest Terms').length, {what: 'offer screen closed'});
+    // Fresh screen: fill the fee to check it, then Cancel. Pre-filled screen: change nothing.
+    if (!prefilled) await setFee('Fee', fee);
+    await leave();
+    await waitFor(x => !x.buttons('Suggest Terms').length && !x.buttons('Make Offer').length, {what: 'offer screen closed'});
     return {...base, dryRun: true, wouldOpenAt: fee};
   }
+  if (prefilled) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
   const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds});
   await log({...base, ...r});
   return {...base, ...r};

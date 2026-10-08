@@ -280,12 +280,13 @@ def market_candidates(rows, role, league, club, max_value=float('inf'), max_wage
     return sorted(cands, key=lambda c: -c['per_pound'])
 
 
-def market_section(rows, club, league, max_value, max_wage, max_age):
+def market_section(rows, club, league, max_value, max_wage, max_age, min_output=None, min_minutes=1500):
     out = []
     for role in ROLES:
         if not ranked(rows, role, league)[1]:
             continue
-        cands = market_candidates(rows, role, league, club, max_value, max_wage, max_age)
+        cands = market_candidates(rows, role, league, club, max_value, max_wage, max_age,
+                                  min_output=min_output, min_minutes=min_minutes)
         out.append(f'\n### {role}\n')
         if not cands:
             out.append('No candidates within the limits.')
@@ -357,6 +358,9 @@ def main():
     ap.add_argument('--max-value', type=float, default=25, help='market search: max transfer value in £M')
     ap.add_argument('--max-wage', type=int, default=60000, help='market search: max weekly wage in £')
     ap.add_argument('--max-age', type=int, default=29)
+    ap.add_argument('--min-output', type=float, default=None,
+                    help='market search: minimum output score (default 58; GK 0.05). Lower it when a role lists no candidates')
+    ap.add_argument('--min-minutes', type=int, default=1500, help='market search: minimum league minutes last season')
     ap.add_argument('-o', '--out', help='report path (default: local/reports/<export>.md)')
     a = ap.parse_args()
 
@@ -391,11 +395,11 @@ def main():
         '',
         *squad_section(rows, a.club),
         '',
-        f'## Market: strong output per £ (1500+ min, value ≤ £{a.max_value:.0f}M, wage ≤ £{a.max_wage / 1e3:.0f}K/week, age ≤ {a.max_age})',
+        f'## Market: strong output per £ ({a.min_minutes}+ min, output ≥ {a.min_output or 58}, value ≤ £{a.max_value:.0f}M, wage ≤ £{a.max_wage / 1e3:.0f}K/week, age ≤ {a.max_age})',
         '',
         'Ranked by output per £. League rank is within the player\'s own league, so candidates must also have '
         f'attributes at least at the bottom-quarter level of {league} players in the role (attribute percentile shown).',
-        *market_section(rows, a.club, league, a.max_value * 1e6, a.max_wage, a.max_age),
+        *market_section(rows, a.club, league, a.max_value * 1e6, a.max_wage, a.max_age, a.min_output, a.min_minutes),
     ]
     out = Path(a.out) if a.out else ROOT / 'local' / 'reports' / f'{Path(csv_path).stem}.md'
     out.parent.mkdir(parents=True, exist_ok=True)
