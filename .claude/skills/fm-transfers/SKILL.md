@@ -16,6 +16,7 @@ node cli/fm.mjs prices                                               # price boo
 node cli/fm.mjs sell "Thiago" --club Brentford --price 63m           # re-price a player listed before (sticky price)
 node cli/fm.mjs buy "Marius Broholm" --club "LOSC Lille" --max 17m   # negotiate now (Suggest Terms) up to £17M
 node cli/fm.mjs offers                                               # bids in progress + budget impact
+node cli/fm.mjs deal "Jayden Meghoma"                               # one deal: other club, stage, fee, actions
 node cli/fm.mjs renew "Rico Henry" --club Brentford                  # Director of Football negotiates
 ```
 Add `--dry-run` to fill everything in and cancel — do this the first time on a new screen.

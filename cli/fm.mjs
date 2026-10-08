@@ -11,8 +11,10 @@ import {holiday} from '../tasks/progression/holiday.mjs';
 import {listPlayer} from '../tasks/transfers/sell.mjs';
 import {buyPlayer} from '../tasks/transfers/buy.mjs';
 import {delegateRenewal} from '../tasks/contracts/renew.mjs';
-import {transferActivity} from '../tasks/transfers/activity.mjs';
+import {transferActivity, deal} from '../tasks/transfers/activity.mjs';
 import {pressConference} from '../tasks/admin/press.mjs';
+import {log} from '../tasks/log.mjs';
+import {summarize} from '../tasks/progression/autopilot.mjs';
 import * as pricebook from '../tasks/transfers/pricebook.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
@@ -45,6 +47,7 @@ Transfers
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
   renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
+  deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
 
 When stuck / setup
   doctor [--fix]                 check game, bridge, save, overlays; --fix starts the bridge
@@ -77,7 +80,14 @@ try {
     case 'screen': out(fm.describe(await fm.Screen.read(), a1)); break;
     case 'overlays': out(fm.overlays(await fm.Screen.read())); break;
     case 'recover': out(await fm.recover()); break;
-    case 'click': out(await fm.click(a1, {name: flags.name})); break;
+    case 'click': {
+      // Decisions taken by hand are logged like a handler's, with the screen they were taken on.
+      const decision = /^(Accept|Reject|Decline|Confirm|Withdraw|Cancel Offer|Accept Offer|Reject Offer|Accept Invitation|Reject Invitation|Accept Demands|Delay Transfer)$/.test(a1);
+      const before = decision ? summarize(await fm.Screen.read()) : null;
+      out(await fm.click(a1, {name: flags.name}));
+      if (decision) await log({action: 'manual-click', label: a1, date: before.date, screen: before.texts.slice(0, 6)});
+      break;
+    }
     case 'key': out(await fm.key(a1)); break;
     case 'player': {
       const s = await fm.openPlayer(a1, flags.club);
@@ -99,6 +109,7 @@ try {
     case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun})); break;
     case 'buy': out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
     case 'offers': out(await transferActivity()); break;
+    case 'deal': out(await deal(a1)); break;
     case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
     case 'input-reset': out(await ui.removeVirtual()); break;

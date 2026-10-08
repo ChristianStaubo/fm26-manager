@@ -46,3 +46,9 @@ test('readFriendly parses date and fee from the proposal text', async () => {
   assert.equal(f.fee, 55000);
   assert.equal(f.club, 'Paris FC');
 });
+
+test('Outgoing Confirm Transfer (loan out, Accept/Delay/Cancel) → confirm-outgoing, not our signing handler', () => {
+  const s = loadScreen('confirm-outgoing-loan');
+  assert.equal(s.continueLabel(), 'Confirm Transfer');
+  assert.deepEqual(handlerFor(s), ['confirm-outgoing']);
+});

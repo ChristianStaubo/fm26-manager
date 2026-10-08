@@ -1,6 +1,6 @@
 // Our current transfer activity: Recruitment → Transfer Activity. The authoritative list of
 // bids we made (and offers received), with status, plus the potential budget impact.
-import {goTo, click, waitFor, Screen, parseMoney} from '../../ui/index.mjs';
+import {goTo, click, waitFor, Screen, parseMoney, toggle, settle} from '../../ui/index.mjs';
 
 export async function transferActivity() {
   await goTo('Recruitment');
@@ -14,4 +14,22 @@ export async function transferActivity() {
   // Detail pane of the selected deal: "Offer Made £7.5M".
   const selected = s.items.find(i => i.kind === 'button' && i.name === 'transfer-link-button')?.label;
   return {deals, selected, potentialBudgetImpact: after('Potential Transfer Budget Impact'), transferBudget: after('Transfer Budget'), payrollAvailable: after('Payroll Budget')};
+}
+
+// One deal's details: select its toggle ("<Player> <Stage>") and read the pane on the right
+// (value, wage, contract, and the buttons: Accept/Stall/Reject Offer, Cancel Offer, …).
+export async function deal(name) {
+  await transferActivity();
+  const pick = x => x.items.find(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label.toLowerCase().startsWith(name.toLowerCase()));
+  const s0 = await Screen.read();
+  if (!pick(s0)) throw new Error(`No deal for "${name}" in Transfer Activity: ${s0.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label).map(i => i.label).join(' | ')}`);
+  await toggle(pick, true, `deal ${name}`);
+  await settle(1500);
+  const s = await Screen.read();
+  // Middle pane, under the player: the other club and the stage with the fee, e.g.
+  // "Aston Villa" + "Contract £7M (£13M)" (fee, his value in brackets). Right pane: actions.
+  const mid = s.items.filter(i => i.bounds[0] > 480 && i.bounds[0] < 1180 && i.bounds[1] > 330 && i.label);
+  const stage = mid.findIndex(i => i.kind === 'button' && /^\w[\w ]* £[\d.]+[KM]? \(£[\d.]+[KM]?\)$/.test(i.label));
+  const right = s.items.filter(i => i.bounds[0] >= 1180 && i.bounds[1] > 300 && i.kind === 'button' && /Offer|Accept|Reject|Stall|Withdraw/.test(i.label));
+  return {deal: pick(s)?.label, club: stage > 0 ? mid[stage - 1].label : null, stage: stage >= 0 ? mid[stage].label : null, actions: right.map(i => i.label)};
 }
