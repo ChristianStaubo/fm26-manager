@@ -52,3 +52,15 @@ test('Outgoing Confirm Transfer (loan out, Accept/Delay/Cancel) → confirm-outg
   assert.equal(s.continueLabel(), 'Confirm Transfer');
   assert.deepEqual(handlerFor(s), ['confirm-outgoing']);
 });
+
+test('Loan approach without a buy clause (Leicester for Milambo) → loan-offer, parsed, plain loan', async () => {
+  const {readLoan} = await import('../tasks/transfers/incoming.mjs');
+  const {decideLoan} = await import('../tasks/transfers/decide.mjs');
+  const s = loadScreen('loan-approach-plain');
+  assert.deepEqual(handlerFor(s), ['loan-offer']);
+  const l = readLoan(s);
+  assert.equal(l.club, 'Leicester'); assert.equal(l.player, 'Milambo');
+  assert.equal(l.loanFee, 0); assert.equal(l.unusedMonthlyFee, 17250); assert.equal(l.duration, 'End of season');
+  assert.equal(l.obligationFee, undefined);
+  assert.equal(decideLoan(l).action, 'escalate');
+});

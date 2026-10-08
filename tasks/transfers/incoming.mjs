@@ -2,7 +2,7 @@
 // agent payoff demands. Each handler: match(screen) → bool, run(screen, {dryRun}) → outcome.
 // Decisions come from decide.mjs + rules.json; anything outside the rules throws NeedsAnalyst.
 import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../../ui/index.mjs';
-import {decideSale, decidePayoff} from './decide.mjs';
+import {decideSale, decidePayoff, decideLoan} from './decide.mjs';
 import {negotiate, offerValueRange, defaultMax, buyStep} from './buy.mjs';
 import {log, history} from '../log.mjs';
 import * as pricebook from './pricebook.mjs';
@@ -42,8 +42,12 @@ export const incomingOffer = {
     const headline = s.texts().find(t => / make .+ offer$/.test(t));
     const [, headClub, shortName] = headline ? / ?(.+?) make (.+) offer$/.exec(headline) : [];
     const coach = s.items.find(i => i.kind === 'button' && i.label.startsWith('Coach Report'))?.label || '';
+    // The details page can take a few seconds; a View Offer press is sometimes ignored (Collins,
+    // 2026-07-07: timed out). Wait longer, then press once more if it is still on the message.
+    const details = x => x.buttons('Reject Offer').length === 1 && x.hasText('Fee:');
     if (!s.buttons('Reject Offer').length) await click('View Offer');
-    const d = await waitFor(x => x.buttons('Reject Offer').length === 1 && x.hasText('Fee:'), {what: 'offer details'});
+    let d = await waitFor(details, {what: 'offer details', timeout: 12000}).catch(() => null);
+    if (!d) { if ((await Screen.read()).buttons('View Offer').length) await click('View Offer'); d = await waitFor(details, {what: 'offer details', timeout: 12000}); }
     const offer = readOffer(d, {headClub, shortName, coach});
     offer.countersSoFar = (await history()).filter(e => e.action === 'incoming-offer' && e.offer?.player === offer.player && e.offer?.club === offer.club && e.decision?.action === 'counter' && e.executed).length;
     // Listed through the price book: decide against our minimum, with the range recorded at listing.
@@ -114,4 +118,39 @@ export const bidResponse = {
   },
 };
 
-export const HANDLERS = [incomingOffer, agentPayoff, bidResponse];
+// Loan approach for one of our players: "<Club> make loan approach for <Player>", fields as text
+// (Fee, Duration, Playing/Unused Monthly Fee, salary %), Accept / Reject / View Offer.
+// Obligation to buy → a sale (decideLoan, user rule); plain loans and options stop for a decision
+// with the parsed numbers (seen: Milambo, Norwich and Leicester, 2026-06/07, no buy clause).
+export function readLoan(s) {
+  const head = s.texts().map(t => /^(.+) make loan approach for (.+)$/.exec(t)).find(Boolean);
+  if (!head) return null;
+  const money = label => parseMoney(s.after(label, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
+  const clause = re => { const t = s.texts().find(x => re.test(x)); return t ? (parseMoney(t) ?? money(t)) : undefined; };
+  const today = s.date(), duration = s.after('Duration', i => i.kind === 'text')?.label;
+  const seasonEnd = today && new Date(Date.UTC(today.getUTCFullYear() + (today.getUTCMonth() >= 5 ? 1 : 0), 4, 31));
+  const months = duration === 'End of season' && seasonEnd ? monthsBetween(today, seasonEnd) : undefined;
+  return {club: head[1], player: head[2], loanFee: money('Fee') ?? 0, monthlyFee: money('Playing Monthly Fee') ?? 0,
+    unusedMonthlyFee: money('Unused Monthly Fee'), months, duration,
+    salaryPct: s.after('Playing Salary Percentage', i => i.kind === 'text')?.label,
+    playingTime: s.after('Agreed Playing Time', i => i.kind === 'text')?.label,
+    obligationFee: clause(/[Oo]bligat/), optionFee: clause(/[Oo]ption to buy|[Ff]uture [Ff]ee/)};
+}
+
+export const loanOffer = {
+  name: 'loan-offer',
+  match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readLoan(s),
+  async run(s, {dryRun = false} = {}) {
+    const loan = readLoan(s), book = pricebook.lookup(loan.player);
+    const o = {...loan, ...(book ? {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1]} : {}), negotiable: false, countersSoFar: 0};
+    const decision = decideLoan(o);
+    const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
+    // Without a price book entry there is no value range on this message: the analyst decides.
+    if (decision.action === 'escalate' || !book || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan approach for ${loan.player} (${loan.club}): ${decision.reason}`, entry); }
+    await click(decision.action === 'accept' ? 'Accept' : 'Reject');
+    await log({...entry, executed: true});
+    return entry;
+  },
+};
+
+export const HANDLERS = [incomingOffer, agentPayoff, bidResponse, loanOffer];

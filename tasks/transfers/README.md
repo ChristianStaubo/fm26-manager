@@ -104,3 +104,11 @@ Confirm) and listing again shows the old price, and the Asking Price presets off
 value range) even while he is not listed, so `fm sell` without `--price` would take it for his
 value: **pass `--price` when re-pricing a player who was listed before.** "Unspecified" is
 probably only available to players never listed (not yet verified).
+
+## Loan approaches for our players (`loan-offer`)
+Message "<Club> make loan approach for <Player>": Fee, Duration, Playing/Unused Monthly Fee,
+salary percentages and Agreed Playing Time as text; Accept / Reject / View Offer. `readLoan`
+parses them. **Obligation to buy = a sale** (user rule): summed and decided by `decideLoan`
+(needs a price-book entry for the range; otherwise it stops with the numbers). Plain loans and
+options-to-buy stop for a decision with the parsed numbers. Not yet seen live: an obligation
+clause (the parser looks for a line mentioning "obligat…" with an amount; check it the first time).
