@@ -129,7 +129,7 @@ try {
     case 'prices': out(Object.values(pricebook.load().players)); break;
     case 'register': out(await register(pos.slice(1), {dryRun})); break;
     case 'squad': out(analysis('manager.py', ['squad'], {fresh: !!flags.fresh})); break;
-    case 'scout': out(analysis('manager.py', ['scout', ...['raw', 'ability', 'free', 'best'].filter(f => flags[f]).map(f => `--${f}`),
+    case 'scout': out(analysis('manager.py', ['scout', ...['raw', 'ability', 'free', 'best', 'include-loans'].filter(f => flags[f]).map(f => `--${f}`),
       ...['max-value', 'max-wage', 'max-age'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(f === 'max-age' ? flags[f] : num(flags[f]))]), ...(flags.positions ? ['--positions', flags.positions] : []),
       ...(flags.budget ? ['--budget', String(num(flags.budget))] : []), ...(flags.per ? ['--per', String(flags.per)] : [])], {fresh: !!flags.fresh})); break;
     case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh})); break;

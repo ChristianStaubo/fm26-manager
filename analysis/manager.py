@@ -478,7 +478,7 @@ BEST_STATS = {
 RATE_STATS = {'pass_pct', 'header_pct', 'save_pct'}  # percentages: not scaled by league strength
 
 
-def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=900):
+def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=900, include_loans=False):
     strength = league_strength(rows)
     def adj(p, k):
         v, f = sr.num(p, k), strength.get(p['competition'], 0)
@@ -502,7 +502,9 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
             pcts = {k: pct(k, v) for k, v in vals.items()}
             score = st.mean(pcts.values())
             ca = int(p['ca'] or 0)
-            return {'name': p['name'], 'club': p['club'] or '(free agent)', 'league': p['competition'], 'age': int(p['age'] or 0),
+            return {'name': p['name'], 'club': p['contract_club'] or '(free agent)',
+                    **({'on_loan_at': p['on_loan_at'], 'loan_ends': (p['loan_ends'] or '')[:10]} if p['on_loan_at'] else {}),
+                    'league': p['competition'], 'age': int(p['age'] or 0),
                     'ca': ca, 'pa': int(p['pa'] or 0), 'quality': round(ca + 0.5 * (score - 50), 1), 'stat_pct': round(score),
                     'stats': {k: f"{vals[k]} ({pcts[k]}%)" for k in stats}, '_vals': vals,
                     'value': int(p['value']), 'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:4] or None,
@@ -518,6 +520,10 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
                     or p['club'].startswith('club#') or int(p['value']) >= sr.NOT_FOR_SALE):
                 continue
             if (max_value and int(p['value']) > max_value) or (max_wage and int(p['wage'] or 0) > max_wage) or (max_age and int(p['age'] or 99) > max_age):
+                continue
+            # Loanees: 'club' is the loan club and loans often end in a permanent move there
+            # (Samardzic: Atalanta's, on loan at Fulham; Kjaergaard: Salzburg's, at Palace). Skip unless asked.
+            if p['on_loan_at'] and not include_loans:
                 continue
             c = card(p)
             if best_ours and c['quality'] < best_ours['quality']:
@@ -551,6 +557,7 @@ def main():
     ap.add_argument('--max-value', type=float)
     ap.add_argument('--max-wage', type=float)
     ap.add_argument('--max-age', type=int)
+    ap.add_argument('--include-loans', action='store_true', help='also players currently on loan (their loan club may keep them)')
     a = ap.parse_args()
     rows, tactic = load(a.csv)
     date = dt.date.fromisoformat(a.date) if a.date else None
@@ -558,7 +565,7 @@ def main():
         r = squad(rows, tactic, date)
     elif a.cmd == 'scout' and a.best:
         r = scout_best(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.max_value or a.budget, a.max_wage, a.max_age,
-                       a.per if a.per != 6 else 12)
+                       a.per if a.per != 6 else 12, include_loans=a.include_loans)
     elif a.cmd == 'scout' and a.free:
         r = scout_free(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.per if a.per != 6 else 8, date)
     elif a.cmd == 'scout' and a.ability:
