@@ -135,9 +135,8 @@ def squad(rows, tactic, date=None):
         if pol_sell.get('age_30_plus_sell_at_v_low') and age >= 30 and wage >= bands['median']:
             out['sell_candidates'].append({'name': p['name'], 'age': age, 'wage': wage, 'value': int(p['value']),
                                            'why': f'30+ on £{wage // 1000}K/wk (≥ first-team median): value only falls'})
-        elif wage >= bands['median'] and int(p['mins']) < 900 and age >= pol_sq['youth_age_under'] and p['name'] not in starters.values():
-            out['sell_candidates'].append({'name': p['name'], 'age': age, 'wage': wage, 'value': int(p['value']),
-                                           'why': f"£{wage // 1000}K/wk but {int(p['mins'])} league minutes: costing us"})
+        # No minutes-based rule: we force one XI all season, so low minutes reflect our selection,
+        # not the player's quality (user, 2026-10-09).
     # Dedupe sell candidates by name (keep the first reason).
     seen, uniq = set(), []
     for c in out['sell_candidates']:
@@ -232,6 +231,72 @@ def xi(rows, tactic, date=None):
     return {'tactic': tactic['name'], 'xi': out}
 
 
+# ---- Raw scouting: plain output per 90, scaled by league strength (no role weights, no attribute floor)
+RAW = {  # position group: (natural positions, metric label, metric(p))
+    'ST': ({'ST'}, 'xG+xA /90', lambda p: sr.num(p, 'xg_p90') + sr.num(p, 'xa_p90')),
+    'W': ({'AML', 'AMR', 'ML', 'MR'}, 'xG+xA /90', lambda p: sr.num(p, 'xg_p90') + sr.num(p, 'xa_p90')),
+    'AM': ({'AMC'}, 'xG+xA /90', lambda p: sr.num(p, 'xg_p90') + sr.num(p, 'xa_p90')),
+    'CM': ({'MC'}, 'progressive passes /90', lambda p: sr.num(p, 'progressive_passes_p90')),
+    'DM': ({'DM'}, 'possession won /90', lambda p: sr.num(p, 'poss_won_p90')),
+    'FB': ({'DL', 'DR', 'WBL', 'WBR'}, 'progressive passes /90', lambda p: sr.num(p, 'progressive_passes_p90')),
+    'CB': ({'DC'}, 'avg rating', lambda p: sr.num(p, 'avg_rating')),
+    'GK': ({'GK'}, 'goals prevented vs xG /90', lambda p: sr.num(p, 'xgp_p90')),
+}
+
+
+def league_strength(rows):
+    """Average ability (CA) of each league's top 200 players, relative to ours (1.0 = our league)."""
+    by = {}
+    for p in rows:
+        if p['competition']:
+            by.setdefault(p['competition'], []).append(int(p['ca'] or 0))
+    avg = {k: st.mean(sorted(v, reverse=True)[:200]) for k, v in by.items() if len(v) >= 150}
+    base = avg.get(LEAGUE) or max(avg.values())
+    return {k: v / base for k, v in avg.items()}
+
+
+def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
+    strength = league_strength(rows)
+    def adjusted(p, metric, group):
+        v, f = metric(p), strength.get(p['competition'])
+        if f is None:
+            return None
+        return round(6 + (v - 6) * f, 2) if group == 'CB' else round(v * f, 3)
+    out = {'method': 'one plain stat per position, per 90, x league strength (league top-200 average CA vs ours); 900+ league minutes',
+           'league_strength': {k: round(v, 2) for k, v in sorted(strength.items(), key=lambda kv: -kv[1])}, 'groups': []}
+    for g, (pos, label, metric) in RAW.items():
+        if groups and g not in groups:
+            continue
+        ours = [p for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and p['mins'] >= min_minutes]
+        best_ours = max(ours, key=lambda p: adjusted(p, metric, g) or -1, default=None)
+        cands = []
+        for p in rows:
+            if (p['contract_club'] == CLUB or not (p['pos'] & pos) or p['mins'] < min_minutes or not p['competition']
+                    or int(p['value']) >= sr.NOT_FOR_SALE or (budget and int(p['value']) > budget)):
+                continue
+            a = adjusted(p, metric, g)
+            if a is None:
+                continue
+            cands.append((a, p))
+        cands.sort(key=lambda c: -c[0])
+        row = lambda a, p: {'name': p['name'], 'club': p['club'], 'league': p['competition'], 'age': int(p['age']),
+                            'raw': round(metric(p), 3), 'adjusted': a, 'minutes': int(p['mins']), 'ca': int(p['ca'] or 0),
+                            'pa': int(p['pa'] or 0), 'value': int(p['value']), 'wage': int(p['wage'] or 0)}
+        bar = adjusted(best_ours, metric, g) if best_ours else None
+        # Bargains: at least as good as our best on the stat (CB: within 0.1 rating), cheapest first.
+        # …and at our level: ability no more than 10 below our best's (a plain stat alone over-rewards
+        # weak leagues: Ligue 2 DMs win the ball more often than Premier League ones).
+        ca_floor = max((int(p['ca'] or 0) for p in ours), default=10) - 10
+        good = [(a, p) for a, p in cands if (bar is None or a >= (bar - 0.1 if g == 'CB' else bar * 0.95))
+                and int(p['ca'] or 0) >= ca_floor]
+        bargains = sorted(good, key=lambda c: int(c[1]['value']))
+        out['groups'].append({'group': g, 'stat': label,
+                              'our_best': best_ours and row(bar, best_ours),
+                              'bargains': [row(a, p) for a, p in bargains[:per]],
+                              'best': [row(a, p) for a, p in cands[:per]]})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('cmd', choices=['squad', 'scout', 'xi'])
@@ -240,11 +305,14 @@ def main():
     ap.add_argument('--positions', help='comma-separated positions for scout (e.g. RW,AM)')
     ap.add_argument('--budget', type=float)
     ap.add_argument('--per', type=int, default=6)
+    ap.add_argument('--raw', action='store_true', help='scout on plain per-90 output x league strength')
     a = ap.parse_args()
     rows, tactic = load(a.csv)
     date = dt.date.fromisoformat(a.date) if a.date else None
     if a.cmd == 'squad':
         r = squad(rows, tactic, date)
+    elif a.cmd == 'scout' and a.raw:
+        r = scout_raw(rows, a.positions.split(',') if a.positions else None, a.budget, a.per if a.per != 6 else 10)
     elif a.cmd == 'scout':
         r = scout(rows, tactic, a.positions.split(',') if a.positions else None, a.budget, a.per, date)
     else:
