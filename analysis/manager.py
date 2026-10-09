@@ -296,6 +296,72 @@ def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
                               'best': [row(a, p) for a, p in cands[:per]]})
     return out
 
+# ---- Ability lens: players at our level (or young with a high ceiling), by price. Catches what the
+# stat lenses can't see: players without minutes (Andrey Santos, 0 league minutes at Chelsea) and
+# high-ability players whose role stats undersell them (Querfeld, CA 147, ranked 13/36 on CB volume).
+EXTRA_STATS = {'CB': ['avg_rating', 'poss_won_p90', 'interceptions_p90', 'headers_won_p90'],
+               'DM': ['poss_won_p90', 'interceptions_p90', 'progressive_passes_p90', 'pass_pct'],
+               'CM': ['progressive_passes_p90', 'xa_p90', 'poss_won_p90', 'pass_pct'],
+               'FB': ['progressive_passes_p90', 'xa_p90', 'poss_won_p90', 'crosses_cmp_p90'],
+               'W': ['xg_p90', 'xa_p90', 'dribbles_p90', 'progressive_passes_p90'],
+               'AM': ['xg_p90', 'xa_p90', 'progressive_passes_p90', 'dribbles_p90'],
+               'ST': ['xg_p90', 'xa_p90', 'shots_p90', 'header_pct'],
+               'GK': ['xgp_p90', 'save_pct', 'avg_rating']}
+
+
+_EXPECTED = {}
+def expected_value(rows, ca, age, pa):
+    """Median market value of real-club players with similar ability (CA ±3) and age band; young
+    players also matched on potential (PA ±5). The market price of that ability, to compare against."""
+    band = 0 if age <= 21 else 1 if age <= 24 else 2 if age <= 27 else 3 if age <= 30 else 4
+    key = (ca, band, pa // 5 if band <= 1 else None)
+    if key not in _EXPECTED:
+        if not _EXPECTED.get('_pool'):
+            _EXPECTED['_pool'] = [(int(p['ca'] or 0), int(p['age'] or 99), int(p['pa'] or 0), int(p['value']))
+                                  for p in rows if not p['club'].startswith('club#') and 0 < int(p['value']) < sr.NOT_FOR_SALE
+                                  and int(p['ca'] or 0) >= 100 and p['contract_expires'][:4] >= '2028']
+        def b(a): return 0 if a <= 21 else 1 if a <= 24 else 2 if a <= 27 else 3 if a <= 30 else 4
+        vals = [v for c, a, pp, v in _EXPECTED['_pool'] if abs(c - ca) <= 3 and b(a) == band and (band > 1 or abs(pp - pa) <= 5)]
+        _EXPECTED[key] = st.median(vals) if len(vals) >= 5 else None
+    return _EXPECTED[key]
+
+
+def scout_ability(rows, groups=None, budget=None, per=10, young_age=23, young_pa=150):
+    out = {'method': f"ability (CA) at least our best at the position minus 5, or age <= {young_age} with potential (PA) >= {young_pa}; cheapest first; stats shown when he played 900+ league minutes",
+           'groups': []}
+    for g, (pos, _, _) in RAW.items():
+        if groups and g not in groups:
+            continue
+        ours = [p for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and not p['on_loan_at']]
+        our_best = max(ours, key=lambda p: int(p['ca'] or 0), default=None)
+        floor = int(our_best['ca'] or 0) - 5 if our_best else 0
+        found = []
+        for p in rows:
+            if p['contract_club'] == CLUB or not (p['pos'] & pos) or int(p['value']) >= sr.NOT_FOR_SALE or (budget and int(p['value']) > budget):
+                continue
+            ca, pa, age = int(p['ca'] or 0), int(p['pa'] or 0), int(p['age'] or 99)
+            # Real clubs only (unresolved 'club#…' ids are the women's database and unnamed clubs),
+            # no veterans, and young players must already be close to our level (CA within 20).
+            if p['club'].startswith('club#') or age >= 33:
+                continue
+            why = ('at our level' if ca >= floor else
+                   'young, high ceiling' if age <= young_age and pa >= young_pa and ca >= floor - 15 else None)
+            if not why:
+                continue
+            found.append({'name': p['name'], 'club': p['club'], 'league': p['competition'] or None, 'age': age, 'ca': ca, 'pa': pa,
+                          'value': int(p['value']), 'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:4],
+                          'minutes': int(p['mins']), 'why': why,
+                          'stats': {k: round(sr.num(p, k), 2) for k in EXTRA_STATS[g]} if p['mins'] >= 900 else 'no league stats (under 900 min)'})
+        # Moneyball order: price relative to what the market charges for this ability and age.
+        for c in found:
+            exp = expected_value(rows, c['ca'], c['age'], c['pa'])
+            c['expected_value'] = int(exp) if exp else None
+            c['price_vs_market'] = round(c['value'] / exp, 2) if exp else None
+        found.sort(key=lambda c: (c['price_vs_market'] is None, c['price_vs_market'] or 0))
+        out['groups'].append({'group': g, 'our_best_ability': our_best and {'name': our_best['name'], 'ca': int(our_best['ca'] or 0)},
+                              'candidates': found[:per]})
+    return out
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
@@ -306,11 +372,14 @@ def main():
     ap.add_argument('--budget', type=float)
     ap.add_argument('--per', type=int, default=6)
     ap.add_argument('--raw', action='store_true', help='scout on plain per-90 output x league strength')
+    ap.add_argument('--ability', action='store_true', help='scout on ability: at our level, or young with a high ceiling')
     a = ap.parse_args()
     rows, tactic = load(a.csv)
     date = dt.date.fromisoformat(a.date) if a.date else None
     if a.cmd == 'squad':
         r = squad(rows, tactic, date)
+    elif a.cmd == 'scout' and a.ability:
+        r = scout_ability(rows, a.positions.split(',') if a.positions else None, a.budget, a.per if a.per != 6 else 10)
     elif a.cmd == 'scout' and a.raw:
         r = scout_raw(rows, a.positions.split(',') if a.positions else None, a.budget, a.per if a.per != 6 else 10)
     elif a.cmd == 'scout':
