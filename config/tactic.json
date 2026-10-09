@@ -2,20 +2,6 @@
   "name": "4-2-3-1 DM AM Wide - Gegenpress",
   "style": "Gegenpress",
   "mentality": "Balanced",
-  "extra_stats": {
-    "Winger": [
-      "pressures_cmp_p90",
-      "poss_won_p90"
-    ],
-    "AMC": [
-      "pressures_cmp_p90",
-      "poss_won_p90"
-    ],
-    "ST": [
-      "pressures_cmp_p90",
-      "poss_won_p90"
-    ]
-  },
   "slots": [
     {
       "slot": "GK",
@@ -95,5 +81,6 @@
       "player": "Thiago"
     }
   ],
-  "_source": "Brentford claude-2.fm, Match Day > Match Squad, 2026-06-01 (was the Brighton pilot XI)"
+  "_source": "Brentford claude-2.fm, Match Day > Match Squad, 2026-06-01 (was the Brighton pilot XI)",
+  "_note": "Shape only: slots and roles. No style-specific stat weights (user, 2026-10-10: find the best players regardless of tactics)."
 }

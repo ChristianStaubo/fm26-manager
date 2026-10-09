@@ -463,6 +463,77 @@ def price(rows, name):
             'wage': int(p['wage'] or 0), 'wage_cap': round(cap), 'wage_ok': int(p['wage'] or 0) <= cap,
             'contract_until': (p['contract_expires'] or '')[:10] or None, 'ours': p['contract_club'] == CLUB,
             'note': 'live range from his profile beats this estimate (fm player)'}
+# ---- Best players (not Moneyball): who is simply better, then filter by price. Uses FM's current
+# ability (CA) on purpose (user, 2026-10-10: a demo of Claude playing FM, find the best players).
+BEST_STATS = {
+    'ST': ['xg_p90', 'xa_p90', 'shots_p90', 'header_pct', 'avg_rating'],
+    'W': ['xg_p90', 'xa_p90', 'dribbles_p90', 'progressive_passes_p90', 'crosses_cmp_p90', 'avg_rating'],
+    'AM': ['xg_p90', 'xa_p90', 'progressive_passes_p90', 'dribbles_p90', 'pass_pct', 'avg_rating'],
+    'CM': ['progressive_passes_p90', 'xa_p90', 'poss_won_p90', 'passes_cmp_p90', 'pass_pct', 'avg_rating'],
+    'DM': ['poss_won_p90', 'interceptions_p90', 'tackles_won_p90', 'progressive_passes_p90', 'pass_pct', 'avg_rating'],
+    'FB': ['progressive_passes_p90', 'xa_p90', 'crosses_cmp_p90', 'poss_won_p90', 'interceptions_p90', 'avg_rating'],
+    'CB': ['avg_rating', 'poss_won_p90', 'interceptions_p90', 'headers_won_p90', 'header_pct', 'pass_pct'],
+    'GK': ['xgp_p90', 'save_pct', 'avg_rating'],
+}
+RATE_STATS = {'pass_pct', 'header_pct', 'save_pct'}  # percentages: not scaled by league strength
+
+
+def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=900):
+    strength = league_strength(rows)
+    def adj(p, k):
+        v, f = sr.num(p, k), strength.get(p['competition'], 0)
+        if k in RATE_STATS:
+            return v
+        return 6 + (v - 6) * f if k == 'avg_rating' else v * f
+    out = {'method': 'quality = current ability (CA) + 0.5 x (average stat percentile - 50); stats per 90, league-adjusted, '
+                     'percentiles vs Premier League players at the position (900+ min); candidates are better than our weakest starter there (bar); beats_ours = stats at or above his',
+           'groups': []}
+    for g, (pos, _, _) in RAW.items():
+        if groups and g not in groups:
+            continue
+        stats = BEST_STATS[g]
+        peers = [p for p in rows if p['competition'] == LEAGUE and p['pos'] & pos and p['mins'] >= min_minutes]
+        dist = {k: sorted(adj(p, k) for p in peers) for k in stats}
+        def pct(k, v):
+            d = dist[k]
+            return round(100 * sum(x <= v for x in d) / len(d)) if d else 50
+        def card(p):
+            vals = {k: round(adj(p, k), 2) for k in stats}
+            pcts = {k: pct(k, v) for k, v in vals.items()}
+            score = st.mean(pcts.values())
+            ca = int(p['ca'] or 0)
+            return {'name': p['name'], 'club': p['club'] or '(free agent)', 'league': p['competition'], 'age': int(p['age'] or 0),
+                    'ca': ca, 'pa': int(p['pa'] or 0), 'quality': round(ca + 0.5 * (score - 50), 1), 'stat_pct': round(score),
+                    'stats': {k: f"{vals[k]} ({pcts[k]}%)" for k in stats}, '_vals': vals,
+                    'value': int(p['value']), 'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:4] or None,
+                    'minutes': int(p['mins'])}
+        ours = sorted((card(p) for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and p['mins'] >= min_minutes and not p['on_loan_at']),
+                      key=lambda c: -c['quality'])
+        # The bar: our weakest starter at the position (2nd best where the shape has two: CB, DM, W, FB).
+        slots = 2 if g in ('CB', 'DM', 'W', 'FB') else 1
+        best_ours = ours[min(slots, len(ours)) - 1] if ours else None
+        found = []
+        for p in rows:
+            if (p['contract_club'] == CLUB or not (p['pos'] & pos) or p['mins'] < min_minutes or not p['competition']
+                    or p['club'].startswith('club#') or int(p['value']) >= sr.NOT_FOR_SALE):
+                continue
+            if (max_value and int(p['value']) > max_value) or (max_wage and int(p['wage'] or 0) > max_wage) or (max_age and int(p['age'] or 99) > max_age):
+                continue
+            c = card(p)
+            if best_ours and c['quality'] < best_ours['quality']:
+                continue  # better than our best only
+            if best_ours:
+                c['beats_ours'] = f"{sum(c['_vals'][k] >= best_ours['_vals'][k] for k in stats)}/{len(stats)}"
+            found.append(c)
+        found.sort(key=lambda c: -c['quality'])
+        for c in found:
+            c.pop('_vals', None)
+        for c in ours:
+            c.pop('_vals', None)
+        out['groups'].append({'group': g, 'bar': best_ours and f"{best_ours['name']} (our #{slots} at {g})", 'ours': ours[:3],
+                              'better_than_ours': len(found), 'candidates': found[:per]})
+    return out
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
@@ -476,11 +547,18 @@ def main():
     ap.add_argument('--raw', action='store_true', help='scout on plain per-90 output x league strength')
     ap.add_argument('--ability', action='store_true', help='scout on ability: at our level, or young with a high ceiling')
     ap.add_argument('--free', action='store_true', help='free agents, expiring contracts, fringe/backup players at their clubs')
+    ap.add_argument('--best', action='store_true', help='simply the best players (CA + stats), filter by price')
+    ap.add_argument('--max-value', type=float)
+    ap.add_argument('--max-wage', type=float)
+    ap.add_argument('--max-age', type=int)
     a = ap.parse_args()
     rows, tactic = load(a.csv)
     date = dt.date.fromisoformat(a.date) if a.date else None
     if a.cmd == 'squad':
         r = squad(rows, tactic, date)
+    elif a.cmd == 'scout' and a.best:
+        r = scout_best(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.max_value or a.budget, a.max_wage, a.max_age,
+                       a.per if a.per != 6 else 12)
     elif a.cmd == 'scout' and a.free:
         r = scout_free(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.per if a.per != 6 else 8, date)
     elif a.cmd == 'scout' and a.ability:
