@@ -432,12 +432,14 @@ def scout_free(rows, groups=None, per=8, date=None):
             a = attr(p, role)
             if a < floor or int(p['wage'] or 0) > wage_cap:
                 continue
-            free = not p['contract_club']
+            # Free agent = no club. A club with no decoded contract is an export gap (Lennon Miller,
+            # Udinese, cost a £10M bid), not free agency: 3,861 such players, 0 clubless (2027-05).
+            free = not p['club']
             expiring = bool(p['contract_expires']) and p['contract_expires'][:10] <= season_end
             fringe = p['squad_status'] in ('Fringe Player', 'Backup')
             if not (free or expiring or fringe):
                 continue
-            found.append({'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'attributes': a,
+            found.append({'name': p['name'], 'club': p['contract_club'] or (f"{p['club']} (contract not in export: check in game)" if p['club'] else '(free agent)'), 'age': int(p['age']), 'attributes': a,
                           'value': int(p['value']), 'wage': int(p['wage'] or 0),
                           'contract_until': (p['contract_expires'] or '')[:10] or None, 'status': p['squad_status'] or None,
                           'why': 'free agent' if free else 'contract ends this summer' if expiring else f"{p['squad_status'].lower()} at his club",
@@ -458,7 +460,7 @@ def price(rows, name):
     p = max(cands, key=lambda p: int(p['value']))
     v = int(p['value']); lo, hi = v * 0.9, v * 1.1
     cap = wage_bands.bands(rows, CLUB)['median'] * POLICY['contracts']['max_salary_vs_first_team_median']
-    return {'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'positions': p['positions'],
+    return {'name': p['name'], 'club': p['contract_club'] or (f"{p['club']} (contract not in export: check in game)" if p['club'] else '(free agent)'), 'age': int(p['age']), 'positions': p['positions'],
             'value': v, 'range_estimate': [round(lo), round(hi)], 'open_at': round(lo * b['open_at']), 'walk_away': round(hi * b['default_max']),
             'wage': int(p['wage'] or 0), 'wage_cap': round(cap), 'wage_ok': int(p['wage'] or 0) <= cap,
             'contract_until': (p['contract_expires'] or '')[:10] or None, 'ours': p['contract_club'] == CLUB,
@@ -502,7 +504,7 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
             pcts = {k: pct(k, v) for k, v in vals.items()}
             score = st.mean(pcts.values())
             ca = int(p['ca'] or 0)
-            return {'name': p['name'], 'club': p['contract_club'] or '(free agent)',
+            return {'name': p['name'], 'club': p['contract_club'] or (f"{p['club']} (contract not in export: check in game)" if p['club'] else '(free agent)'),
                     **({'on_loan_at': p['on_loan_at'], 'loan_ends': (p['loan_ends'] or '')[:10]} if p['on_loan_at'] else {}),
                     'league': p['competition'], 'age': int(p['age'] or 0),
                     'ca': ca, 'pa': int(p['pa'] or 0), 'quality': round(ca + 0.5 * (score - 50), 1), 'stat_pct': round(score),
