@@ -64,9 +64,13 @@
     "_loans": "Loan offers for our players (user, 2026-10-08): with an OBLIGATION to buy, it is a sale: guaranteed = loan fee + monthly fees over the loan + obligation fee, decided like a transfer bid (price-book minimum if listed). Never reject only because it is a loan. With only an OPTION to buy (e.g. Valdimarsson: 1.8M after 25 games, optional): a plain loan, decided on wage relief and depth (escalate).",
     "list_players": true,
     "age_30_plus_sell_at_v_low": true,
-    "list_below_hierarchy": "Influential",
+    "list_below_hierarchy": "Highly Influential",
     "influential_moves_per_window": 1,
-    "_listing": "User 2026-10-09: anyone is for sale. Players below Influential may be listed freely when the numbers say so; Influential and above at most one per window and only when really costing us (wages vs output, decline). Never sell without a replacement in the squad or an affordable target."
+    "_listing": "User 2026-10-09: anyone is for sale. Players below Highly Influential (Influential and lower) may be listed freely when the numbers say so; Highly Influential and Team Leaders at most one per window (user 2026-10-09: Influential is fine to sell) and only when really costing us (wages vs output, decline). Never sell without a replacement in the squad or an affordable target.",
+    "limited_hierarchy": [
+      "team_leaders",
+      "highly_influential"
+    ]
   },
   "buying": {
     "_section": "5",

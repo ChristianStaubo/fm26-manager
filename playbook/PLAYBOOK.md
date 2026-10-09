@@ -39,9 +39,11 @@ These are the user's rules (decided 2026-10-09).
 
 ## 4. Selling
 - **Anyone is for sale** at the right price, including through a transfer listing.
-- **Listing:** players below *Influential* in the squad hierarchy can be listed freely when the
-  numbers say so (overvalued, underperforming, surplus, costing us).
-- **Influential and above** (Squad → Dynamics): moving them upsets the squad.
+- **Listing:** players below *Highly Influential* in the squad hierarchy (Influential and lower)
+  can be listed and sold freely when the numbers say so (overvalued, underperforming, surplus,
+  costing us).
+- **Highly Influential and Team Leaders** (Squad → Dynamics, `fm dynamics`): moving them upsets
+  the squad.
   - **At most one per window**, and only when he's **really costing us** (wages against output,
     clear decline), not just slightly overvalued.
 - Players **aged 30+ on big wages** are sellable at the bottom of their range: their value only falls.

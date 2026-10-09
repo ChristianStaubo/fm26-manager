@@ -18,6 +18,7 @@ import {summarize} from '../capabilities/season/autopilot.mjs';
 import * as pricebook from '../capabilities/value/pricebook.mjs';
 import {register} from '../game/screens/admin/registration.mjs';
 import {analysis, note} from '../capabilities/data.mjs';
+import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
@@ -51,6 +52,7 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
   xi [--fresh]                   suggested starting XI for our tactic (§7)
   value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for one of OUR players (§3)
   price "<name>"                 any player (targets): open at, walk away above, wage vs our cap (§5)
+  dynamics                       read the squad hierarchy (open Squad → Dynamics → Hierarchy first) (§4)
   note ["lesson"]                append a lesson to the notebook, or print it (§9)
 
 Transfers
@@ -135,6 +137,7 @@ try {
       out(analysis('evaluate_offer.py', ['--price'], {fresh: !!flags.fresh, input: JSON.stringify({player: a1, date: new Date().toISOString().slice(0, 10), ...(range ? {value_range: range} : {})})}));
       break;
     }
+    case 'dynamics': out(await dynamics()); break;
     case 'note': out(note(pos.slice(1).join(' '))); break;
     case 'press': out(await pressConference({dryRun})); break;
     case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun})); break;

@@ -157,6 +157,14 @@ def squad(rows, tactic, date=None):
     out['youth'] = {'keep': [y for y in out['youth'] if y['advice'] == 'keep'],
                     'loan_or_sell': f"{len(loan_or_sell)} others (lower potential): loan or sell when bids come"}
     out['hierarchy'] = load_hierarchy()
+    tiers = {}
+    for tier in ('team_leaders', 'highly_influential', 'influential'):
+        for n in out['hierarchy'].get(tier, []):
+            tiers.setdefault(n, tier)
+    for c in out['sell_candidates'] + out['expiring']:
+        c['hierarchy'] = tiers.get(c['name'], 'other' if tiers else 'unknown')
+        if c['hierarchy'] in POLICY['selling']['limited_hierarchy']:
+            c['why'] += ' | Highly Influential or above: counts towards the one-per-window limit'
     return out
 
 

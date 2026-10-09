@@ -89,3 +89,11 @@ test('Loan-to-buy detail page (Aston Villa for Milambo): value = overall + wage 
   const noEsc = {...loadRules(), escalate: {...loadRules().escalate, offer_v_high_over: Infinity}};
   assert.equal(decideSale({guaranteed: l.overall + l.wageRelief, vLow: l.range[0], vHigh: l.range[1], negotiable: false, countersSoFar: 0}, noEsc).action, 'accept');
 });
+
+test('Squad hierarchy (Dynamics): sections read from the raw tree, below the fold included', async () => {
+  const {readHierarchy} = await import('../game/screens/dynamics.mjs');
+  const h = readHierarchy(loadScreen('squad-hierarchy'));
+  assert.deepEqual(h.team_leaders, ['Jordan Henderson', 'Ethan Pinnock', 'Rico Henry']);
+  assert.equal(h.highly_influential.length, 10);
+  assert.ok(h.influential.includes('Félix Correia'));
+});
