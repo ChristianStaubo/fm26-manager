@@ -45,8 +45,9 @@ Act
 
 Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after saving the game
   squad [--fresh]                depth per position, needs, sell candidates, youth (playbook §2)
-  scout [--positions RW,AM] [--budget N] [--per N] [--fresh]
-                                 market shortlist for the needs (or given positions) (§5)
+  scout [--raw | --ability | --free] [--positions RW,AM] [--budget N] [--per N] [--fresh]
+                                 market shortlist: output lens (default), plain stats x league
+                                 strength, ability vs market price, free/expiring/fringe (§5)
   xi [--fresh]                   suggested starting XI for our tactic (§7)
   value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for a player (§3)
   note ["lesson"]                append a lesson to the notebook, or print it (§9)
@@ -124,7 +125,7 @@ try {
     case 'prices': out(Object.values(pricebook.load().players)); break;
     case 'register': out(await register(pos.slice(1), {dryRun})); break;
     case 'squad': out(analysis('manager.py', ['squad'], {fresh: !!flags.fresh})); break;
-    case 'scout': out(analysis('manager.py', ['scout', ...(flags.positions ? ['--positions', flags.positions] : []),
+    case 'scout': out(analysis('manager.py', ['scout', ...['raw', 'ability', 'free'].filter(f => flags[f]).map(f => `--${f}`), ...(flags.positions ? ['--positions', flags.positions] : []),
       ...(flags.budget ? ['--budget', String(num(flags.budget))] : []), ...(flags.per ? ['--per', String(flags.per)] : [])], {fresh: !!flags.fresh})); break;
     case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh})); break;
     case 'value': {
