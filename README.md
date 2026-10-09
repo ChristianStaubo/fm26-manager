@@ -13,8 +13,6 @@ Claude: exports the save → Moneyball report → plan → lists players, bids, 
 ## What's inside
 | Folder | What |
 |---|---|
-| `game/bridge/` | Frida agent inside FM26 + socket host (reads UI, presses controls, Continue) |
-| `game/ui/` | screen reading, controls, popup recovery, navigation |
 | `playbook/` | the manager's principles (`PLAYBOOK.md`) and every number (`policy.json`) |
 | `capabilities/` | one module per decision: `value`, `sell`, `buy`, `contracts`, `season` |
 | `game/` | the operator: Frida `bridge/`, screen reading `ui/`, screen handlers `screens/` |
