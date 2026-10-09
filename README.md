@@ -18,7 +18,7 @@ Claude: exports the save → Moneyball report → plan → lists players, bids, 
 | `game/` | the operator: Frida `bridge/`, screen reading `ui/`, screen handlers `screens/` |
 | `analysis/` | Moneyball squad/market reports from the save file (via [FM26 Scout]) |
 | `cli/fm.mjs` | the command Claude uses: `node cli/fm.mjs help` |
-| `.claude/skills/` | instructions Claude loads: `fm-season`, `fm-operate`, `fm-transfers`, `fm-moneyball` |
+| `.claude/skills/` | instructions Claude loads: `fm-manager` (decisions), `fm-operate` (the game) |
 | `docs/` | analysis method, decision guidelines, FM26 UI notes and quirks |
 
 ## Requirements

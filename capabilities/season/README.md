@@ -1,3 +1,7 @@
+# season: the cycle (window → holiday → report)
+**Interface:** `fm run` (autopilot through a window), `fm holiday [--season]`, `fm continue`. Screen handlers live in `game/screens/`; this module sequences them and stops for decisions.
+
+---
 # Progression: Continue loop, autopilot, holiday
 
 ## Continue (`continue.mjs`, `fm continue [N]`)

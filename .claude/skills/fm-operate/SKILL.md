@@ -28,7 +28,7 @@ Where things are in the game: `docs/screens/README.md`.
 
 ## 3. Act
 - `fm click "<label>"` (add `--name <element>` when two buttons share a label).
-- Domain commands: `fm sell`, `fm buy`, `fm renew` (skill **fm-transfers**), `fm holiday`.
+- Domain commands: `fm sell`, `fm buy`, `fm renew` (skill **fm-manager**), `fm holiday`.
 - After every action, check the result (`fm screen`/`fm overlays`). Outputs say
   `verificationRequired: true`: an action only proves the click happened.
 - `fm recover` returns to a clean page (closes menus, lists, search, chats, card dialogs;
@@ -41,9 +41,9 @@ Where things are in the game: `docs/screens/README.md`.
 Exit code 2 = it stopped for you. Read `reason`, `why`, `screen.texts`, `screen.buttons`:
 | reason | do |
 |---|---|
-| `needs-analyst` | a decision: transfers → skill fm-transfers; other screens → decide (prefer delegating to staff), act, `fm run` again |
+| `needs-analyst` | a decision: transfers → skill fm-manager; other screens → decide (prefer delegating to staff), act, `fm run` again |
 | `unfamiliar-state` | match/press conference/team talk etc.: usually press the obvious button (e.g. delegate to assistant) and continue |
-| `window-closed` / `until` | done — next step per skill fm-season |
+| `window-closed` / `until` | done — next step per skill fm-manager |
 | `error` | read it; never blindly repeat an action that may have run |
 
 ## 5. Rules

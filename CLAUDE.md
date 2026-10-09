@@ -7,8 +7,8 @@ work autonomously and narrate briefly.
 ## Start here
 1. **`playbook/PLAYBOOK.md`**: how this manager runs a club (the user's rules). Read it first.
    The numbers are in `playbook/policy.json`.
-2. Skills: **fm-season** (the cycle), **fm-operate** (controlling the game), **fm-transfers**,
-   **fm-moneyball**. Load the one that fits before acting.
+2. Skills: **fm-manager** (decisions: windows, transfers, XI, the season) and **fm-operate**
+   (controlling the game). Load the one that fits before acting.
 3. Machine-specific paths (game copy, Frida venv): `local/paths.md`, else `game/bridge/README.md`.
 4. `node cli/fm.mjs doctor`: are the game, bridge, save and screen ready? (`--fix` starts the bridge.)
 
@@ -16,8 +16,10 @@ work autonomously and narrate briefly.
 - `playbook/`: the principles (`PLAYBOOK.md`) and every number (`policy.json`). Rules live only here.
 - `capabilities/<name>/`: one module per decision. Each has a small public API and a README
   (what it decides, its inputs and outputs, and which playbook section it implements):
-  `value` (what a player is worth to us), `sell` (bids, loans, listing), `buy` (negotiating),
-  `contracts`, `season` (Continue, autopilot, holiday, the cycle). Shared: `log.mjs`.
+  `squad` (needs, sell candidates), `scout` (targets), `value` (what a player is worth to us),
+  `buy` (negotiating), `sell` (bids, loans, listing), `contracts`, `xi` (who plays),
+  `season` (Continue, autopilot, holiday, the cycle). Shared: `data.mjs` (export + analysis,
+  notebook), `log.mjs`.
 - `game/`: the operator, which only reads screens and acts; it never decides.
   `bridge/` (Frida), `ui/` (screen reading, controls, overlays), `screens/` (handlers that read a
   screen, call a capability, and click).

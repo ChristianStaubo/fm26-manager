@@ -1,3 +1,8 @@
+# contracts: renewals and wages (playbook §6)
+**Interface:** `fm renew "<name>" --club <club>` (the DoF negotiates); personal terms inside `fm run` (`personal-terms.mjs`, wage cap = 1.3× first-team median, `analysis/wage_bands.py`).
+**Rules:** renew starters and good-value rotation players; up to 5 years, 4 at 29, 2 at 30+; let declining or surplus players go.
+
+---
 # Contracts
 
 The user's rule: **staff negotiate player contracts.** We only start renewals.

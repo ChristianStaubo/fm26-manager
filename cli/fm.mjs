@@ -17,6 +17,7 @@ import {log} from '../capabilities/log.mjs';
 import {summarize} from '../capabilities/season/autopilot.mjs';
 import * as pricebook from '../capabilities/value/pricebook.mjs';
 import {register} from '../game/screens/admin/registration.mjs';
+import {analysis, note} from '../capabilities/data.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
@@ -41,6 +42,14 @@ Act
   register ["<name>" …] [--dry-run]  squad registration (open the "squad to be decided" message first):
                                  register the named players, or every unregistered 21+ player; submit
   press [--dry-run]              hold the pending press conference (positive answers), then leave
+
+Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after saving the game
+  squad [--fresh]                depth per position, needs, sell candidates, youth (playbook §2)
+  scout [--positions RW,AM] [--budget N] [--per N] [--fresh]
+                                 market shortlist for the needs (or given positions) (§5)
+  xi [--fresh]                   suggested starting XI for our tactic (§7)
+  value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for a player (§3)
+  note ["lesson"]                append a lesson to the notebook, or print it (§9)
 
 Transfers
   sell "<name>" --club <club> [--min N] [--force] [--dry-run]
@@ -114,6 +123,16 @@ try {
       break;
     case 'prices': out(Object.values(pricebook.load().players)); break;
     case 'register': out(await register(pos.slice(1), {dryRun})); break;
+    case 'squad': out(analysis('manager.py', ['squad'], {fresh: !!flags.fresh})); break;
+    case 'scout': out(analysis('manager.py', ['scout', ...(flags.positions ? ['--positions', flags.positions] : []),
+      ...(flags.budget ? ['--budget', String(num(flags.budget))] : []), ...(flags.per ? ['--per', String(flags.per)] : [])], {fresh: !!flags.fresh})); break;
+    case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh})); break;
+    case 'value': {
+      const range = flags.range ? String(flags.range).split(',').map(num) : undefined;
+      out(analysis('evaluate_offer.py', ['--price'], {fresh: !!flags.fresh, input: JSON.stringify({player: a1, date: new Date().toISOString().slice(0, 10), ...(range ? {value_range: range} : {})})}));
+      break;
+    }
+    case 'note': out(note(pos.slice(1).join(' '))); break;
     case 'press': out(await pressConference({dryRun})); break;
     case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun})); break;
     case 'buy': out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;

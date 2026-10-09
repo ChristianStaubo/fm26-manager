@@ -1,3 +1,10 @@
+# sell: answering bids and listing (playbook §4)
+**Interface:** bids are decided inside `fm run` (`decide.mjs`: `decideSale`, `decideLoan`, `decidePayoff`) against our minimum from `value`; `fm sell` lists (`list.mjs`, Unspecified asking price, records the price book).
+**Rules:** anyone is for sale at the right price; Influential and above at most one per window; add-ons are fee; floor = bottom of the range (or our minimum); a loan with an obligation is a sale. **Never** sells without a replacement in the squad or an affordable target.
+
+---
+Screen notes (history):
+
 # Transfers
 
 Code: `sell.mjs` (transfer-list), `buy.mjs` (bids), `incoming.mjs` (bids for our players and agent
