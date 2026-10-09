@@ -46,7 +46,7 @@ negotiation is available. Acceptance is not proof of a completed sale.
 
 Revenue is an explicit goal of the experiment: sell at profitable values,
 buy below value. Staff handle player contract negotiations; we handle fees.
-The numbers below live in `tasks/transfers/rules.json`, which is authoritative.
+The numbers below live in `playbook/policy.json`, which is authoritative.
 Summary: counter first at 1.20 × the top of the value range, then 1.10;
 accept a reply at 1.05 × or more; at most three counters. Counter agent
 payoffs at 65% of the ask and accept at 80% or less. We operate only

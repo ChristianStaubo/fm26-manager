@@ -2,7 +2,7 @@
   "_about": "Which club this save manages. The analysis scripts and skills read this.",
   "club": "Brentford",
   "league": "Premier League",
-  "save_pattern": "*.fm",
+  "save_pattern": "claude-2.fm",
   "_save_pattern": "Glob for the save in the FM26 games folder; 'latest' picks the newest match. Name saves after the experiment (e.g. claude-1.fm) and set e.g. \"claude-*.fm\".",
   "goal": "Moneyball: generate transfer profit while competing; buy output the market underprices, sell what it overprices."
 }

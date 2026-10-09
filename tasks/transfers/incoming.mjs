@@ -1,6 +1,6 @@
 // Handlers for transfer screens that stop the game (NeedAction): bids for our players and
 // agent payoff demands. Each handler: match(screen) → bool, run(screen, {dryRun}) → outcome.
-// Decisions come from decide.mjs + rules.json; anything outside the rules throws NeedsAnalyst.
+// Decisions come from decide.mjs + policy.json; anything outside the rules throws NeedsAnalyst.
 import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../../ui/index.mjs';
 import {decideSale, decidePayoff, decideLoan} from './decide.mjs';
 import {negotiate, offerValueRange, defaultMax, buyStep} from './buy.mjs';
@@ -18,7 +18,7 @@ function readOffer(d, {headClub, shortName, coach}) {
     negotiable: !d.hasText('Non-Negotiable') && d.hasText('Negotiable'),
     guaranteed: parseMoney(d.after('Fee:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
-    // Everything incl. instalments and add-ons; add-ons count as fee (rules.json addon_weight).
+    // Everything incl. instalments and add-ons; add-ons count as fee (policy.json addon_weight).
     total: parseMoney(d.after('Future & Potential Total Cost with Additional Fees:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
     keyPlayer: /\b(key|star|important|regular starter)\b/i.test(coach),
   };

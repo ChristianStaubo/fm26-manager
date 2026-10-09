@@ -3,21 +3,97 @@
   "style": "Gegenpress",
   "mentality": "Balanced",
   "extra_stats": {
-    "Winger": ["pressures_cmp_p90", "poss_won_p90"],
-    "AMC": ["pressures_cmp_p90", "poss_won_p90"],
-    "ST": ["pressures_cmp_p90", "poss_won_p90"]
+    "Winger": [
+      "pressures_cmp_p90",
+      "poss_won_p90"
+    ],
+    "AMC": [
+      "pressures_cmp_p90",
+      "poss_won_p90"
+    ],
+    "ST": [
+      "pressures_cmp_p90",
+      "poss_won_p90"
+    ]
   },
   "slots": [
-    {"slot": "GK",  "in": "BGK", "out": "SK",  "role": "GK",             "player": "Bart Verbruggen"},
-    {"slot": "LB",  "in": "FB",  "out": "FB",  "role": "FB (defensive)", "player": "Ferdi Kadıoğlu"},
-    {"slot": "LCB", "in": "CB",  "out": "CB",  "role": "CB",             "player": "Lewis Dunk"},
-    {"slot": "RCB", "in": "BCB", "out": "CB",  "role": "CB",             "player": "Jan Paul van Hecke"},
-    {"slot": "RB",  "in": "WB",  "out": "FB",  "role": "WB (attacking)", "player": "Joël Veltman"},
-    {"slot": "LDM", "in": "DLP", "out": "PDM", "role": "DM",             "player": "Carlos Baleba"},
-    {"slot": "RDM", "in": "DM",  "out": "DM",  "role": "DM",             "player": "Pascal Groß"},
-    {"slot": "LW",  "in": "IF",  "out": "WMF", "role": "Winger",         "player": "Kaoru Mitoma"},
-    {"slot": "AM",  "in": "SS",  "out": "CFD", "role": "AMC",            "player": "Georginio Rutter"},
-    {"slot": "RW",  "in": "IW",  "out": "WMF", "role": "Winger",         "player": "Solly March"},
-    {"slot": "ST",  "in": "CFD", "out": "CFD", "role": "ST",             "player": "Danny Welbeck"}
-  ]
+    {
+      "slot": "GK",
+      "in": "BGK",
+      "out": "SK",
+      "role": "GK",
+      "player": "Caoimhin Kelleher"
+    },
+    {
+      "slot": "LB",
+      "in": "FB",
+      "out": "FB",
+      "role": "FB (defensive)",
+      "player": "Rico Henry"
+    },
+    {
+      "slot": "LCB",
+      "in": "CB",
+      "out": "CB",
+      "role": "CB",
+      "player": "Ethan Pinnock"
+    },
+    {
+      "slot": "RCB",
+      "in": "BCB",
+      "out": "CB",
+      "role": "CB",
+      "player": "Nathan Collins"
+    },
+    {
+      "slot": "RB",
+      "in": "WB",
+      "out": "FB",
+      "role": "WB (attacking)",
+      "player": "Michael Kayode"
+    },
+    {
+      "slot": "LDM",
+      "in": "DLP",
+      "out": "PDM",
+      "role": "DM",
+      "player": "Jordan Henderson"
+    },
+    {
+      "slot": "RDM",
+      "in": "DM",
+      "out": "DM",
+      "role": "DM",
+      "player": "Mathias Jensen"
+    },
+    {
+      "slot": "LW",
+      "in": "IF",
+      "out": "WMF",
+      "role": "Winger",
+      "player": "Kevin Schade"
+    },
+    {
+      "slot": "AM",
+      "in": "SS",
+      "out": "CFD",
+      "role": "AMC",
+      "player": "Mikkel Damsgaard"
+    },
+    {
+      "slot": "RW",
+      "in": "IW",
+      "out": "WMF",
+      "role": "Winger",
+      "player": "Keane Lewis-Potter"
+    },
+    {
+      "slot": "ST",
+      "in": "CFD",
+      "out": "CFD",
+      "role": "ST",
+      "player": "Thiago"
+    }
+  ],
+  "_source": "Brentford claude-2.fm, Match Day > Match Squad, 2026-06-01 (was the Brighton pilot XI)"
 }

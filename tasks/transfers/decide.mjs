@@ -1,8 +1,10 @@
-// Pure transfer decisions from rules.json (no game access). Edit rules.json to change behaviour.
+// Pure transfer decisions from playbook/policy.json (no game access). Edit policy.json to change behaviour.
 import {readFileSync} from 'node:fs';
 
-export const loadRules = (path = new URL('./rules.json', import.meta.url)) =>
+// All numbers live in playbook/policy.json (principles: playbook/PLAYBOOK.md).
+export const loadPolicy = (path = new URL('../../playbook/policy.json', import.meta.url)) =>
   JSON.parse(readFileSync(path, 'utf8'));
+export const loadRules = loadPolicy; // older name
 
 const roundTo = (v, step) => Math.ceil(v / step - 1e-9) * step;
 // Fee boxes accept any whole pound; round asks to tidy figures.

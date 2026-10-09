@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 .DS_Store
 node_modules/
+
+# Private working notes (not part of the published history)
+notes/

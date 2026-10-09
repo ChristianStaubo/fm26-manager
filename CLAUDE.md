@@ -15,7 +15,7 @@ transfer profit while competing. The user films this; work autonomously and narr
 ## Layout
 - `cli/fm.mjs` — the only command you need (`node cli/fm.mjs help`).
 - `tasks/<domain>/` — code + `README.md` with the screens and quirks for that domain:
-  `progression` (Continue, autopilot, holiday), `transfers` (+ `rules.json`), `contracts`, `admin`.
+  `progression` (Continue, autopilot, holiday), `transfers` (+ `playbook/policy.json`), `contracts`, `admin`.
 - `ui/` — screen reading, controls, overlays/recovery, navigation (generic FM UI).
 - `bridge/` — Frida host and in-game agent (low level; `bridge/README.md`).
 - `analysis/` — Python Moneyball reports (needs FM26 Scout). `docs/` — method, UI notes.
@@ -26,7 +26,7 @@ A cheap **player** (`.claude/agents/fm-player.md`, Sonnet) plays one segment and
 `fm stuck "<…>"` when the tools fall short. The **fixer** (main session) then:
 1. `fm friction` → read `local/runs/friction/<id>.json` (+ look at the live game: the player has stopped).
 2. Fix the owning layer: missing command/handler → code in `tasks/`/`ui/`; unknown route →
-   `docs/screens/README.md`; wrong judgement → skill or `rules.json`; known dialog → `KNOWN_DIALOGS`.
+   `docs/screens/README.md`; wrong judgement → skill or `playbook/policy.json`; known dialog → `KNOWN_DIALOGS`.
 3. Leave a guard: `fm friction fixture <id> <name>` + a test in `test/` replaying it (or a map entry).
 4. `npm test`, commit (small, straight to main), `fm friction resolve <id> "<fix, commit>"`.
 5. Spawn the next player segment. Fewer stops per in-game month = the tools are getting better.
@@ -38,5 +38,5 @@ A cheap **player** (`.claude/agents/fm-player.md`, Sonnet) plays one segment and
   and document it in the domain README (that is how the next session avoids it).
 - One operator at a time; ask the user not to click while you act.
 - User rules: contracts are negotiated by staff; on holiday TICK "Use team selection where possible"
-  (user, 2026-10-09: the chosen XI must play; watch injuries); negotiation numbers live in `tasks/transfers/rules.json`.
+  (user, 2026-10-09: the chosen XI must play; watch injuries); negotiation numbers live in `playbook/policy.json`.
 - Keep saves, exports and logs out of git.

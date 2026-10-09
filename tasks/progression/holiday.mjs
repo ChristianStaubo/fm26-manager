@@ -4,6 +4,7 @@
 import {Screen, waitFor, click, clickWhere, toggle, setNumber, recover, isoDate} from '../../ui/index.mjs';
 import {loadSeason, nextDate, daysBetween} from './season.mjs';
 import {log} from '../log.mjs';
+import {loadPolicy} from '../transfers/decide.mjs';
 
 // Checkboxes have no label of their own: the label is the next text item.
 const checkboxBefore = label => s => { const k = s.items.findIndex(i => i.kind === 'text' && i.label === label); return k < 0 ? null : s.items.slice(0, k).reverse().find(i => i.kind === 'toggle'); };
@@ -11,7 +12,7 @@ const radio = prefix => s => s.items.find(i => i.kind === 'toggle' && i.label.st
 
 /** holiday({days?, until?: 'YYYY-MM-DD', dryRun?}) — default: back on season.json holiday.return_on */
 export async function holiday({days, until, dryRun = false} = {}) {
-  const cfg = loadSeason().holiday;
+  const cfg = loadPolicy().holiday;
   await recover();
   const today = (await Screen.read()).date();
   const back = until ? new Date(until + 'T00:00:00Z') : nextDate(today, cfg.return_on);
@@ -61,7 +62,7 @@ async function waitUntilIdle({quietPolls = 3, every = 5000, maxMs = 3 * 3600e3} 
 export async function holidaySeason({until, maxLegs = 40, onLeg = () => {}} = {}) {
   const {summarize} = await import('./autopilot.mjs');
   const start = (await Screen.read()).date();
-  const back = until ? new Date(until + 'T00:00:00Z') : nextDate(start, loadSeason().holiday.return_on);
+  const back = until ? new Date(until + 'T00:00:00Z') : nextDate(start, loadPolicy().holiday.return_on);
   const legs = [];
   let stalls = 0;
   for (let leg = 1; leg <= maxLegs; leg++) {

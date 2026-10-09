@@ -5,7 +5,7 @@ description: Sell, buy and renew players in FM26 — transfer-list with an askin
 
 # Transfers
 
-Read first: `tasks/transfers/README.md` (flows, screens, quirks) and `tasks/transfers/rules.json`
+Read first: `tasks/transfers/README.md` (flows, screens, quirks) and `playbook/policy.json`
 (the numbers). Operating basics: skill **fm-operate**. Every action is logged to
 `local/runs/decisions.jsonl`.
 
@@ -40,14 +40,14 @@ Clubs are as shown in the game ("LOSC Lille", "Sheffield United").
   decide.mjs; price-book minimum if listed). Never reject it only for being a loan. With only an
   **option** to buy it is a plain loan: decide on wage relief and depth. No handler reads loan
   screens yet: capture one with `fm stuck` before answering it.
-- **Other bids** follow rules.json (counter 1.2 ×, accept ≥ 1.05 ×, reject lowballs, max 3
+- **Other bids** follow policy.json (counter 1.2 ×, accept ≥ 1.05 ×, reject lowballs, max 3
   counters). They stop for you on key players, valuations ≥ £20M, unreadable offers. Then decide with skill **fm-moneyball** (importance, depth, replacement):
   - accept/reject: `fm click "Accept Offer"` / `fm click "Reject Offer"` on the offer detail page
     (open it with `fm click "View Offer"` from the message);
   - counter: set the up-front fee, then `fm click "Negotiate Offer"`. Use the fee helper from
     code: `import {setFee} from './ui/index.mjs'; await setFee('Fee', 58e6)`.
 - **Agent payoffs**: always settle (70% counter, accept up to the ask) — automatic.
-- **Buying**: always your decision (rules.json `escalate.any_purchase`). Set a walk-away maximum
+- **Buying**: always your decision (policy.json `escalate.any_purchase`). Set a walk-away maximum
   first (fee value incl. half of add-ons; check wages and budget with `fm offers`). `fm buy … --max`
   negotiates in one sitting with Suggest Terms: it opens at 0.9 × the value floor, raises 10% per
   round, accepts the club's demand if it fits, and withdraws if not. Outcome: `agreed`,

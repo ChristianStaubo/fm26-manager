@@ -1,5 +1,5 @@
 {
-  "_about": "Season cycle: operate during transfer windows, holiday otherwise. Window dates are approximate (MM-DD); check the in-game calendar.",
+  "_about": "Calendar facts only: transfer windows (MM-DD). Policy (holiday settings, staff delegation) lives in playbook/policy.json.",
   "windows": [
     {
       "opens": "06-16",
@@ -9,23 +9,5 @@
       "opens": "01-01",
       "closes": "02-02"
     }
-  ],
-  "holiday": {
-    "return": "after N days via 'Return from vacation after'; for a season: back on 05-28 (after the last league match, before the summer window)",
-    "return_on": "05-28",
-    "offers": "Only accept offers matching asking price",
-    "tick": [
-      "Only sell transfer listed players",
-      "Use current match tactics",
-      "Use team selection where possible"
-    ],
-    "never_tick": [],
-    "_never_tick": "Changed by the user 2026-10-09: TICK 'Use team selection where possible' so the XI we pick (new signings) plays; before, it was never ticked because forcing the XI stops rotation and risked injuries. Watch injuries in the season report; revert if they pile up."
-  },
-  "delegate_to_staff": [
-    "contract negotiations",
-    "finalizing signings",
-    "code of conduct",
-    "matches"
   ]
 }

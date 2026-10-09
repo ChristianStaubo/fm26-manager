@@ -21,7 +21,7 @@ Negotiations / Walk Away. The handler: Enter → Finalize Promises → Negotiate
 agent's demands) → Salary at 85% (then 95%, 100%) → lower the Agent Fee only if "Suggest Terms" is
 disabled (agent fee above the allowed maximum) → Suggest Terms → Finalize Deal → Exit Talks.
 Keeps all bonuses and clauses (agents are firm on those). Stops for a decision when the demand
-exceeds 2× the squad's average salary (`rules.json` → `contracts`).
+exceeds 2× the squad's average salary (`playbook/policy.json` → `contracts`).
 
 ## Personal terms handed back to us (2026-07-16, Camara)
 - Wage cap: **first-team median × 1.3** (top 25 earners, `analysis/wage_bands.py`; £51.5K → £66.9K

@@ -36,7 +36,7 @@ cd fm26-manager
    original) and a Python venv with the pinned Frida. See `bridge/README.md`.
 2. Edit `config/club.json` (your club, save name pattern) and `config/tactic.json` (your
    formation's slots, used by the reports).
-3. Optional: tune `tasks/transfers/rules.json` (counter-offer multiples, payoff rule, …) and
+3. Optional: tune `playbook/policy.json` (counter-offer multiples, payoff rule, …) and
    `tasks/progression/season.json` (window dates, holiday options).
 
 ## Use

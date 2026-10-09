@@ -1,6 +1,20 @@
 {
-  "_about": "Numeric transfer playbook. Prices are multiples of the in-game Transfer Value range: v_low and v_high are its bottom and top. Guaranteed = up-front + instalments. Calibrate from local/runs negotiation logs.",
+  "_about": "Every number the manager uses. Principles: playbook/PLAYBOOK.md (sections named in _section). ❓ = draft awaiting the user.",
+  "objective": {
+    "_section": "1",
+    "priority": "position",
+    "budget_reserve_pct": 20,
+    "_draft": "❓ position vs profit, reserve"
+  },
+  "squad": {
+    "_section": "2",
+    "per_position": 2,
+    "options_per_position": 3,
+    "youth_keep_pa": 140,
+    "_draft": "❓ youth_keep_pa"
+  },
   "valuation": {
+    "_section": "3",
     "addon_weight": 1.0,
     "_addon_weight": "Add-ons count at this fraction of face value. 1.0 (user, 2026-10-08): they are usually hit, treat them as part of the fee. Offers are judged on value = guaranteed + addon_weight x add-ons (the offer page's 'Future & Potential Total Cost with Additional Fees').",
     "net_costs": [
@@ -8,9 +22,17 @@
       "money_still_owed",
       "agent_payoff",
       "loyalty_bonus"
-    ]
+    ],
+    "age_curve": {
+      "21-24": 1.25,
+      "25-28": 1.0,
+      "29+": 0.85
+    },
+    "replacement_floor": true,
+    "_draft": "❓ age_curve, replacement_floor"
   },
   "selling": {
+    "_section": "4",
     "first_counter": 1.2,
     "second_counter": 1.1,
     "min_raise_over_offer": 1.1,
@@ -42,15 +64,17 @@
     "_keep": "fm sell refuses (keep him) when our minimum exceeds this x v_high: the analysis says he is worth more to us than the market pays (McKnight: range 24K-200K, replacing his output costs ~11M). --min overrides.",
     "_loans": "Loan offers for our players (user, 2026-10-08): with an OBLIGATION to buy, it is a sale: guaranteed = loan fee + monthly fees over the loan + obligation fee, decided like a transfer bid (price-book minimum if listed). Never reject only because it is a loan. With only an OPTION to buy (e.g. Valdimarsson: 1.8M after 25 games, optional): a plain loan, decided on wage relief and depth (escalate).",
     "list_players": false,
-    "_list_players": "User (2026-10-09), after listing 5-6 first-teamers all season and finishing the first half 19th: do NOT transfer-list players (it hurts morale and ships the first team out). Consider bids as they come: every bid is judged against our Moneyball minimum for that player (evaluate_offer.py --price on the bid's value range), keep him when he is worth more to us than the market pays. fm sell only with --force."
-  },
-  "agent_payoff": {
-    "counter_at": 0.7,
-    "accept_at_or_below": 1.0,
-    "_payoff": "Fractions of the agent's first ask. Always settle: counter at counter_at, then accept any reply at or below accept_at_or_below (user rule, 2026-10-04).",
-    "escalate_above_pct_of_fee": 0.1
+    "_list_players": "User (2026-10-09), after listing 5-6 first-teamers all season and finishing the first half 19th: do NOT transfer-list players (it hurts morale and ships the first team out). Consider bids as they come: every bid is judged against our Moneyball minimum for that player (evaluate_offer.py --price on the bid's value range), keep him when he is worth more to us than the market pays. fm sell only with --force.",
+    "protected": {
+      "hierarchy_at_least": "Influential",
+      "key_starters": true,
+      "exception_multiple_of_v_high": 2.0,
+      "_draft": "❓ exception"
+    },
+    "age_30_plus_sell_at_v_low": true
   },
   "buying": {
+    "_section": "5",
     "open_at": 0.9,
     "open_at_if_club_keen_to_sell": 0.75,
     "_open": "x v_low, up-front.",
@@ -58,17 +82,17 @@
     "_raise": "Each raise adds this x v_low.",
     "default_max": 1.1,
     "_max": "x v_high unless the analyst sets a walk-away maximum first.",
-    "prefer_instalments": true
-  },
-  "escalate": {
-    "_about": "Situations where the loop stops for analysis instead of a handler.",
-    "offer_v_high_over": 20000000,
-    "key_starter": true,
-    "any_purchase": true,
-    "squad_depth_blocker": true,
-    "unknown_screen": true
+    "prefer_instalments": true,
+    "min_attr_pct_starter": 40,
+    "preferred_age": [
+      21,
+      26
+    ],
+    "older_max_fee": 10000000,
+    "_draft": "❓ min_attr_pct_starter, ages"
   },
   "contracts": {
+    "_section": "6",
     "salary_factors": [
       0.85,
       0.95,
@@ -76,6 +100,46 @@
     ],
     "_salary_factors": "Personal terms for signings: keep the agent's bonuses/clauses, offer this share of the demanded salary in turn (user rule: agents give a little on salary, are firm on the rest).",
     "_max_salary": "Personal terms: accept a demand up to this x our FIRST-TEAM median wage (top 25 earners, analysis/wage_bands.py; ~£51K in July 2026), negotiating via salary_factors; above it, stop for a decision. The contract screen's 'Avg.' includes youth/reserves (squad median £7K) and is no longer used (user, 2026-10-08: Camara's £36-44.5K is a normal first-team wage).",
-    "max_salary_vs_first_team_median": 1.3
-  }
+    "max_salary_vs_first_team_median": 1.3,
+    "max_years_by_age": {
+      "<=25": 5,
+      "26-29": 3,
+      "30+": 1
+    },
+    "_draft": "❓ lengths"
+  },
+  "agent_payoff": {
+    "counter_at": 0.7,
+    "accept_at_or_below": 1.0,
+    "_payoff": "Fractions of the agent's first ask. Always settle: counter at counter_at, then accept any reply at or below accept_at_or_below (user rule, 2026-10-04).",
+    "escalate_above_pct_of_fee": 0.1
+  },
+  "escalate": {
+    "_about": "Situations where the loop stops for analysis instead of a handler.",
+    "offer_v_high_over": 20000000,
+    "key_starter": true,
+    "any_purchase": false,
+    "squad_depth_blocker": true,
+    "unknown_screen": true,
+    "_any_purchase": "False since 2026-10-09: the manager buys on its own within the playbook (no approval gates)."
+  },
+  "holiday": {
+    "_section": "7-8",
+    "return": "after N days via 'Return from vacation after'; for a season: back on 05-28 (after the last league match, before the summer window)",
+    "return_on": "05-28",
+    "offers": "Only accept offers matching asking price",
+    "tick": [
+      "Only sell transfer listed players",
+      "Use current match tactics",
+      "Use team selection where possible"
+    ],
+    "never_tick": [],
+    "_never_tick": "Changed by the user 2026-10-09: TICK 'Use team selection where possible' so the XI we pick (new signings) plays; before, it was never ticked because forcing the XI stops rotation and risked injuries. Watch injuries in the season report; revert if they pile up."
+  },
+  "delegate_to_staff": [
+    "contract negotiations",
+    "finalizing signings",
+    "code of conduct",
+    "matches"
+  ]
 }

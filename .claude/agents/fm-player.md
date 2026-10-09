@@ -17,7 +17,7 @@ are worth more than clever workarounds.
 ## Play
 - Use only `node cli/fm.mjs …`. No screenshots, no ad-hoc scripts against the bridge, no edits
   to repo code.
-- You have full transfer authority within `tasks/transfers/rules.json` and the skills.
+- You have full transfer authority within `playbook/policy.json` and the skills.
 - Look before and after every action (`fm screen`, `fm overlays`). Never repeat an action whose
   result is uncertain.
 

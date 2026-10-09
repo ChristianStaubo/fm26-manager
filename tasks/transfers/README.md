@@ -1,9 +1,9 @@
 # Transfers
 
 Code: `sell.mjs` (transfer-list), `buy.mjs` (bids), `incoming.mjs` (bids for our players and agent
-payoffs, used by the autopilot), `decide.mjs` + `rules.json` (the numbers). Log: `local/runs/decisions.jsonl`.
+payoffs, used by the autopilot), `decide.mjs` + `playbook/policy.json` (the numbers). Log: `local/runs/decisions.jsonl`.
 
-## Rules (rules.json) — the user's negotiation style
+## Rules (policy.json) — the user's negotiation style
 - Anchor: the in-game **Transfer Value** range (`v_low`–`v_high`); compare on **guaranteed** money
   (up front + instalments). Add-ons count at 50%.
 - **Selling:** never accept a first negotiable offer. Counter at **1.20 × v_high** (and ≥ 10% above
@@ -22,7 +22,7 @@ payoffs, used by the autopilot), `decide.mjs` + `rules.json` (the numbers). Log:
 before he is listed), prices him with `analysis/evaluate_offer.py --price` (importance, cheapest
 replacement with his output, contract, age), stores **minimum** and **target** in
 `local/runs/price-book.json` (`fm prices`), and lists him with the asking price **Unspecified**.
-The bid handler decides against the minimum (see rules.json `_price_book`). Refuses with
+The bid handler decides against the minimum (see policy.json `_price_book`). Refuses with
 "Keep <name>" when our minimum is above the top of his range (McKnight: £24K–£200K, but his
 output costs ~£11M to replace). `--price` (asking = that amount) and `--deter` (1.2 × v_high)
 are only for re-pricing players listed before (sticky asking prices, below).
