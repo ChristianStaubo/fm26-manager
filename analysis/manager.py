@@ -47,6 +47,22 @@ def load(csv=None):
     return rows, tactic
 
 
+# ---- Visible ability: FM's CA/PA are hidden from a real manager, so the manager never sees or uses
+# them (user, 2026-10-09). Ability = the average of the role's key attributes (1-20), as seen on a
+# player's profile. Lens groups → the role whose attributes count.
+GROUP_ROLE = {'GK': 'GK', 'CB': 'CB', 'FB': 'FB (defensive)', 'DM': 'DM', 'CM': 'CM', 'W': 'Winger', 'AM': 'AMC', 'ST': 'ST'}
+ALL_ATTRS = sorted({a for _, _, attrs in sr.ROLES.values() for a in attrs})
+
+
+def attr(p, role):
+    """Average of the role's key attributes (1-20)."""
+    return round(st.mean(sr.num(p, a) for a in sr.ROLES[role][2]), 2)
+
+
+def attr_all(p):
+    return st.mean(sr.num(p, a) for a in ALL_ATTRS)
+
+
 class Standing:
     """Output standing of a player in a role, ranked within his own league (cached per league)."""
     def __init__(self, rows):
@@ -147,12 +163,14 @@ def squad(rows, tactic, date=None):
     end = str(today.year)
     out['expiring'] = [c for c in uniq if any(x['name'] == c['name'] and (x['contract_expires'] or '9')[:4] <= end for x in ours)]
     out['sell_candidates'] = [c for c in uniq if c not in out['expiring']]
+    first_team = sorted((attr_all(p) for p in ours if int(p['age'] or 0) >= pol_sq['youth_age_under']), reverse=True)[:22]
+    bar = st.median(first_team) - pol_sq['youth_keep_attr_gap'] if first_team else 0
     for p in ours:
         if int(p['age'] or 99) < pol_sq['youth_age_under']:
-            pa = int(p['pa'] or 0)
-            out['youth'].append({'name': p['name'], 'age': int(p['age']), 'pa': pa, 'on_loan_at': p['on_loan_at'] or None,
-                                 'advice': 'keep' if pa >= pol_sq['youth_keep_pa'] else 'loan or sell'})
-    out['youth'].sort(key=lambda y: -y['pa'])
+            a = round(attr_all(p), 2)
+            out['youth'].append({'name': p['name'], 'age': int(p['age']), 'attributes': a, 'on_loan_at': p['on_loan_at'] or None,
+                                 'advice': 'keep' if a >= bar else 'loan or sell'})
+    out['youth'].sort(key=lambda y: -y['attributes'])
     loan_or_sell = [y for y in out['youth'] if y['advice'] != 'keep']
     out['youth'] = {'keep': [y for y in out['youth'] if y['advice'] == 'keep'],
                     'loan_or_sell': f"{len(loan_or_sell)} others (lower potential): loan or sell when bids come"}
@@ -230,11 +248,11 @@ def xi(rows, tactic, date=None):
             st_ = standing(p, role) or {}
             natural = fits(p, slot)
             new = (p.get('joined_club') or '')[:10] >= season_start.isoformat()
-            # Ability (CA) anchors the pick; this season's output moves it (±15 at the extremes); no
+            # Visible ability (role attributes) anchors the pick; this season's output moves it (±15 at the extremes); no
             # output record costs a little. Natural position and being a new signing count.
-            ca = int(p['ca'] or 0)
+            ability = attr(p, role) * 10  # visible attributes (1-20) on a CA-like scale
             form = (st_['pct'] - 50) * 0.3 if st_.get('ranked') else -5
-            score = ca + form + (10 if natural else -15) + (8 if new else 0)
+            score = ability + form + (10 if natural else -15) + (8 if new else 0)
             options.append((score, p, st_, natural, new))
         if not options:
             out.append({'slot': slot, 'player': None, 'why': 'nobody fits'}); continue
@@ -269,11 +287,11 @@ def lens_groups(positions):
 
 
 def league_strength(rows):
-    """Average ability (CA) of each league's top 200 players, relative to ours (1.0 = our league)."""
+    """Average visible ability (all attributes) of each league's top 200 players, relative to ours."""
     by = {}
     for p in rows:
         if p['competition']:
-            by.setdefault(p['competition'], []).append(int(p['ca'] or 0))
+            by.setdefault(p['competition'], []).append(attr_all(p))
     avg = {k: st.mean(sorted(v, reverse=True)[:200]) for k, v in by.items() if len(v) >= 150}
     base = avg.get(LEAGUE) or max(avg.values())
     return {k: v / base for k, v in avg.items()}
@@ -286,7 +304,7 @@ def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
         if f is None:
             return None
         return round(6 + (v - 6) * f, 2) if group == 'CB' else round(v * f, 3)
-    out = {'method': 'one plain stat per position, per 90, x league strength (league top-200 average CA vs ours); 900+ league minutes',
+    out = {'method': 'one plain stat per position, per 90, x league strength (league top-200 average attributes vs ours); 900+ league minutes',
            'league_strength': {k: round(v, 2) for k, v in sorted(strength.items(), key=lambda kv: -kv[1])}, 'groups': []}
     for g, (pos, label, metric) in RAW.items():
         if groups and g not in groups:
@@ -304,15 +322,15 @@ def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
             cands.append((a, p))
         cands.sort(key=lambda c: -c[0])
         row = lambda a, p: {'name': p['name'], 'club': p['club'], 'league': p['competition'], 'age': int(p['age']),
-                            'raw': round(metric(p), 3), 'adjusted': a, 'minutes': int(p['mins']), 'ca': int(p['ca'] or 0),
-                            'pa': int(p['pa'] or 0), 'value': int(p['value']), 'wage': int(p['wage'] or 0)}
+                            'raw': round(metric(p), 3), 'adjusted': a, 'minutes': int(p['mins']), 'attributes': attr(p, GROUP_ROLE[g]),
+                            'value': int(p['value']), 'wage': int(p['wage'] or 0)}
         bar = adjusted(best_ours, metric, g) if best_ours else None
         # Bargains: at least as good as our best on the stat (CB: within 0.1 rating), cheapest first.
-        # …and at our level: ability no more than 10 below our best's (a plain stat alone over-rewards
+        # …and at our level: role attributes no more than 1.0 below our best's (a plain stat alone over-rewards
         # weak leagues: Ligue 2 DMs win the ball more often than Premier League ones).
-        ca_floor = max((int(p['ca'] or 0) for p in ours), default=10) - 10
+        attr_floor = max((attr(p, GROUP_ROLE[g]) for p in ours), default=0) - 1.0
         good = [(a, p) for a, p in cands if (bar is None or a >= (bar - 0.1 if g == 'CB' else bar * 0.95))
-                and int(p['ca'] or 0) >= ca_floor]
+                and attr(p, GROUP_ROLE[g]) >= attr_floor]
         bargains = sorted(good, key=lambda c: int(c[1]['value']))
         out['groups'].append({'group': g, 'stat': label,
                               'our_best': best_ours and row(bar, best_ours),
@@ -322,7 +340,7 @@ def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
 
 # ---- Ability lens: players at our level (or young with a high ceiling), by price. Catches what the
 # stat lenses can't see: players without minutes (Andrey Santos, 0 league minutes at Chelsea) and
-# high-ability players whose role stats undersell them (Querfeld, CA 147, ranked 13/36 on CB volume).
+# high-ability players whose role stats undersell them (Querfeld: strong attributes, ranked 13/36 on CB volume).
 EXTRA_STATS = {'CB': ['avg_rating', 'poss_won_p90', 'interceptions_p90', 'headers_won_p90'],
                'DM': ['poss_won_p90', 'interceptions_p90', 'progressive_passes_p90', 'pass_pct'],
                'CM': ['progressive_passes_p90', 'xa_p90', 'poss_won_p90', 'pass_pct'],
@@ -334,93 +352,101 @@ EXTRA_STATS = {'CB': ['avg_rating', 'poss_won_p90', 'interceptions_p90', 'header
 
 
 _EXPECTED = {}
-def expected_value(rows, ca, age, pa):
-    """Median market value of real-club players with similar ability (CA ±3) and age band; young
-    players also matched on potential (PA ±5). The market price of that ability, to compare against."""
+def expected_value(rows, group, a, age):
+    """Median market value of real-club players at this position with similar visible ability (role
+    attributes ±0.3) and age band: what the market charges for that ability. No hidden CA/PA."""
     band = 0 if age <= 21 else 1 if age <= 24 else 2 if age <= 27 else 3 if age <= 30 else 4
-    key = (ca, band, pa // 5 if band <= 1 else None)
+    key = (group, round(a, 1), band)
     if key not in _EXPECTED:
-        if not _EXPECTED.get('_pool'):
-            _EXPECTED['_pool'] = [(int(p['ca'] or 0), int(p['age'] or 99), int(p['pa'] or 0), int(p['value']))
-                                  for p in rows if not p['club'].startswith('club#') and 0 < int(p['value']) < sr.NOT_FOR_SALE
-                                  and int(p['ca'] or 0) >= 100 and p['contract_expires'][:4] >= '2028']
-        def b(a): return 0 if a <= 21 else 1 if a <= 24 else 2 if a <= 27 else 3 if a <= 30 else 4
-        vals = [v for c, a, pp, v in _EXPECTED['_pool'] if abs(c - ca) <= 3 and b(a) == band and (band > 1 or abs(pp - pa) <= 5)]
+        pool_key = ('_pool', group)
+        if pool_key not in _EXPECTED:
+            pos = RAW[group][0]
+            _EXPECTED[pool_key] = [(attr(p, GROUP_ROLE[group]), int(p['age'] or 99), int(p['value'])) for p in rows
+                                   if p['pos'] & pos and not p['club'].startswith('club#') and 0 < int(p['value']) < sr.NOT_FOR_SALE
+                                   and (p['contract_expires'] or '0')[:4] >= '2028']
+        def b(x): return 0 if x <= 21 else 1 if x <= 24 else 2 if x <= 27 else 3 if x <= 30 else 4
+        vals = [v for aa, ag, v in _EXPECTED[pool_key] if abs(aa - a) <= 0.3 and b(ag) == band]
         _EXPECTED[key] = st.median(vals) if len(vals) >= 5 else None
     return _EXPECTED[key]
 
 
-def scout_ability(rows, groups=None, budget=None, per=10, young_age=23, young_pa=150):
-    out = {'method': f"ability (CA) at least our best at the position minus 5, or age <= {young_age} with potential (PA) >= {young_pa}; 'candidates' = most underpriced vs the market price of that ability/age, 'best_ability' = strongest within budget; stats shown when he played 900+ league minutes; expiring contracts are in the free lens",
-           'groups': []}
+def scout_ability(rows, groups=None, budget=None, per=10, young_age=21):
+    """Attributes lens: role attributes at or near our best at the position, or young and already
+    close; 'candidates' = most underpriced vs the market price of that ability and age,
+    'best_ability' = strongest within budget. Visible attributes only (no CA/PA)."""
+    year = str(today_of(rows).year)
+    out = {'method': f"role attributes >= our best at the position - 0.5, or age <= {young_age} within 1.5 of it; "
+                     "'candidates' = most underpriced vs the market price of that ability/age, 'best_ability' = strongest within budget; "
+                     "stats when he played 900+ league minutes; expiring contracts are in the free lens", 'groups': []}
     for g, (pos, _, _) in RAW.items():
         if groups and g not in groups:
             continue
+        role = GROUP_ROLE[g]
         ours = [p for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and not p['on_loan_at']]
-        our_best = max(ours, key=lambda p: int(p['ca'] or 0), default=None)
-        floor = int(our_best['ca'] or 0) - 5 if our_best else 0
+        our_best = max(ours, key=lambda p: attr(p, role), default=None)
+        floor = attr(our_best, role) - 0.5 if our_best else 0
         found = []
         for p in rows:
-            if p['contract_club'] == CLUB or not (p['pos'] & pos) or int(p['value']) >= sr.NOT_FOR_SALE or (budget and int(p['value']) > budget):
+            if (p['contract_club'] == CLUB or not (p['pos'] & pos) or int(p['value']) >= sr.NOT_FOR_SALE
+                    or (budget and int(p['value']) > budget) or p['club'].startswith('club#')):
                 continue
-            ca, pa, age = int(p['ca'] or 0), int(p['pa'] or 0), int(p['age'] or 99)
-            # Real clubs only (unresolved 'club#…' ids are the women's database and unnamed clubs),
-            # no veterans, and young players must already be close to our level (CA within 20).
-            if p['club'].startswith('club#') or age >= 33 or (p['contract_expires'] or '9')[:4] <= str(today_of(rows).year):
+            age = int(p['age'] or 99)
+            if age >= 33 or (p['contract_expires'] or '9')[:4] <= year:
                 continue  # expiring contracts: see the free lens
-            why = ('at our level' if ca >= floor else
-                   'young, high ceiling' if age <= young_age and pa >= young_pa and ca >= floor - 15 else None)
+            a = attr(p, role)
+            why = 'at our level' if a >= floor else 'young, near our level' if age <= young_age and a >= floor - 1.0 else None
             if not why:
                 continue
-            found.append({'name': p['name'], 'club': p['club'], 'league': p['competition'] or None, 'age': age, 'ca': ca, 'pa': pa,
+            exp = expected_value(rows, g, a, age)
+            found.append({'name': p['name'], 'club': p['club'], 'league': p['competition'] or None, 'age': age, 'attributes': a,
                           'value': int(p['value']), 'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:4],
-                          'minutes': int(p['mins']), 'why': why,
+                          'minutes': int(p['mins']), 'why': why, 'expected_value': int(exp) if exp else None,
+                          'price_vs_market': round(int(p['value']) / exp, 2) if exp else None,
                           'stats': {k: round(sr.num(p, k), 2) for k in EXTRA_STATS[g]} if p['mins'] >= 900 else 'no league stats (under 900 min)'})
-        # Moneyball order: price relative to what the market charges for this ability and age.
-        for c in found:
-            exp = expected_value(rows, c['ca'], c['age'], c['pa'])
-            c['expected_value'] = int(exp) if exp else None
-            c['price_vs_market'] = round(c['value'] / exp, 2) if exp else None
-        found.sort(key=lambda c: (c['price_vs_market'] is None, c['price_vs_market'] or 0))
-        out['groups'].append({'group': g, 'our_best_ability': our_best and {'name': our_best['name'], 'ca': int(our_best['ca'] or 0)},
-                              'candidates': found[:per],
-                              'best_ability': sorted(found, key=lambda c: (-c['ca'], c['value']))[:per]})
+        out['groups'].append({'group': g, 'our_best': our_best and {'name': our_best['name'], 'attributes': attr(our_best, role)},
+                              'candidates': sorted(found, key=lambda c: (c['price_vs_market'] is None, c['price_vs_market'] or 0))[:per],
+                              'best_ability': sorted(found, key=lambda c: (-c['attributes'], c['value']))[:per]})
     return out
+
 
 def scout_free(rows, groups=None, per=8, date=None):
     """Players available cheaply because of their contract or role: free agents (no club), contracts
     ending this summer (free or a token fee), and fringe/backup players at their clubs (clubs sell
-    what they don't use). At our level (CA within 10 of our best at the position), under 33."""
+    what they don't use). At our level (role attributes within 1.0 of our best), under 33, current
+    wage within our cap."""
     today = date or today_of(rows)
     season_end = dt.date(today.year if today.month <= 6 else today.year + 1, 6, 30).isoformat()
-    # Their current wage is a floor for what they'll ask: over our cap is out of reach.
     wage_cap = wage_bands.bands(rows, CLUB)['median'] * POLICY['contracts']['max_salary_vs_first_team_median']
-    out = {'method': f'free agents, contracts ending by {season_end}, fringe/backup at their club; CA >= our best - 10; under 33; current wage <= our cap (£{wage_cap/1e3:.0f}K); strongest first',
-           'groups': []}
+    out = {'method': f'free agents, contracts ending by {season_end}, fringe/backup at their club; role attributes >= our best - 1.0; '
+                     f'under 33; current wage <= our cap (£{wage_cap/1e3:.0f}K); strongest first', 'groups': []}
     for g, (pos, _, _) in RAW.items():
         if groups and g not in groups:
             continue
+        role = GROUP_ROLE[g]
         ours = [p for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and not p['on_loan_at']]
-        floor = max((int(p['ca'] or 0) for p in ours), default=10) - 10
+        floor = max((attr(p, role) for p in ours), default=0) - 1.0
         found = []
         for p in rows:
             if p['contract_club'] == CLUB or not (p['pos'] & pos) or p['club'].startswith('club#') or int(p['age'] or 99) >= 33:
                 continue
-            if int(p['ca'] or 0) < floor or int(p['wage'] or 0) > wage_cap:
+            a = attr(p, role)
+            if a < floor or int(p['wage'] or 0) > wage_cap:
                 continue
             free = not p['contract_club']
             expiring = bool(p['contract_expires']) and p['contract_expires'][:10] <= season_end
             fringe = p['squad_status'] in ('Fringe Player', 'Backup')
             if not (free or expiring or fringe):
                 continue
-            found.append({'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'ca': int(p['ca'] or 0),
-                          'pa': int(p['pa'] or 0), 'value': int(p['value']), 'wage': int(p['wage'] or 0),
+            found.append({'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'attributes': a,
+                          'value': int(p['value']), 'wage': int(p['wage'] or 0),
                           'contract_until': (p['contract_expires'] or '')[:10] or None, 'status': p['squad_status'] or None,
                           'why': 'free agent' if free else 'contract ends this summer' if expiring else f"{p['squad_status'].lower()} at his club",
-                          'minutes': int(p['mins'])})
-        found.sort(key=lambda c: (-c['ca'], c['value']))
-        out['groups'].append({'group': g, 'floor_ca': floor, 'candidates': found[:per]})
+                          'minutes': int(p['mins']),
+                          'stats': {k: round(sr.num(p, k), 2) for k in EXTRA_STATS[g]} if p['mins'] >= 900 else 'no league stats (under 900 min)'})
+        found.sort(key=lambda c: (-c['attributes'], c['value']))
+        out['groups'].append({'group': g, 'our_best_attributes': round(floor + 1.0, 2), 'candidates': found[:per]})
     return out
+
 
 def price(rows, name):
     """Our price for any player (targets too): open at buying.open_at x the bottom of his range, walk
@@ -432,12 +458,11 @@ def price(rows, name):
     p = max(cands, key=lambda p: int(p['value']))
     v = int(p['value']); lo, hi = v * 0.9, v * 1.1
     cap = wage_bands.bands(rows, CLUB)['median'] * POLICY['contracts']['max_salary_vs_first_team_median']
-    return {'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'ca': int(p['ca'] or 0), 'pa': int(p['pa'] or 0),
+    return {'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'positions': p['positions'],
             'value': v, 'range_estimate': [round(lo), round(hi)], 'open_at': round(lo * b['open_at']), 'walk_away': round(hi * b['default_max']),
             'wage': int(p['wage'] or 0), 'wage_cap': round(cap), 'wage_ok': int(p['wage'] or 0) <= cap,
             'contract_until': (p['contract_expires'] or '')[:10] or None, 'ours': p['contract_club'] == CLUB,
             'note': 'live range from his profile beats this estimate (fm player)'}
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])

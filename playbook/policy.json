@@ -11,7 +11,8 @@
     "per_position": 2,
     "options_per_position": 3,
     "youth_age_under": 21,
-    "youth_keep_pa": 140
+    "youth_keep_attr_gap": 2.0,
+    "_youth": "Keep under-21s whose average attributes are within youth_keep_attr_gap of our first-team median; loan or sell the rest (no hidden PA)."
   },
   "valuation": {
     "_section": "3",
@@ -140,5 +141,9 @@
   "tactic": {
     "_section": "7",
     "keep_current": true
+  },
+  "information": {
+    "hide_hidden_attributes": true,
+    "_why": "User 2026-10-09: a real manager never sees FM's CA/PA. The manager judges ability by visible attributes (1-20), stats, value, wage, age and contract."
   }
 }

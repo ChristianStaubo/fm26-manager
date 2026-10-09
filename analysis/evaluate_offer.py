@@ -147,13 +147,13 @@ def evaluate(rows, offer, tactic, club=CLUB):
             if q['contract_club'] != club or q['key'] == p['key'] or not sr.can_play(q, role) or int(q['age'] or 0) < 18:
                 continue
             st_q = role_standing(rows, q, role, cache)
-            depth.append(dict(name=q['name'], age=int(q['age']), ca=int(q['ca']), minutes=q['mins'],
+            depth.append(dict(name=q['name'], age=int(q['age']), minutes=q['mins'],
                               starter_elsewhere=plain(q['name']) in starters,
                               on_loan_at=q['on_loan_at'] or None, loan_ends=q['loan_ends'] or None,
                               output=st_q['output'] if st_q else None, pct=st_q['pct'] if st_q else None,
                               rank=f"{st_q['rank']} {st_q['league']}" if st_q else 'no ranked league or minutes'))
-        depth.sort(key=lambda d: (d['pct'] is None, -(d['pct'] or 0), -d['ca']))
-    senior = [d for d in depth if d['ca'] >= 110]
+        depth.sort(key=lambda d: (d['pct'] is None, -(d['pct'] or 0), -d['age']))
+    senior = [d for d in depth if d['age'] >= 21]  # no hidden ability (CA): seniority by age
     blockers = []
     if role == 'GK' and len(senior) < 2:
         blockers.append(f'only {len(senior)} senior goalkeeper(s) would remain (minimum 2, target 3)')
@@ -216,7 +216,7 @@ def evaluate(rows, offer, tactic, club=CLUB):
         decision = 'counter' if negotiable and net >= 0.6 * floor else 'reject'
 
     return dict(
-        player=dict(name=p['name'], age=int(p['age']), ca=int(p['ca']), pa=int(p['pa']), positions=p['positions'],
+        player=dict(name=p['name'], age=int(p['age']), positions=p['positions'],
                     club_now=p['club'], on_loan_at=p['on_loan_at'] or None, squad_status=p['squad_status'],
                     minutes=p['mins'], value=value, wage_pw=int(p['wage'] or 0), contract_expires=p['contract_expires'],
                     contract_years_left=round(y, 2) if y is not None else None,
