@@ -109,7 +109,8 @@ def squad(rows, tactic, date=None):
         spec_cards = sorted((card(p) for p in spec), key=lambda c: -((c['standing'] or {}).get('pct') or 0))
         need_spec = pol_sq['per_position'] * len(slots)
         entry = {'position': grp, 'role': role, 'slots': slots, 'specialists': spec_cards,
-                 'cover': [p['name'] for p in cover], 'have': len(spec), 'want': need_spec}
+                 'cover': [p['name'] for p in cover], 'specialists_have': len(spec),
+                 'specialists_target': need_spec, 'note': f"{len(slots)} slot(s) x {pol_sq['per_position']} per slot; versatile cover counts towards {pol_sq['options_per_position']} options per slot"}
         out['positions'].append(entry)
         used_as_specialist.update(p['name'] for p in spec)
         # Needs: short of specialists, or a starter clearly underperforming (bottom third of his league pool).
@@ -142,13 +143,19 @@ def squad(rows, tactic, date=None):
     for c in out['sell_candidates']:
         if c['name'] not in seen:
             seen.add(c['name']); uniq.append(c)
-    out['sell_candidates'] = uniq
+    # Contracts ending this season are 'let go' decisions (renew or not), not sales.
+    end = str(today.year)
+    out['expiring'] = [c for c in uniq if any(x['name'] == c['name'] and (x['contract_expires'] or '9')[:4] <= end for x in ours)]
+    out['sell_candidates'] = [c for c in uniq if c not in out['expiring']]
     for p in ours:
         if int(p['age'] or 99) < pol_sq['youth_age_under']:
             pa = int(p['pa'] or 0)
             out['youth'].append({'name': p['name'], 'age': int(p['age']), 'pa': pa, 'on_loan_at': p['on_loan_at'] or None,
                                  'advice': 'keep' if pa >= pol_sq['youth_keep_pa'] else 'loan or sell'})
     out['youth'].sort(key=lambda y: -y['pa'])
+    loan_or_sell = [y for y in out['youth'] if y['advice'] != 'keep']
+    out['youth'] = {'keep': [y for y in out['youth'] if y['advice'] == 'keep'],
+                    'loan_or_sell': f"{len(loan_or_sell)} others (lower potential): loan or sell when bids come"}
     out['hierarchy'] = load_hierarchy()
     return out
 
@@ -244,6 +251,15 @@ RAW = {  # position group: (natural positions, metric label, metric(p))
 }
 
 
+# Squad positions (fm squad) → lens groups.
+LENS_GROUP = {'LW': 'W', 'RW': 'W', 'W': 'W', 'LB': 'FB', 'RB': 'FB', 'FB': 'FB', 'AM': 'AM', 'CM': 'CM', 'DM': 'DM',
+              'CB': 'CB', 'ST': 'ST', 'GK': 'GK'}
+
+
+def lens_groups(positions):
+    return {LENS_GROUP.get(p.upper(), p.upper()) for p in positions} if positions else None
+
+
 def league_strength(rows):
     """Average ability (CA) of each league's top 200 players, relative to ours (1.0 = our league)."""
     by = {}
@@ -327,7 +343,7 @@ def expected_value(rows, ca, age, pa):
 
 
 def scout_ability(rows, groups=None, budget=None, per=10, young_age=23, young_pa=150):
-    out = {'method': f"ability (CA) at least our best at the position minus 5, or age <= {young_age} with potential (PA) >= {young_pa}; cheapest first; stats shown when he played 900+ league minutes",
+    out = {'method': f"ability (CA) at least our best at the position minus 5, or age <= {young_age} with potential (PA) >= {young_pa}; 'candidates' = most underpriced vs the market price of that ability/age, 'best_ability' = strongest within budget; stats shown when he played 900+ league minutes; expiring contracts are in the free lens",
            'groups': []}
     for g, (pos, _, _) in RAW.items():
         if groups and g not in groups:
@@ -342,8 +358,8 @@ def scout_ability(rows, groups=None, budget=None, per=10, young_age=23, young_pa
             ca, pa, age = int(p['ca'] or 0), int(p['pa'] or 0), int(p['age'] or 99)
             # Real clubs only (unresolved 'club#…' ids are the women's database and unnamed clubs),
             # no veterans, and young players must already be close to our level (CA within 20).
-            if p['club'].startswith('club#') or age >= 33:
-                continue
+            if p['club'].startswith('club#') or age >= 33 or (p['contract_expires'] or '9')[:4] <= str(today_of(rows).year):
+                continue  # expiring contracts: see the free lens
             why = ('at our level' if ca >= floor else
                    'young, high ceiling' if age <= young_age and pa >= young_pa and ca >= floor - 15 else None)
             if not why:
@@ -359,7 +375,8 @@ def scout_ability(rows, groups=None, budget=None, per=10, young_age=23, young_pa
             c['price_vs_market'] = round(c['value'] / exp, 2) if exp else None
         found.sort(key=lambda c: (c['price_vs_market'] is None, c['price_vs_market'] or 0))
         out['groups'].append({'group': g, 'our_best_ability': our_best and {'name': our_best['name'], 'ca': int(our_best['ca'] or 0)},
-                              'candidates': found[:per]})
+                              'candidates': found[:per],
+                              'best_ability': sorted(found, key=lambda c: (-c['ca'], c['value']))[:per]})
     return out
 
 def scout_free(rows, groups=None, per=8, date=None):
@@ -397,10 +414,27 @@ def scout_free(rows, groups=None, per=8, date=None):
         out['groups'].append({'group': g, 'floor_ca': floor, 'candidates': found[:per]})
     return out
 
+def price(rows, name):
+    """Our price for any player (targets too): open at buying.open_at x the bottom of his range, walk
+    away above buying.default_max x the top; the range is his value +-10% (the game shows a scouted range)."""
+    b = POLICY['buying']
+    cands = [p for p in rows if p['name'].lower() == name.lower()] or [p for p in rows if name.lower() in p['name'].lower()]
+    if not cands:
+        return {'error': f'no player named {name}'}
+    p = max(cands, key=lambda p: int(p['value']))
+    v = int(p['value']); lo, hi = v * 0.9, v * 1.1
+    cap = wage_bands.bands(rows, CLUB)['median'] * POLICY['contracts']['max_salary_vs_first_team_median']
+    return {'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'ca': int(p['ca'] or 0), 'pa': int(p['pa'] or 0),
+            'value': v, 'range_estimate': [round(lo), round(hi)], 'open_at': round(lo * b['open_at']), 'walk_away': round(hi * b['default_max']),
+            'wage': int(p['wage'] or 0), 'wage_cap': round(cap), 'wage_ok': int(p['wage'] or 0) <= cap,
+            'contract_until': (p['contract_expires'] or '')[:10] or None, 'ours': p['contract_club'] == CLUB,
+            'note': 'live range from his profile beats this estimate (fm player)'}
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('cmd', choices=['squad', 'scout', 'xi'])
+    ap.add_argument('cmd', choices=['squad', 'scout', 'xi', 'price'])
+    ap.add_argument('name', nargs='?')
     ap.add_argument('--csv')
     ap.add_argument('--date')
     ap.add_argument('--positions', help='comma-separated positions for scout (e.g. RW,AM)')
@@ -415,13 +449,15 @@ def main():
     if a.cmd == 'squad':
         r = squad(rows, tactic, date)
     elif a.cmd == 'scout' and a.free:
-        r = scout_free(rows, a.positions.split(',') if a.positions else None, a.per if a.per != 6 else 8, date)
+        r = scout_free(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.per if a.per != 6 else 8, date)
     elif a.cmd == 'scout' and a.ability:
-        r = scout_ability(rows, a.positions.split(',') if a.positions else None, a.budget, a.per if a.per != 6 else 10)
+        r = scout_ability(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.budget, a.per if a.per != 6 else 10)
     elif a.cmd == 'scout' and a.raw:
-        r = scout_raw(rows, a.positions.split(',') if a.positions else None, a.budget, a.per if a.per != 6 else 10)
+        r = scout_raw(rows, lens_groups(a.positions.split(',')) if a.positions else None, a.budget, a.per if a.per != 6 else 10)
     elif a.cmd == 'scout':
         r = scout(rows, tactic, a.positions.split(',') if a.positions else None, a.budget, a.per, date)
+    elif a.cmd == 'price':
+        r = price(rows, a.name or '')
     else:
         r = xi(rows, tactic, date)
     print(json.dumps(r, indent=1, ensure_ascii=False, default=str))

@@ -49,7 +49,8 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
                                  market shortlist: output lens (default), plain stats x league
                                  strength, ability vs market price, free/expiring/fringe (§5)
   xi [--fresh]                   suggested starting XI for our tactic (§7)
-  value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for a player (§3)
+  value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for one of OUR players (§3)
+  price "<name>"                 any player (targets): open at, walk away above, wage vs our cap (§5)
   note ["lesson"]                append a lesson to the notebook, or print it (§9)
 
 Transfers
@@ -128,6 +129,7 @@ try {
     case 'scout': out(analysis('manager.py', ['scout', ...['raw', 'ability', 'free'].filter(f => flags[f]).map(f => `--${f}`), ...(flags.positions ? ['--positions', flags.positions] : []),
       ...(flags.budget ? ['--budget', String(num(flags.budget))] : []), ...(flags.per ? ['--per', String(flags.per)] : [])], {fresh: !!flags.fresh})); break;
     case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh})); break;
+    case 'price': out(analysis('manager.py', ['price', a1 || ''], {fresh: !!flags.fresh})); break;
     case 'value': {
       const range = flags.range ? String(flags.range).split(',').map(num) : undefined;
       out(analysis('evaluate_offer.py', ['--price'], {fresh: !!flags.fresh, input: JSON.stringify({player: a1, date: new Date().toISOString().slice(0, 10), ...(range ? {value_range: range} : {})})}));
