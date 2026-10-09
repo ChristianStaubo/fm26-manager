@@ -11,7 +11,7 @@ Frida 17.19.0. Other builds may need class/field names adjusted (`agent/10-class
 macOS blocks attaching to signed apps, so the bridge attaches to a **re-signed copy** of the
 game. The Steam installation is not modified.
 ```bash
-bridge/setup-macos.sh        # copies to ~/fm26-debug/fm.app, signs it, creates ~/fm26-debug/venv
+game/bridge/setup-macos.sh        # copies to ~/fm26-debug/fm.app, signs it, creates ~/fm26-debug/venv
 ```
 Environment overrides: `FM26_STEAM_APP`, `FM26_GAME_COPY`, `FM26_VENV`. The copy uses your
 normal saves and settings. Entitlements: `debug.entitlements.plist` (get-task-allow,
@@ -22,7 +22,7 @@ to attach (Developer Tools in System Settings → Privacy & Security).
 ```bash
 open ~/fm26-debug/fm.app                                   # the copy, not Steam's
 mkdir -p /tmp/fm26-bridge
-~/fm26-debug/venv/bin/python bridge/server.py > /tmp/fm26-bridge/bridge.log 2>&1 &
+~/fm26-debug/venv/bin/python game/bridge/server.py > /tmp/fm26-bridge/bridge.log 2>&1 &
 node cli/fm.mjs status                                     # → state, actionReady
 node cli/fm.mjs click Continue                             # once per game launch
 ```

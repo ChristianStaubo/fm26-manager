@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {trimTree} from '../cli/friction.mjs';
-import {Screen} from '../ui/screen.mjs';
+import {Screen} from '../game/ui/screen.mjs';
 
 const node = (id, parent, extra = {}) => ({id, parent, name: '', type: 'VisualElement', visible: true, enabled: true, bounds: [0, 0, 100, 20], ...extra});
 const tree = {snapshot: 1, nodes: [

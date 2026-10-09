@@ -4,9 +4,9 @@
 import {mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
 import {gzipSync} from 'node:zlib';
 import {execSync} from 'node:child_process';
-import {getState} from '../bridge/client.mjs';
-import {Screen, overlays, describe, isoDate} from '../ui/index.mjs';
-import {summarize} from '../tasks/progression/autopilot.mjs';
+import {getState} from '../game/bridge/client.mjs';
+import {Screen, overlays, describe, isoDate} from '../game/ui/index.mjs';
+import {summarize} from '../capabilities/season/autopilot.mjs';
 import {recentCommands} from './journal.mjs';
 
 const DIR = new URL('../local/runs/friction/', import.meta.url);

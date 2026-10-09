@@ -1,10 +1,10 @@
 // Go on vacation: Portal date button → Calendar → "Go On Vacation" → options → Confirm.
 // Settings come from season.json (holiday.*). "Use team selection where possible" is TICKED since
 // 2026-10-09 (user: the chosen XI must play); it used to be never ticked (rotation/injuries).
-import {Screen, waitFor, click, clickWhere, toggle, setNumber, recover, isoDate} from '../../ui/index.mjs';
+import {Screen, waitFor, click, clickWhere, toggle, setNumber, recover, isoDate} from '../../game/ui/index.mjs';
 import {loadSeason, nextDate, daysBetween} from './season.mjs';
 import {log} from '../log.mjs';
-import {loadPolicy} from '../transfers/decide.mjs';
+import {loadPolicy} from '../sell/decide.mjs';
 
 // Checkboxes have no label of their own: the label is the next text item.
 const checkboxBefore = label => s => { const k = s.items.findIndex(i => i.kind === 'text' && i.label === label); return k < 0 ? null : s.items.slice(0, k).reverse().find(i => i.kind === 'toggle'); };
@@ -50,7 +50,7 @@ export async function holiday({days, until, dryRun = false} = {}) {
 // unknown dialog (recover refuses it), or when two legs in a row make no progress.
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function waitUntilIdle({quietPolls = 3, every = 5000, maxMs = 3 * 3600e3} = {}) {
-  const {getState} = await import('../../bridge/client.mjs');
+  const {getState} = await import('../../game/bridge/client.mjs');
   const end = Date.now() + maxMs;
   for (let quiet = 0; quiet < quietPolls && Date.now() < end; ) {
     await sleep(every);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {offerState} from './buy.mjs';
-import {Screen} from '../../ui/screen.mjs';
+import {Screen} from '../../game/ui/screen.mjs';
 
 // Minimal offer screen: a General Manager line (button) and optional Suggest Terms / Accept Demands.
 const screen = (gm, buttons = []) => new Screen({nodes: [

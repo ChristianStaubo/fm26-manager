@@ -3,20 +3,20 @@
 // Output is JSON (except `screen`). Exit codes: 0 done, 2 needs a decision (read the output),
 // 1 error (read the message; do not blindly retry actions that may have run).
 import {writeFile} from 'node:fs/promises';
-import {getState, request, ui} from '../bridge/client.mjs';
-import * as fm from '../ui/index.mjs';
-import {control, withLock} from '../tasks/progression/continue.mjs';
-import {run} from '../tasks/progression/autopilot.mjs';
-import {holiday, holidaySeason} from '../tasks/progression/holiday.mjs';
-import {listPlayer} from '../tasks/transfers/sell.mjs';
-import {buyPlayer} from '../tasks/transfers/buy.mjs';
-import {delegateRenewal} from '../tasks/contracts/renew.mjs';
-import {transferActivity, deal} from '../tasks/transfers/activity.mjs';
-import {pressConference} from '../tasks/admin/press.mjs';
-import {log} from '../tasks/log.mjs';
-import {summarize} from '../tasks/progression/autopilot.mjs';
-import * as pricebook from '../tasks/transfers/pricebook.mjs';
-import {register} from '../tasks/admin/registration.mjs';
+import {getState, request, ui} from '../game/bridge/client.mjs';
+import * as fm from '../game/ui/index.mjs';
+import {control, withLock} from '../capabilities/season/continue.mjs';
+import {run} from '../capabilities/season/autopilot.mjs';
+import {holiday, holidaySeason} from '../capabilities/season/holiday.mjs';
+import {listPlayer} from '../capabilities/sell/list.mjs';
+import {buyPlayer} from '../capabilities/buy/buy.mjs';
+import {delegateRenewal} from '../capabilities/contracts/renew.mjs';
+import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
+import {pressConference} from '../game/screens/admin/press.mjs';
+import {log} from '../capabilities/log.mjs';
+import {summarize} from '../capabilities/season/autopilot.mjs';
+import * as pricebook from '../capabilities/value/pricebook.mjs';
+import {register} from '../game/screens/admin/registration.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';

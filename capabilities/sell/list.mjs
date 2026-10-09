@@ -1,8 +1,8 @@
 // Transfer-list one of our players with an asking price.
-import {Screen, waitFor, click, choose, setFee, parseMoney, openPlayer, actionPath, profileFacts, isoDate, NeedsAnalyst} from '../../ui/index.mjs';
+import {Screen, waitFor, click, choose, setFee, parseMoney, openPlayer, actionPath, profileFacts, isoDate, NeedsAnalyst} from '../../game/ui/index.mjs';
 import {loadRules} from './decide.mjs';
 import {log} from '../log.mjs';
-import * as pricebook from './pricebook.mjs';
+import * as pricebook from '../value/pricebook.mjs';
 
 // Default asking price: rules.selling.asking_price × the top of the player's valuation (1.0: we
 // want to sell). --deter uses asking_price_deter for players listed but not really for sale.

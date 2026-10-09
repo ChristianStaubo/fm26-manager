@@ -4,8 +4,8 @@
 import {existsSync, mkdirSync, openSync} from 'node:fs';
 import {execSync, spawn} from 'node:child_process';
 import {homedir} from 'node:os';
-import {getState, RUNTIME_DIR} from '../bridge/client.mjs';
-import {Screen, overlays, settle} from '../ui/index.mjs';
+import {getState, RUNTIME_DIR} from '../game/bridge/client.mjs';
+import {Screen, overlays, settle} from '../game/ui/index.mjs';
 
 const REPO = new URL('..', import.meta.url).pathname;
 const first = list => list.filter(Boolean).find(p => existsSync(p)) || null;
@@ -16,7 +16,7 @@ const pgrep = pattern => { try { return execSync(`pgrep -f ${JSON.stringify(patt
 function startBridge() {
   mkdirSync(RUNTIME_DIR, {recursive: true});
   const log = openSync(`${RUNTIME_DIR}/bridge.log`, 'a');
-  spawn(PYTHON, ['bridge/server.py'], {cwd: REPO, detached: true, stdio: ['ignore', log, log]}).unref();
+  spawn(PYTHON, ['game/bridge/server.py'], {cwd: REPO, detached: true, stdio: ['ignore', log, log]}).unref();
 }
 
 export async function doctor({fix = false} = {}) {
@@ -33,10 +33,10 @@ export async function doctor({fix = false} = {}) {
     steam.length ? 'the STEAM game is running: quit it and `open` the copy (Frida cannot attach to Steam\'s)' : `ask the user to: open ${GAME} and load the save`))
     return {ok: false, checks};
 
-  let bridge = pgrep('bridge/server.py');
+  let bridge = pgrep('game/bridge/server.py');
   if (!bridge.length && fix && PYTHON) {
     startBridge();
-    for (let i = 0; i < 20 && !bridge.length; i++) { await settle(500); bridge = pgrep('bridge/server.py'); }
+    for (let i = 0; i < 20 && !bridge.length; i++) { await settle(500); bridge = pgrep('game/bridge/server.py'); }
     await settle(3000); // attach + agent load
   }
   if (!add('bridge process', bridge.length === 1, bridge.length ? `pid ${bridge.join(',')}` : 'not running',

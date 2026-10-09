@@ -5,7 +5,7 @@
 // Broholm, Lopez, Bird, Kayode, Onyeka and Cox with 9 places free. Changes are allowed until the
 // deadline; Confirm → dialog "Please Confirm: Submit completed squad list?" → Confirm.
 import {Screen, waitFor, toggle, clickWhere, settle, isoDate, NeedsAnalyst} from '../../ui/index.mjs';
-import {log} from '../log.mjs';
+import {log} from '../../../capabilities/log.mjs';
 
 const SWITCH = 'inputs-switch-toggle-large-default';
 

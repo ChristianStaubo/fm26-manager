@@ -4,7 +4,7 @@
 // Route: message → (delegate future ones to staff) → Attend Press Conference → Start Press
 // Conference → answer every question with the first (most positive) answer → Leave.
 import {Screen, waitFor, settle, click, clickWhere, isoDate, NeedsAnalyst} from '../../ui/index.mjs';
-import {log} from '../log.mjs';
+import {log} from '../../../capabilities/log.mjs';
 
 const inRoom = s => s.hasText('Press Room');
 const question = s => s.texts().find(t => /^Question \d+ of \d+$/.test(t)) || null;

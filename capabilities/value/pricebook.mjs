@@ -5,7 +5,7 @@
 // contract, age), fed the live range; without analysis: minimum v_low, target v_high.
 import {execFileSync} from 'node:child_process';
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
-import {loadRules} from './decide.mjs';
+import {loadRules} from '../sell/decide.mjs';
 
 const FILE = new URL('../../local/runs/price-book.json', import.meta.url);
 const ROOT = new URL('../..', import.meta.url).pathname;

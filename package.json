@@ -7,8 +7,8 @@
   "bin": {"fm": "cli/fm.mjs"},
   "scripts": {
     "fm": "node cli/fm.mjs",
-    "bridge": "python3 bridge/server.py",
-    "test": "node --test tasks/*/*.test.mjs test/*.test.mjs"
+    "bridge": "python3 game/bridge/server.py",
+    "test": "node --test capabilities/*/*.test.mjs test/*.test.mjs"
   },
   "engines": {"node": ">=20"}
 }

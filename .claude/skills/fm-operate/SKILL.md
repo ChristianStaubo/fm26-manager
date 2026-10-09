@@ -16,7 +16,7 @@ node cli/fm.mjs doctor          # every check with a fix hint; --fix starts the 
 Where things are in the game: `docs/screens/README.md`.
 - `Bridge is not running` → the game copy must be running (not Steam's): `open ~/fm26-debug/fm.app`
   (or `$FM26_GAME_COPY`). Then start the bridge in the background:
-  `~/fm26-debug/venv/bin/python bridge/server.py > /tmp/fm26-bridge/bridge.log 2>&1 &`
+  `~/fm26-debug/venv/bin/python game/bridge/server.py > /tmp/fm26-bridge/bridge.log 2>&1 &`
   and run `status` again. Setup if missing: `bridge/README.md`.
 - `available: false` / `actionReady: false` → load the save, then `node cli/fm.mjs click Continue`
   once (teaches the bridge the Continue call).
@@ -60,7 +60,7 @@ recent commands to `local/runs/friction/`. As the player: run it and stop, don't
 | Symptom | Fix |
 |---|---|
 | `Element is occluded (by …floating-element-root)` | a list/menu is open: `fm recover` |
-| `Unknown dialog: …` | read it (`fm overlays`); click the right button; add it to `KNOWN_DIALOGS` (ui/overlays.mjs) if routine |
+| `Unknown dialog: …` | read it (`fm overlays`); click the right button; add it to `KNOWN_DIALOGS` (game/ui/overlays.mjs) if routine |
 | `No search result for X` | check spelling/club; the helper already retries the Messages-only quirk |
 | `Timed out waiting for …` | `fm screen` to see where you are, `fm recover`, try again |
 | `Continue not initialised` | `fm click Continue` once |

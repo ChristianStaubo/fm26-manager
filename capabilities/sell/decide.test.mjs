@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {decideSale, decidePayoff, loadRules} from './decide.mjs';
-import {inWindow, nextWindowOpen, nextDate, daysBetween, loadSeason} from '../progression/season.mjs';
+import {inWindow, nextWindowOpen, nextDate, daysBetween, loadSeason} from '../season/season.mjs';
 
 const policy = loadRules();
 const sale = o => decideSale({negotiable: true, countersSoFar: 0, monthsLeft: 24, ...o}, policy);

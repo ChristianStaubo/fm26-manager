@@ -8,8 +8,8 @@
 // contract form (Salary, Loyalty Bonus, Agent Fee, Contract Length, Bonuses & Clauses, payroll
 // "Avg." per week) → Suggest Terms → agent: "…appreciates these terms…" + Finalize Deal →
 // Finalize Deal → "…I'll be in touch regarding my client's final decision…" → Exit Talks.
-import {Screen, waitFor, click, clickWhere, setFee, settle, parseMoney, NeedsAnalyst, isoDate} from '../../ui/index.mjs';
-import {loadRules} from '../transfers/decide.mjs';
+import {Screen, waitFor, click, clickWhere, setFee, settle, parseMoney, NeedsAnalyst, isoDate} from '../../game/ui/index.mjs';
+import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {execFileSync} from 'node:child_process';
 

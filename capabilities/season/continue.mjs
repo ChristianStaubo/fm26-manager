@@ -2,7 +2,7 @@
 // appears, or a step/time limit is hit. Each call returns; the caller decides what's next.
 import {open, unlink} from 'node:fs/promises';
 import path from 'node:path';
-import {classifyState, getState, request, RUNTIME_DIR} from '../../bridge/client.mjs';
+import {classifyState, getState, request, RUNTIME_DIR} from '../../game/bridge/client.mjs';
 
 // Each invocation owns progression until it returns. A handoff ends the loop;
 // only an explicit new invocation can resume it.

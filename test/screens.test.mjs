@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadScreen} from './screens.mjs';
-import {HANDLERS} from '../tasks/progression/autopilot.mjs';
+import {HANDLERS} from '../capabilities/season/autopilot.mjs';
 
 const handlerFor = s => HANDLERS.filter(h => h.match(s)).map(h => h.name);
 
@@ -13,14 +13,14 @@ test('Confirm Transfer (signing agreed, before the window opens) → delegate fi
 });
 
 test('Pending new-signing press conference (message open) → Attend button in the message, not the Continue slot', async () => {
-  const {locate} = await import('../tasks/admin/press.mjs');
+  const {locate} = await import('../game/screens/admin/press.mjs');
   const s = loadScreen('press-conference-message');
   assert.equal(s.continueLabel(), 'Attend Press Conference');
   assert.deepEqual({inRoom: false, attend: true}, (({inRoom, attend}) => ({inRoom, attend}))(locate(s)));
 });
 
 test('A leftover hover tooltip is reported as a tooltip, not a dropdown (recover clicks Portal)', async () => {
-  const {overlays} = await import('../ui/overlays.mjs');
+  const {overlays} = await import('../game/ui/overlays.mjs');
   const open = overlays(loadScreen('stray-tooltip'));
   assert.deepEqual(open.map(o => o.kind), ['tooltip']);
   assert.match(open[0].text, /attribute/);
@@ -33,14 +33,14 @@ test('Board season expectations (Response Required) → keep defaults and Confir
 });
 
 test('Friendly proposal (Accept/Reject Invitation) → accept-invitation', async () => {
-  const {readFriendly} = await import('../tasks/admin/handlers.mjs');
+  const {readFriendly} = await import('../game/screens/admin/handlers.mjs');
   const s = loadScreen('friendly-proposal');
   assert.deepEqual(handlerFor(s), ['accept-invitation']);
   const f = readFriendly(s.texts().find(t => !!readFriendly(t)));
   assert.ok(f.date instanceof Date && f.fee > 0);
 });
 test('readFriendly parses date and fee from the proposal text', async () => {
-  const {readFriendly} = await import('../tasks/admin/handlers.mjs');
+  const {readFriendly} = await import('../game/screens/admin/handlers.mjs');
   const f = readFriendly('Paris FC have offered Brentford a friendly match at Stade Jean-Bouin (France) on Monday July 13th 2026. Brentford will receive a fee of £55,000 if they accept the offer.');
   assert.equal(f.date.toISOString().slice(0, 10), '2026-07-13');
   assert.equal(f.fee, 55000);
@@ -54,8 +54,8 @@ test('Outgoing Confirm Transfer (loan out, Accept/Delay/Cancel) → confirm-outg
 });
 
 test('Loan approach without a buy clause (Leicester for Milambo) → loan-offer, parsed, plain loan', async () => {
-  const {readLoan} = await import('../tasks/transfers/incoming.mjs');
-  const {decideLoan} = await import('../tasks/transfers/decide.mjs');
+  const {readLoan} = await import('../game/screens/transfer-offers.mjs');
+  const {decideLoan} = await import('../capabilities/sell/decide.mjs');
   const s = loadScreen('loan-approach-plain');
   assert.deepEqual(handlerFor(s), ['loan-offer']);
   const l = readLoan(s);
@@ -66,8 +66,8 @@ test('Loan approach without a buy clause (Leicester for Milambo) → loan-offer,
 });
 
 test('Loan approach with a mandatory future fee is an obligation to buy (Al-Ahli for Schade, 2026-07)', async () => {
-  const {readLoan} = await import('../tasks/transfers/incoming.mjs');
-  const {Screen} = await import('../ui/screen.mjs');
+  const {readLoan} = await import('../game/screens/transfer-offers.mjs');
+  const {Screen} = await import('../game/ui/screen.mjs');
   const lines = ['Al-Ahli make loan approach for Schade', 'Fee', '£500K', 'Duration', 'End of season', 'Playing Monthly Fee', '£75K',
     'Mandatory Future Fee', '£43.5M', 'Agreed Playing Time', 'Regular Starter'];
   const nodes = [{id: 0, parent: null, visible: true, bounds: [0, 0, 1680, 1050]},
@@ -78,9 +78,9 @@ test('Loan approach with a mandatory future fee is an obligation to buy (Al-Ahli
 });
 
 test('Loan-to-buy detail page (Aston Villa for Milambo): value = overall + wage relief, judged as a sale', async () => {
-  const {readLoanPage} = await import('../tasks/transfers/incoming.mjs');
-  const {decideSale} = await import('../tasks/transfers/decide.mjs');
-  const {loadRules} = await import('../tasks/transfers/decide.mjs');
+  const {readLoanPage} = await import('../game/screens/transfer-offers.mjs');
+  const {decideSale} = await import('../capabilities/sell/decide.mjs');
+  const {loadRules} = await import('../capabilities/sell/decide.mjs');
   const s = loadScreen('loan-approach-obligation');
   assert.deepEqual(handlerFor(s), ['loan-offer-page']);
   const l = readLoanPage(s);

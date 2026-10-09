@@ -5,7 +5,7 @@ description: Sell, buy and renew players in FM26 — transfer-list with an askin
 
 # Transfers
 
-Read first: `tasks/transfers/README.md` (flows, screens, quirks) and `playbook/policy.json`
+Read first: `capabilities/sell/TRANSFERS-NOTES.md` (flows, screens, quirks) and `playbook/policy.json`
 (the numbers). Operating basics: skill **fm-operate**. Every action is logged to
 `local/runs/decisions.jsonl`.
 

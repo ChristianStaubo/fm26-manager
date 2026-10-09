@@ -1,6 +1,6 @@
 // Our current transfer activity: Recruitment → Transfer Activity. The authoritative list of
 // bids we made (and offers received), with status, plus the potential budget impact.
-import {goTo, click, waitFor, Screen, parseMoney, toggle, settle} from '../../ui/index.mjs';
+import {goTo, click, waitFor, Screen, parseMoney, toggle, settle} from '../ui/index.mjs';
 
 export async function transferActivity() {
   await goTo('Recruitment');

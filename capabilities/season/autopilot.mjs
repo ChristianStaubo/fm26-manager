@@ -3,14 +3,14 @@
 //
 // Stop reasons: 'until' (date reached), 'window-closed', 'needs-analyst' (no handler, or a
 // handler escalated), 'unfamiliar-state', 'decision-limit', 'error' (do not retry blindly).
-import {getState} from '../../bridge/client.mjs';
-import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../ui/index.mjs';
+import {getState} from '../../game/bridge/client.mjs';
+import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../game/ui/index.mjs';
 import {control, withLock} from './continue.mjs';
 import {windowEnd} from './season.mjs';
-import {HANDLERS as TRANSFER_HANDLERS} from '../transfers/incoming.mjs';
-import {HANDLERS as ADMIN_HANDLERS} from '../admin/handlers.mjs';
+import {HANDLERS as TRANSFER_HANDLERS} from '../../game/screens/transfer-offers.mjs';
+import {HANDLERS as ADMIN_HANDLERS} from '../../game/screens/admin/handlers.mjs';
 import {handBackContract} from '../contracts/personal-terms.mjs';
-import {pressConference} from '../admin/press.mjs';
+import {pressConference} from '../../game/screens/admin/press.mjs';
 
 export const HANDLERS = [...TRANSFER_HANDLERS, handBackContract, ...ADMIN_HANDLERS];
 

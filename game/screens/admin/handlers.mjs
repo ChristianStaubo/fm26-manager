@@ -2,7 +2,7 @@
 // To add one: write {name, match, run} below and list it in HANDLERS. Unknown screens stop
 // the autopilot so the model can look (see .claude/skills/fm-operate).
 import {clickWhere, isoDate, parseMoney} from '../../ui/index.mjs';
-import {log, history} from '../log.mjs';
+import {log, history} from '../../../capabilities/log.mjs';
 import {registrationHandler} from './registration.mjs';
 import {NeedsAnalyst, click, recover, waitFor, settle} from '../../ui/index.mjs';
 
@@ -113,7 +113,7 @@ export const HANDLERS = [
     async run(s, {dryRun = false} = {}) {
       const entry = {action: 'player-issue', date: isoDate(s.date()), detail: 'holiday 1 day: assistant handles the conversation', headline: s.texts().find(t => / wants to | asks to /.test(t))};
       if (dryRun) return {...entry, dryRun: true};
-      const {holiday} = await import('../progression/holiday.mjs');
+      const {holiday} = await import('../../../capabilities/season/holiday.mjs');
       await holiday({days: 1});
       await log(entry);
       return entry;

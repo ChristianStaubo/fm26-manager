@@ -1,7 +1,7 @@
 // Contract renewals are delegated to the Director of Football (user rule: staff negotiate
 // contracts). Actions → Contract → "DoF To Negotiate Contract", then the confirmation dialog
 // "DOF to negotiate contract?" is answered Yes by recover() (ui/overlays.mjs KNOWN_DIALOGS).
-import {openPlayer, actionPath, peekActions, recover, isoDate} from '../../ui/index.mjs';
+import {openPlayer, actionPath, peekActions, recover, isoDate} from '../../game/ui/index.mjs';
 import {log} from '../log.mjs';
 
 export async function delegateRenewal(name, club, {dryRun = false} = {}) {

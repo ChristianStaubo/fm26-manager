@@ -8,8 +8,8 @@
 //     "An offer has been made for …"                → Exit Talks; the club then confirms the
 //        fee and contract talks follow later as a NeedAction.
 import {Screen, waitFor, click, setFee, recover, openPlayer, actionPath, peekActions, profileFacts,
-  isoDate, parseMoney, parseRange, NeedsAnalyst} from '../../ui/index.mjs';
-import {loadRules} from './decide.mjs';
+  isoDate, parseMoney, parseRange, NeedsAnalyst} from '../../game/ui/index.mjs';
+import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 
 // Opening bid: rules.buying.open_at × the bottom of the valuation (lower if the club wants to sell).

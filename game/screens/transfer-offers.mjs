@@ -1,11 +1,11 @@
 // Handlers for transfer screens that stop the game (NeedAction): bids for our players and
 // agent payoff demands. Each handler: match(screen) → bool, run(screen, {dryRun}) → outcome.
 // Decisions come from decide.mjs + policy.json; anything outside the rules throws NeedsAnalyst.
-import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../../ui/index.mjs';
-import {decideSale, decidePayoff, decideLoan} from './decide.mjs';
-import {negotiate, offerValueRange, defaultMax, buyStep} from './buy.mjs';
-import {log, history} from '../log.mjs';
-import * as pricebook from './pricebook.mjs';
+import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../ui/index.mjs';
+import {decideSale, decidePayoff, decideLoan} from '../../capabilities/sell/decide.mjs';
+import {negotiate, offerValueRange, defaultMax, buyStep} from '../../capabilities/buy/buy.mjs';
+import {log, history} from '../../capabilities/log.mjs';
+import * as pricebook from '../../capabilities/value/pricebook.mjs';
 
 const monthsBetween = (a, b) => (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
 

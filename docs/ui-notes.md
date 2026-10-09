@@ -39,7 +39,7 @@ What works, recorded from a player's click:
 
 | Overlay | Detected by | Cleared by |
 |---|---|---|
-| Modal dialog | `GenericModalDialog` panel; title in `dialog-title` | Known titles answered from `KNOWN_DIALOGS` (ui/overlays.mjs); **unknown → stop and ask** |
+| Modal dialog | `GenericModalDialog` panel; title in `dialog-title` | Known titles answered from `KNOWN_DIALOGS` (game/ui/overlays.mjs); **unknown → stop and ask** |
 | Context menu | `floating-element-root` + `EntryElement`s | click the header entry (Escape does NOT close it) |
 | Dropdown / preset list | `floating-element-root` | `closeDropdowns` (Escape does NOT close it) |
 | Hover tooltip (attribute description…) | `floating-element-root` holding text only | click `Portal` (Escape and `closeDropdowns` do NOT close it) |
@@ -58,7 +58,7 @@ What works, recorded from a player's click:
   in-flight latch after 8 s; the loop retries.
 - **NewsAggregator / OnHoliday** states pass by themselves; treated as busy.
 - **Node ids are tree positions** and change between snapshots: always pick targets from the
-  snapshot you act on (the `ui/` helpers do this).
+  snapshot you act on (the `game/ui/` helpers do this).
 - **Hit test**: an action is refused if something covers the element. The helpers run
   `recover()` once and retry; a second refusal means an overlay we don't know — look at it.
 - Player search result rows are buttons labelled "Player"; the name is in a menu element right
@@ -68,5 +68,5 @@ What works, recorded from a player's click:
 1. `fm record start`, do the action by hand in the game, `fm record stop trace.json`.
 2. Find the entry point in the trace (filter out `CloseSelfAndAllChildren`/`HideDropdown` noise):
    the first meaningful call after `SIClickable.ProcessUpEvent`.
-3. Add the class to `bridge/agent/10-classes.js` and an action to `ELEMENT_ACTIONS` in
-   `bridge/agent/40-ui-actions.js`; `fm reload`; document it here.
+3. Add the class to `game/bridge/agent/10-classes.js` and an action to `ELEMENT_ACTIONS` in
+   `game/bridge/agent/40-ui-actions.js`; `fm reload`; document it here.

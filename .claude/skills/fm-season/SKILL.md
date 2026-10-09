@@ -7,7 +7,7 @@ description: Run the FM26 Moneyball experiment season by season — transfer win
 
 The experiment: manage `config/club.json`'s club for transfer profit while competing. You act only
 in transfer windows; the rest of the season the manager is on holiday and staff run the team.
-Windows and holiday settings: `tasks/progression/season.json`. Skills: **fm-operate**,
+Windows and holiday settings: `capabilities/season/season.json`. Skills: **fm-operate**,
 **fm-moneyball**, **fm-transfers**.
 
 ## Cycle
