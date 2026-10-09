@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import squad_report as sr  # noqa: E402
 
 CLUB = sr.CLUB_CONFIG['club']
+POLICY = json.loads((sr.ROOT / 'playbook' / 'policy.json').read_text())
 # Default probability that an add-on is paid, by type.
 ADD_ON_LIKELIHOOD = {'appearances': 0.5, 'goals': 0.4, 'clean_sheets': 0.4, 'promotion': 0.2,
                      'trophy': 0.1, 'international': 0.2, 'qualification': 0.3}
@@ -177,14 +178,21 @@ def evaluate(rows, offer, tactic, club=CLUB):
     # Pricing. The live in-game range (offer['value_range'], read by fm sell before listing) beats
     # the save's stored value, which can be wrong (Thiago exported as £1K while valued £63M).
     vr = offer.get('value_range')
-    value = int(sum(vr) / 2) if vr else int(p['value'])
+    # Playbook §3: FM's value range is the anchor (what the market pays). Adjusted for us: our own
+    # young players are worth a little more, expiring contracts less, and a starter never less than
+    # the cost of replacing his output. Numbers: playbook/policy.json valuation.
+    pol = POLICY['valuation']
+    vlo, vhi = (vr if vr else (int(p['value']) * 0.9, int(p['value']) * 1.1))
+    value = int((vlo + vhi) / 2)
     y = years_left(p, today)
-    factors = dict(contract=contract_factor(y), age=age_factor(int(p['age'])), importance=IMPORTANCE[importance])
-    target = value * factors['contract'] * factors['age'] * factors['importance']
-    floor = target * 0.8
-    if replacement and importance in ('key starter', 'starter', 'strong rotation'):
+    youth = pol['own_youth_premium']
+    factors = dict(contract=min(1.0, contract_factor(y)),
+                   youth=youth['multiple'] if int(p['age']) <= youth['age_up_to'] else 1.0)
+    floor = vlo * factors['contract'] * factors['youth']
+    target = vhi * factors['contract'] * factors['youth']
+    if pol.get('replacement_floor') and replacement and importance in ('key starter', 'starter', 'strong rotation'):
         floor = max(floor, replacement['value'])
-        target = max(target, replacement['value'] * 1.2)
+        target = max(target, replacement['value'] * 1.1)
     signals = []
     goals, xg = sr.num(p, 'goals'), sr.num(p, 'xg')
     if role in ('ST', 'Winger', 'AMC') and goals - xg >= 3:
@@ -246,6 +254,11 @@ def main():
     if tactic:
         sr.apply_tactic(tactic)
     rows = sr.load(csv_path)
+    if tactic:  # starters come from the live XI selection; tactic.json only supplies the shape
+        import manager
+        picks = {x['slot']: x['player'] for x in manager.xi(rows, tactic)['xi']}
+        for slot in tactic['slots']:
+            slot['player'] = picks.get(slot['slot']) or slot['player']
     r = evaluate(rows, offer, tactic, a.club)
     if a.price:
         pr = r['pricing']
