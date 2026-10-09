@@ -14,7 +14,7 @@ description: Run the FM26 club as its Moneyball manager — plan and run transfe
 | Capability | Command | Decides / gives you |
 |---|---|---|
 | squad | `fm squad` | depth per position, needs, sell candidates, youth |
-| scout | `fm scout [--positions …] [--budget N]` | shortlist per need, with PL-readiness |
+| scout | `fm scout` · `--raw` · `--ability` · `--free` | four lenses: output, plain stats, ability vs price, free/expiring/fringe |
 | value | `fm value "<name>"` | our minimum/target for a player |
 | buy | `fm buy "<name>" --club … --max N` | negotiates a signing to a max |
 | sell | `fm run` answers bids; `fm sell "<name>"` lists | sale decisions against our minimum |
@@ -29,8 +29,10 @@ After saving the game, add `--fresh` to the first data command (re-exports the s
    - surplus players, 30+ on big wages, expensive players who don't play
    - at most one Influential-or-above player per window, and only if he's really costing us
    - never leave a position below two without the replacement lined up (`fm value` for the price)
-3. **Buy for the needs:** `fm scout`, pick players at least as good as the one they replace and
-   undervalued, check `fm value` for the walk-away price, then `fm buy`.
+3. **Buy for the needs:** run all four scout lenses for each need (`fm scout`, `--raw`, `--ability`,
+   `--free`), shortlist players who show up well in more than one or are clearly undervalued
+   (fee **and** wages), at least as good as the player they replace. Check `fm value` for the
+   walk-away price, then `fm buy`.
 4. Renew whoever the playbook says to keep (`fm renew`).
 5. Advance with `fm run` until the window closes; it answers bids by the rules.
 6. Check `fm xi` and make sure the XI is set in the game; then `fm holiday --season`.

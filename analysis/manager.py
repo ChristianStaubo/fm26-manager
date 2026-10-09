@@ -362,6 +362,41 @@ def scout_ability(rows, groups=None, budget=None, per=10, young_age=23, young_pa
                               'candidates': found[:per]})
     return out
 
+def scout_free(rows, groups=None, per=8, date=None):
+    """Players available cheaply because of their contract or role: free agents (no club), contracts
+    ending this summer (free or a token fee), and fringe/backup players at their clubs (clubs sell
+    what they don't use). At our level (CA within 10 of our best at the position), under 33."""
+    today = date or today_of(rows)
+    season_end = dt.date(today.year if today.month <= 6 else today.year + 1, 6, 30).isoformat()
+    # Their current wage is a floor for what they'll ask: over our cap is out of reach.
+    wage_cap = wage_bands.bands(rows, CLUB)['median'] * POLICY['contracts']['max_salary_vs_first_team_median']
+    out = {'method': f'free agents, contracts ending by {season_end}, fringe/backup at their club; CA >= our best - 10; under 33; current wage <= our cap (£{wage_cap/1e3:.0f}K); strongest first',
+           'groups': []}
+    for g, (pos, _, _) in RAW.items():
+        if groups and g not in groups:
+            continue
+        ours = [p for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and not p['on_loan_at']]
+        floor = max((int(p['ca'] or 0) for p in ours), default=10) - 10
+        found = []
+        for p in rows:
+            if p['contract_club'] == CLUB or not (p['pos'] & pos) or p['club'].startswith('club#') or int(p['age'] or 99) >= 33:
+                continue
+            if int(p['ca'] or 0) < floor or int(p['wage'] or 0) > wage_cap:
+                continue
+            free = not p['contract_club']
+            expiring = bool(p['contract_expires']) and p['contract_expires'][:10] <= season_end
+            fringe = p['squad_status'] in ('Fringe Player', 'Backup')
+            if not (free or expiring or fringe):
+                continue
+            found.append({'name': p['name'], 'club': p['club'] or '(free agent)', 'age': int(p['age']), 'ca': int(p['ca'] or 0),
+                          'pa': int(p['pa'] or 0), 'value': int(p['value']), 'wage': int(p['wage'] or 0),
+                          'contract_until': (p['contract_expires'] or '')[:10] or None, 'status': p['squad_status'] or None,
+                          'why': 'free agent' if free else 'contract ends this summer' if expiring else f"{p['squad_status'].lower()} at his club",
+                          'minutes': int(p['mins'])})
+        found.sort(key=lambda c: (-c['ca'], c['value']))
+        out['groups'].append({'group': g, 'floor_ca': floor, 'candidates': found[:per]})
+    return out
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
@@ -373,11 +408,14 @@ def main():
     ap.add_argument('--per', type=int, default=6)
     ap.add_argument('--raw', action='store_true', help='scout on plain per-90 output x league strength')
     ap.add_argument('--ability', action='store_true', help='scout on ability: at our level, or young with a high ceiling')
+    ap.add_argument('--free', action='store_true', help='free agents, expiring contracts, fringe/backup players at their clubs')
     a = ap.parse_args()
     rows, tactic = load(a.csv)
     date = dt.date.fromisoformat(a.date) if a.date else None
     if a.cmd == 'squad':
         r = squad(rows, tactic, date)
+    elif a.cmd == 'scout' and a.free:
+        r = scout_free(rows, a.positions.split(',') if a.positions else None, a.per if a.per != 6 else 8, date)
     elif a.cmd == 'scout' and a.ability:
         r = scout_ability(rows, a.positions.split(',') if a.positions else None, a.budget, a.per if a.per != 6 else 10)
     elif a.cmd == 'scout' and a.raw:
