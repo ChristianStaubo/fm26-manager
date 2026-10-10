@@ -276,14 +276,28 @@ def xi(rows, tactic, date=None):
 # ---- Raw scouting: plain output per 90, scaled by league strength (no role weights, no attribute floor)
 
 def minutes_floor(rows):
-    """Per league: the minutes a regular starter has in the export's data window (other clubs'
-    players carry only ~their last 20 league games): buying.min_minutes_share x the 97th percentile (an ever-present)."""
+    """Per (league, data source): the minutes a regular starter has. Rows linked to FM's season
+    history carry full-season league totals (stats_source 'history'); the rest only ~the last 20
+    league games (the save keeps every match for our club only). Floor = buying.min_minutes_share
+    x the 97th-percentile player's minutes in that league and source (an ever-present)."""
     by = {}
     for p in rows:
         if p['competition'] and p['contract_club'] != CLUB and p['mins'] > 0:
-            by.setdefault(p['competition'], []).append(p['mins'])
+            by.setdefault((p['competition'], source(p)), []).append(p['mins'])
     share = POLICY['buying']['min_minutes_share']
-    return {c: share * sorted(m)[int(0.97 * (len(m) - 1))] for c, m in by.items() if len(m) >= 20}
+    return {k: share * sorted(m)[int(0.97 * (len(m) - 1))] for k, m in by.items() if len(m) >= 20}
+
+
+def source(p):
+    return 'history' if p.get('stats_source') == 'history' else 'window'
+
+
+def has_sample(p, floor):
+    """A regular starter in his league by his own data source. Our club's rows are judged against
+    the league's history floor (our full season is in the save either way)."""
+    src = 'history' if p['contract_club'] == CLUB else source(p)
+    f = floor.get((p['competition'], src)) or floor.get((p['competition'], 'window'))
+    return f is not None and p['mins'] >= f
 
 
 RAW = {  # position group: (natural positions, metric label, metric(p))
@@ -503,7 +517,7 @@ RATE_STATS = {'pass_pct', 'header_pct', 'save_pct'}  # percentages: not scaled b
 
 def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=None, include_loans=False):
     floor = minutes_floor(rows)
-    enough = lambda p: p['mins'] >= (min_minutes or floor.get(p['competition'], 10**9))
+    enough = lambda p: p['mins'] >= min_minutes if min_minutes else has_sample(p, floor)
     strength = league_strength(rows)
     def adj(p, k):
         v, f = sr.num(p, k), strength.get(p['competition'], 0)
@@ -534,7 +548,7 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
                     'stats': {k: f"{vals[k]} ({pcts[k]}%)" for k in stats}, '_vals': vals,
                     'value': int(p['value']), 'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:4] or None,
                     'minutes': int(p['mins'])}
-        ours = sorted((card(p) for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and p['mins'] >= floor.get(LEAGUE, 900) and not p['on_loan_at']),
+        ours = sorted((card(p) for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and has_sample(p, floor) and not p['on_loan_at']),
                       key=lambda c: -c['quality'])
         # The bar: our weakest starter at the position (2nd best where the shape has two: CB, DM, W, FB).
         slots = 2 if g in ('CB', 'DM', 'W', 'FB') else 1

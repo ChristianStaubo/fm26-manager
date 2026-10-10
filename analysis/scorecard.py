@@ -42,7 +42,7 @@ def scorecard(rows, groups=None, max_value=None, per=6, max_age=None, thin_until
     """thin_until: also score players WITHOUT a stat sample on attributes alone when their contract ends
     by this date (free/expiring: Zalazar 2028, 177 league minutes in the export)."""
     strength, floor = m.league_strength(rows), m.minutes_floor(rows)
-    enough = lambda p: p['mins'] >= floor.get(p['competition'], 10 ** 9)
+    enough = lambda p: m.has_sample(p, floor)
     adj = lambda p, k: sr.num(p, k) if k in RATE else sr.num(p, k) * strength.get(p['competition'], 0)
     buy = m.POLICY['buying']
     today = m.today_of(rows).isoformat()
@@ -78,8 +78,8 @@ def scorecard(rows, groups=None, max_value=None, per=6, max_age=None, thin_until
         bar = ours[min(slots, len(ours)) - 1]['score'] if ours else 0
         found = []
         for p in rows:
-            thin = not enough(p)
-            if thin and thin_until and (p['contract_expires'] or '9999')[:10] <= thin_until and p['contract_club'] != m.CLUB \
+            no_sample = not enough(p)
+            if no_sample and thin_until and (p['contract_expires'] or '9999')[:10] <= thin_until and p['contract_club'] != m.CLUB \
                     and p['pos'] & pos and not p['on_loan_at'] and int(p['value']) < sr.NOT_FOR_SALE \
                     and not (max_age and int(p['age'] or 99) > max_age):
                 c = card(p)
@@ -87,7 +87,7 @@ def scorecard(rows, groups=None, max_value=None, per=6, max_age=None, thin_until
                     found.append({**c, 'stat_pct': None, 'stats': {}, 'score': c['attr_pct'],
                                   'verdict': f"attributes only ({int(p['mins'])} league min in the data)"})
                 continue
-            if (p['contract_club'] == m.CLUB or not (p['pos'] & pos) or thin or p['on_loan_at']
+            if (p['contract_club'] == m.CLUB or not (p['pos'] & pos) or no_sample or p['on_loan_at']
                     or p['club'].startswith('club#') or int(p['value']) >= sr.NOT_FOR_SALE):
                 continue
             if (max_value and int(p['value']) > max_value) or (max_age and int(p['age'] or 99) > max_age):
@@ -113,7 +113,7 @@ def show(groups):
             print(f"  (ours, too few PL minutes to judge: {', '.join(gr['too_few_minutes'])})")
         for tag, lst in (('us', gr['ours']), ('->', gr['targets'])):
             for c in lst:
-                print(f"  {tag:2}{c['name'][:23]:24}{c['age']:>4} {c['club'][:21]:22}{c['attr_pct']:>5}%{c['stat_pct']:>5}%{c['score']:>6}  {money(c['value']):>8}  "
+                print(f"  {tag:2}{c['name'][:23]:24}{c['age']:>4} {c['club'][:21]:22}{c['attr_pct']:>5}%{'-' if c['stat_pct'] is None else c['stat_pct']:>5}%{c['score']:>6}  {money(c['value']):>8}  "
                       f"{c['verdict']}{'; ' + c['luck'] if c.get('luck') else ''}")
                 print(f"  {'':26}{'':27}attrs {c['attr_fit']}/20 | " + ' | '.join(f"{k} {v}" for k, v in c['stats'].items()))
 
