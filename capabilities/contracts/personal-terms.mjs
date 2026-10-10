@@ -45,9 +45,17 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
   // (Camara, 2026-07-16), or Transfer Activity with the deal's "Contract £…" link.
   const form = x => !!amountAfter(x, 'Salary') && x.hasText('Payroll Budget Impact');
   const link = x => x.buttons().find(b => b.name === 'transfer-link-button' && /^Contract £/.test(b.label));
-  const steps = x => x.buttons(/^(Finalize Promises|Negotiate Contract)$/).length > 0;
+  const steps = x => x.buttons(/^(Finalize Promises|Negotiate Contract|Hand Over to .+)$/).length > 0;
   let s = await waitFor(x => form(x) || steps(x) || !!link(x), {what: 'contract negotiation', timeout: 15000});
   if (!form(s) && !steps(s)) { await clickWhere(link, 'Contract link'); s = await waitFor(x => form(x) || steps(x), {what: 'contract negotiation (via deal)', timeout: 15000}); }
+  // Talks the Director of Football hasn't tried yet: hand them over (playbook: staff negotiate
+  // contracts; Grimes, 2028-06-27 waited on "Hand Over to Phil Giles").
+  const handOver = s.buttons(/^Hand Over to /)[0];
+  if (handOver) {
+    await click(handOver.label);
+    await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'handed-over'});
+    return {action: 'personal-terms', player, outcome: 'handed-over', to: handOver.label.replace(/^Hand Over to /, '')};
+  }
   if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || x.buttons('Negotiate Contract').length > 0, {what: 'promises accepted'}); }
   if (!form(s)) { await click('Negotiate Contract'); s = await waitFor(form, {what: 'contract form'}); }
   const demand = parseMoney(amountAfter(s, 'Salary').label);
@@ -63,6 +71,7 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
     throw new NeedsAnalyst(`${player} wants £${demand}/week, above our cap £${Math.round(cap)} (${rules.max_salary_vs_first_team_median}× first-team median £${bands.median}); decide`, entry);
   }
   for (const f of factors) {
+    if (demand * f > cap) break;
     await click('Reset', {name: 'button-secondary-label'}); await settle(800);
     const set = await setFee('Salary', Math.round(demand * f));
     if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({factor: f, salary: set.set, blocked: 'agent fee'}); continue; }
@@ -77,9 +86,9 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
       return {...entry, outcome: 'agreed', salary: set.set};
     }
   }
-  await click('Cancel Negotiations');
+  // No agreement: leave the talks open (cancelling loses the player and the agreed fee) and ask.
   await log({...entry, outcome: 'no-agreement'});
-  return {...entry, outcome: 'no-agreement'};
+  throw new NeedsAnalyst(`${player}: no agreement up to ${factors.at(-1)}x the demand (£${demand}/wk); talks left open`, entry);
 }
 
 // Autopilot handler.
