@@ -8,7 +8,8 @@
 //     "An offer has been made for …"                → Exit Talks; the club then confirms the
 //        fee and contract talks follow later as a NeedAction.
 import {Screen, waitFor, click, setFee, recover, openPlayer, actionPath, peekActions, profileFacts,
-  isoDate, parseMoney, parseRange, NeedsAnalyst} from '../../game/ui/index.mjs';
+  isoDate, parseMoney, parseRange, NeedsAnalyst, overlays} from '../../game/ui/index.mjs';
+import {writeFileSync, mkdirSync} from 'node:fs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 
@@ -50,9 +51,34 @@ export function offerState(s) {
 // Value of a deal for comparisons: guaranteed cost plus add-ons at rules.valuation.addon_weight.
 const dealValue = o => (o.upfront ?? 0) + ((o.total ?? o.upfront ?? 0) - (o.upfront ?? 0)) * loadRules().valuation.addon_weight;
 
+// The club's reply read from the General Manager line alone (offerState says 'editing' while
+// Suggest Terms is on screen, whatever the line says).
+export function replyState(s) {
+  const gm = gmLine(s);
+  return /An offer has been made/i.test(gm) || s.hasText(/An offer has been made/) ? 'made'
+    : /is unacceptable|have rejected/i.test(gm) ? 'rejected'
+    : /prepared to accept|(?<!un)acceptable/i.test(gm) ? 'accepted'
+    : /negotiated the offer|responded to the latest offer/i.test(gm) ? 'countered' : null;
+}
+// Suggest Terms, then wait for the reply: a NEW General Manager line (or Suggest Terms gone).
+// "Timed out waiting for club response" (Maza, Atubolu 2028-06): the reply can take longer than
+// 10 s, and a reply that leaves Suggest Terms on screen was never recognised. On a timeout the
+// screen is saved for the fixer (local/runs/buy-timeout-*.json) instead of guessing.
 async function suggest() {
+  const before = gmLine(await Screen.read());
   await click('Suggest Terms');
-  return offerState(await waitFor(x => ['countered', 'accepted', 'made', 'rejected'].includes(offerState(x).state) && !x.buttons('Suggest Terms').length, {what: 'club response', timeout: 10000}));
+  const end = Date.now() + 30000;
+  for (;;) {
+    const x = await Screen.read(), r = replyState(x), ov = overlays(x).filter(o => o.kind === 'dialog');
+    if (r && (!x.buttons('Suggest Terms').length || gmLine(x) !== before)) return {...offerState(x), state: r};
+    if (Date.now() > end || ov.length) {
+      const dump = {gmBefore: before, gm: gmLine(x), overlays: ov, buttons: x.buttons(/./).map(b => b.label).slice(0, 80), texts: x.texts().slice(0, 120)};
+      mkdirSync(new URL('../../local/runs/', import.meta.url), {recursive: true});
+      writeFileSync(new URL(`../../local/runs/buy-timeout-${Date.now()}.json`, import.meta.url), JSON.stringify(dump, null, 1));
+      throw new NeedsAnalyst(ov.length ? 'A dialog opened after Suggest Terms' : 'Timed out waiting for club response (30 s); screen saved in local/runs/buy-timeout-*.json', dump);
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
 }
 async function finalize() {
   await click('Make Offer');

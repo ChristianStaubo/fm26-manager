@@ -59,6 +59,7 @@ These are the user's rules (decided 2026-10-09).
   underperforming. The signing must be **at least as good** as the player he replaces.
 - **Targets:**
   - strong output in their own league (rank)
+  - judged on **1,500+ league minutes** (~17 full games): smaller samples are noise (the 2027 signings were bought on ~11 apps and regressed). Rank attackers on xG/xA, not goals; a keeper's goals prevented needs more than one season
   - for players meant to **start**, attributes at least the **40th percentile** of our league
     (PL-readiness)
   - **any age**: value per pound is what counts

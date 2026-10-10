@@ -297,7 +297,8 @@ def league_strength(rows):
     return {k: v / base for k, v in avg.items()}
 
 
-def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
+def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=None):
+    min_minutes = min_minutes or POLICY['buying']['min_minutes_sample']
     strength = league_strength(rows)
     def adjusted(p, metric, group):
         v, f = metric(p), strength.get(p['competition'])
@@ -480,7 +481,8 @@ BEST_STATS = {
 RATE_STATS = {'pass_pct', 'header_pct', 'save_pct'}  # percentages: not scaled by league strength
 
 
-def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=900, include_loans=False):
+def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=None, include_loans=False):
+    min_minutes = min_minutes or POLICY['buying']['min_minutes_sample']
     strength = league_strength(rows)
     def adj(p, k):
         v, f = sr.num(p, k), strength.get(p['competition'], 0)
@@ -488,7 +490,7 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
             return v
         return 6 + (v - 6) * f if k == 'avg_rating' else v * f
     out = {'method': 'quality = current ability (CA) + 0.5 x (average stat percentile - 50); stats per 90, league-adjusted, '
-                     'percentiles vs Premier League players at the position (900+ min); candidates are better than our weakest starter there (bar); beats_ours = stats at or above his',
+                     'percentiles vs Premier League players at the position; everyone judged on buying.min_minutes_sample+ league minutes (small samples regress); candidates are better than our weakest starter there (bar); beats_ours = stats at or above his',
            'groups': []}
     for g, (pos, _, _) in RAW.items():
         if groups and g not in groups:

@@ -84,6 +84,8 @@
     "_max": "x v_high unless the analyst sets a walk-away maximum first.",
     "prefer_instalments": true,
     "min_attr_pct_starter": 40,
+    "min_minutes_sample": 1500,
+    "_min_minutes_sample": "Judge a target's stats only on 1500+ league minutes (~17 full games): the 2027 signings were bought on ~11 apps and regressed (Kofane +3.2 G-xG, Risser +3.7 goals prevented, both flipped). Goals-minus-xG and goals prevented are mostly luck within one season.",
     "any_age": true,
     "replacement_at_least_as_good": true
   },
