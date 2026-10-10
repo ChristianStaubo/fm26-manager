@@ -79,7 +79,7 @@ These are the user's rules (decided 2026-10-09).
 - **Keep the current tactic** (4-2-3-1 Gegenpress). Buy and select for it.
 - The XI is the best output per position in that shape, and **new signings start** (they were
   bought to play).
-- On holiday, "Use team selection where possible" is **ticked**, so this XI plays. Watch injuries.
+- On holiday, "Use team selection where possible" is **unticked** for 2028/29 (user, 2026-10-10): the assistant picks the XI. (2027/28 had it ticked.)
 
 ## 8. Matches, conversations, admin
 - During the season we are "on holiday": the assistant runs matches, press and player
