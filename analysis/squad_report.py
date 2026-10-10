@@ -327,7 +327,8 @@ CLUB_CONFIG = json.loads((ROOT / 'config' / 'club.json').read_text())
 
 
 def latest_save(pattern=CLUB_CONFIG.get('save_pattern', '*.fm')):
-    saves = sorted(SAVE_DIR.glob(pattern), key=lambda f: f.stat().st_mtime)
+    # FM's rolling backups ("name (v02).fm") are not the save being played.
+    saves = sorted((f for f in SAVE_DIR.glob(pattern) if ' (v' not in f.name), key=lambda f: f.stat().st_mtime)
     if not saves:
         sys.exit(f'No saves matching {pattern} in {SAVE_DIR}; set FM26_SAVE_DIR or pass --save')
     return saves[-1]

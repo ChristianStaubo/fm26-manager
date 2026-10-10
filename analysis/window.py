@@ -45,6 +45,9 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6):
     strength = m.league_strength(rows)
     buy = m.POLICY['buying']
     today = m.today_of(rows).isoformat()
+    # Free agents and contracts ending by the coming 30 June (free in the summer window).
+    t = m.today_of(rows)
+    free_by = f"{t.year + (1 if t.month >= 7 else 0)}-06-30"
     adj = lambda p, k: sr.num(p, k) if k in sc.RATE else sr.num(p, k) * strength.get(p['competition'], 0)
     real = lambda p: p['mins'] >= MIN_SAMPLE and strength.get(p['competition'], 0) >= STRONG and not CUP.search(p['competition'] or 'x')
     by_wage = sorted((p for p in rows if p['contract_club'] == m.CLUB and not p['on_loan_at']), key=lambda p: -sr.num(p, 'wage'))
@@ -96,9 +99,9 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6):
                     or sr.num(p, 'Important Matches') < buy['min_important_matches'] - 1:
                 continue
             age, value = int(p['age'] or 99), int(p['value'])
-            is_free = not p['club'] or (p['contract_expires'] or '9999')[:10] < today
+            is_free = not p['club'] or (p['contract_expires'] or '9999')[:10] <= free_by
             if is_free and age <= 31:
-                free.append(card(p))
+                free.append({**card(p), 'free_from': (p['contract_expires'] or '')[:10] or 'now'})
             if value <= bench_max and age <= 31 and p['mins'] >= 900:
                 bench.append(card(p))
             if age <= max_age and value <= max_value:
@@ -114,7 +117,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6):
             'best': sorted(targets, key=lambda c: -c['blended'])[:3],
             'value': sorted(targets, key=lambda c: -c['per10m'])[:3],
             'bench': sorted((c for c in bench if c['blended'] >= 35), key=lambda c: (-c['blended'], c['value']))[:3],
-            'free': sorted((c for c in free if c['blended'] >= 40), key=lambda c: -c['blended'])[:3],
+            'free': sorted((c for c in free if c['blended'] >= 40), key=lambda c: -c['blended'])[:4],
         })
         for c in ours:
             if c['name'] not in best_slot or c['blended'] > best_slot[c['name']][1]['blended']:
