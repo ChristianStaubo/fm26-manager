@@ -147,6 +147,11 @@ def squad(rows, tactic, date=None):
     # Players 30+ on big wages (sellable at the bottom of their range) and expensive non-performers.
     for p in ours:
         age, wage = int(p['age'] or 0), int(p['wage'] or 0)
+        # Sell high on a lucky finishing season (loanees too: Correia, 13 goals from 5.9 xG at Ajax).
+        gx = sr.num(p, 'goals_minus_xg')
+        if gx >= pol_sell.get('overperformer_goals_over_xg', 99) and age >= pol_sell.get('overperformer_min_age', 0):
+            out['sell_candidates'].append({'name': p['name'], 'age': age, 'wage': wage, 'value': int(p['value']),
+                                           'why': f"overperformer: {sr.num(p, 'goals'):.0f} goals from {sr.num(p, 'xg'):.1f} xG; finishing regresses, value peaks now"})
         if p['on_loan_at']:
             continue
         if pol_sell.get('age_30_plus_sell_at_v_low') and age >= 30 and wage >= bands['median']:
@@ -476,7 +481,7 @@ BEST_STATS = {
     'DM': ['poss_won_p90', 'interceptions_p90', 'tackles_won_p90', 'progressive_passes_p90', 'pass_pct', 'avg_rating'],
     'FB': ['progressive_passes_p90', 'xa_p90', 'crosses_cmp_p90', 'poss_won_p90', 'interceptions_p90', 'avg_rating'],
     'CB': ['avg_rating', 'poss_won_p90', 'interceptions_p90', 'headers_won_p90', 'header_pct', 'pass_pct'],
-    'GK': ['xgp_p90', 'save_pct', 'avg_rating'],
+    'GK': ['xgp_p90', 'save_pct', 'pass_pct'],  # no avg rating: it reflects the defence (YouTuber's GK rule)
 }
 RATE_STATS = {'pass_pct', 'header_pct', 'save_pct'}  # percentages: not scaled by league strength
 
@@ -528,6 +533,9 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
             # Loanees: 'club' is the loan club and loans often end in a permanent move there
             # (Samardzic: Atalanta's, on loan at Fulham; Kjaergaard: Salzburg's, at Palace). Skip unless asked.
             if p['on_loan_at'] and not include_loans:
+                continue
+            # Personality from the scout report: inconsistent players and big-match flops are skipped.
+            if sr.num(p, 'Consistency') < POLICY['buying']['min_consistency'] or sr.num(p, 'Important Matches') < POLICY['buying']['min_important_matches']:
                 continue
             c = card(p)
             if best_ours and c['quality'] < best_ours['quality']:

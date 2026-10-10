@@ -33,6 +33,9 @@
   },
   "selling": {
     "_section": "4",
+    "overperformer_goals_over_xg": 3.0,
+    "overperformer_min_age": 26,
+    "_overperformer": "Sell high: a 26+ attacker who scored >= this many goals above his xG had a lucky season; his value peaks now and finishing regresses (a FM Moneyball YouTuber sold a 19-goals-from-12-xG striker at 27 for 46M; our own Kofane/Risser regressed the other way).",
     "first_counter": 1.2,
     "second_counter": 1.1,
     "min_raise_over_offer": 1.1,
@@ -85,6 +88,9 @@
     "prefer_instalments": true,
     "min_attr_pct_starter": 40,
     "min_minutes_sample": 1500,
+    "min_consistency": 10,
+    "min_important_matches": 10,
+    "_personality": "Scout-report traits (FM shows them as 'consistent performer' / 'enjoys big matches'): skip targets below these. GKs are judged without average rating (it mostly reflects the defence in front of them).",
     "_min_minutes_sample": "Judge a target's stats only on 1500+ league minutes (~17 full games): the 2027 signings were bought on ~11 apps and regressed (Kofane +3.2 G-xG, Risser +3.7 goals prevented, both flipped). Goals-minus-xG and goals prevented are mostly luck within one season.",
     "any_age": true,
     "replacement_at_least_as_good": true

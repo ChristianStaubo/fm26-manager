@@ -47,6 +47,7 @@ These are the user's rules (decided 2026-10-09).
   - **At most one per window**, and only when he's **really costing us** (wages against output,
     clear decline), not just slightly overvalued.
 - Players **aged 30+ on big wages** are sellable at the bottom of their range: their value only falls.
+- **Sell high on luck:** a 26+ attacker who scored 3+ goals above his xG had a lucky season; his value peaks now and his finishing will regress (`fm squad` flags him).
 - Add-ons count as part of the fee (they are usually hit).
 - Accept a bid when its total (incl. add-ons) is at or above our minimum; counter towards the
   target; reject lowballs. Up to 3 counters.
@@ -62,7 +63,9 @@ These are the user's rules (decided 2026-10-09).
   - judged on **1,500+ league minutes** (~17 full games): smaller samples are noise (the 2027 signings were bought on ~11 apps and regressed). Rank attackers on xG/xA, not goals; a keeper's goals prevented needs more than one season
   - for players meant to **start**, attributes at least the **40th percentile** of our league
     (PL-readiness)
-  - **any age**: value per pound is what counts
+  - **personality**: skip inconsistent players and big-match flops (scout report traits)
+  - starters must be proven at a comparable level; a lower-league star is a risk worth taking only as a backup
+  - **any age**: value per pound is what counts (younger = resale)
 - Price: open at FM's value (the middle of his range; bids far below it are flatly rejected) and walk away above 1.1× the top (or a lower max).
   A flat "the offer is unacceptable" means walk away.
 - Wages: up to **1.3× our first-team median** (top 25 earners). Above that, skip the target.
