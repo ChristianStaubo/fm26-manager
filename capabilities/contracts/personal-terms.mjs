@@ -21,7 +21,8 @@ function firstTeamBands() {
 
 const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && parseMoney(i.label) !== null);
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
-const agentLine = s => s.buttons(/ Agent /)[0]?.label || '';
+const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
+export const termsAccepted = s => /pleased with the negotiations|solution everyone agrees|terms are acceptable/i.test(agentLine(s));
 
 async function lowerAgentFeeUntilAllowed(max = 40) {
   for (let k = 0; k < max; k++) {
@@ -78,6 +79,13 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
     await click('Suggest Terms', {name: 'StandardButton'});
     const r = await waitFor(x => x.buttons('Finalize Deal').length > 0 || suggestEnabled(x), {what: 'agent reply', timeout: 8000}).catch(() => Screen.read());
     entry.tries.push({factor: f, salary: set.set, reply: agentLine(r).slice(0, 200)});
+    // Accepted, decision pending: no Finalize Deal, the player "would like to go away and think" /
+    // "These terms are acceptable but I wish to evaluate all my options" (Tanaka, Grimes 2028-06-27:
+    // read as a no, the handler kept raising the salary). Stop here; the player answers in days.
+    if (!r.buttons('Finalize Deal').length && termsAccepted(r)) {
+      await log({...entry, outcome: 'accepted-pending', salary: set.set});
+      return {...entry, outcome: 'accepted-pending', salary: set.set};
+    }
     if (r.buttons('Finalize Deal').length) {
       await click('Finalize Deal');
       await waitFor(x => x.buttons('Exit Talks').length > 0, {what: 'deal finalized'});
