@@ -54,6 +54,12 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
   review [--max-value N] [--max-age N] [--fresh]
                                  who to sell and who to buy: attribute fit (prediction) + the position's
                                  core stats (evidence) vs PL regulars; best, value and free/expiring (§4-5)
+  window [--slots LB,RW] [--max-value N] [--max-age N] [--bench-max N] [--fresh]
+                                 THE window report: every 4-2-3-1 slot with depth, blended + moneyball
+                                 scores, best/value/bench/free targets and the sell list. Run it in the
+                                 first days of July (after the rollover, before the first league match)
+  results [--label "…"] [--position N] [--points N] [--fresh]
+                                 scoreboard row (money + table) into local/reports/<save>-results.md
   xi [--fresh]                   suggested starting XI for our tactic (§7)
   value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for one of OUR players (§3)
   price "<name>"                 any player (targets): open at, walk away above, wage vs our cap (§5)
@@ -142,6 +148,20 @@ try {
       const date = await gameDate();
       out(analysis('review.py', ['--json', ...(date ? ['--date', date] : []),
         ...['max-value', 'max-age'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(f === 'max-age' ? flags[f] : num(flags[f]))])], {fresh: !!flags.fresh, date}));
+      break;
+    }
+    case 'window': {
+      // The standard window report: every slot, depth, blended + moneyball scores, best/value/bench/free, sell list.
+      const date = await gameDate();
+      const r = analysis('window.py', ['--json', ...(flags.slots ? ['--slots', flags.slots] : []),
+        ...['max-value', 'max-age', 'bench-max'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(f === 'max-age' ? flags[f] : num(flags[f]))])], {fresh: !!flags.fresh, date});
+      out(r); break;
+    }
+    case 'results': {
+      // Scoreboard row (window close / season end): money + table into local/reports/<save>-results.md.
+      const date = await gameDate();
+      out(analysis('results.py', ['--date', date || new Date().toISOString().slice(0, 10), ...(flags.label ? ['--label', flags.label] : []),
+        ...['position', 'points'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(flags[f])])], {fresh: !!flags.fresh, date}));
       break;
     }
     case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh, date: await gameDate()})); break;
