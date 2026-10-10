@@ -11,13 +11,14 @@ import {holiday, holidaySeason} from '../capabilities/season/holiday.mjs';
 import {listPlayer} from '../capabilities/sell/list.mjs';
 import {buyPlayer} from '../capabilities/buy/buy.mjs';
 import {delegateRenewal} from '../capabilities/contracts/renew.mjs';
+import {allow as allowWage} from '../capabilities/contracts/wage-exceptions.mjs';
 import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
 import {pressConference} from '../game/screens/admin/press.mjs';
 import {log} from '../capabilities/log.mjs';
 import {summarize} from '../capabilities/season/autopilot.mjs';
 import * as pricebook from '../capabilities/value/pricebook.mjs';
 import {register} from '../game/screens/admin/registration.mjs';
-import {analysis, note} from '../capabilities/data.mjs';
+import {analysis, note, gameDate} from '../capabilities/data.mjs';
 import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
@@ -50,6 +51,9 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
        --best [--max-value N] [--max-wage N] [--max-age N]: simply the best players (CA + stats)
                                  market shortlist: output lens (default), plain stats x league
                                  strength, ability vs market price, free/expiring/fringe (§5)
+  review [--max-value N] [--max-age N] [--fresh]
+                                 who to sell and who to buy: attribute fit (prediction) + the position's
+                                 core stats (evidence) vs PL regulars; best, value and free/expiring (§4-5)
   xi [--fresh]                   suggested starting XI for our tactic (§7)
   value "<name>" [--range LOW,HIGH] [--fresh]   our minimum/target for one of OUR players (§3)
   price "<name>"                 any player (targets): open at, walk away above, wage vs our cap (§5)
@@ -62,7 +66,8 @@ Transfers
                                  (price book) for the bid handler. --min overrides the minimum.
        [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
   prices                         the price book: listed players with our minimum and target
-  buy "<name>" --club <club> [--open N] [--max N] [--dry-run]
+  buy "<name>" --club <club> [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]
+                                 --wage-max: a swap may pay up to the outgoing player's wage above the cap
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
   renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
@@ -128,22 +133,33 @@ try {
       break;
     case 'prices': out(Object.values(pricebook.load().players)); break;
     case 'register': out(await register(pos.slice(1), {dryRun})); break;
-    case 'squad': out(analysis('manager.py', ['squad'], {fresh: !!flags.fresh})); break;
+    case 'squad': out(analysis('manager.py', ['squad'], {fresh: !!flags.fresh, date: await gameDate()})); break;
     case 'scout': out(analysis('manager.py', ['scout', ...['raw', 'ability', 'free', 'best', 'include-loans'].filter(f => flags[f]).map(f => `--${f}`),
       ...['max-value', 'max-wage', 'max-age'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(f === 'max-age' ? flags[f] : num(flags[f]))]), ...(flags.positions ? ['--positions', flags.positions] : []),
-      ...(flags.budget ? ['--budget', String(num(flags.budget))] : []), ...(flags.per ? ['--per', String(flags.per)] : [])], {fresh: !!flags.fresh})); break;
-    case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh})); break;
-    case 'price': out(analysis('manager.py', ['price', a1 || ''], {fresh: !!flags.fresh})); break;
+      ...(flags.budget ? ['--budget', String(num(flags.budget))] : []), ...(flags.per ? ['--per', String(flags.per)] : [])], {fresh: !!flags.fresh, date: await gameDate()})); break;
+    case 'review': {
+      // Squad review: sell / buy (best, value, free-expiring) on attributes + core stats (scorecard).
+      const date = await gameDate();
+      out(analysis('review.py', ['--json', ...(date ? ['--date', date] : []),
+        ...['max-value', 'max-age'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(f === 'max-age' ? flags[f] : num(flags[f]))])], {fresh: !!flags.fresh, date}));
+      break;
+    }
+    case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh, date: await gameDate()})); break;
+    case 'price': out(analysis('manager.py', ['price', a1 || ''], {fresh: !!flags.fresh, date: await gameDate()})); break;
     case 'value': {
       const range = flags.range ? String(flags.range).split(',').map(num) : undefined;
-      out(analysis('evaluate_offer.py', ['--price'], {fresh: !!flags.fresh, input: JSON.stringify({player: a1, date: new Date().toISOString().slice(0, 10), ...(range ? {value_range: range} : {})})}));
+      out(analysis('evaluate_offer.py', ['--price'], {fresh: !!flags.fresh, input: JSON.stringify({player: a1, date: await gameDate() ?? new Date().toISOString().slice(0, 10), ...(range ? {value_range: range} : {})})}));
       break;
     }
     case 'dynamics': out(await dynamics()); break;
     case 'note': out(note(pos.slice(1).join(' '))); break;
     case 'press': out(await pressConference({dryRun})); break;
     case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun})); break;
-    case 'buy': out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
+    case 'buy': {
+      // A swap may pay up to the outgoing player's wage above the cap (playbook §5).
+      if (flags['wage-max'] && !dryRun) allowWage(a1, num(flags['wage-max']), `swap${flags.replaces ? ': replaces ' + flags.replaces : ''}`);
+      out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
+    }
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;

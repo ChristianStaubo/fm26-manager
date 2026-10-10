@@ -11,6 +11,7 @@
 import {Screen, waitFor, click, clickWhere, setFee, settle, parseMoney, NeedsAnalyst, isoDate} from '../../game/ui/index.mjs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
+import {wageException} from './wage-exceptions.mjs';
 import {execFileSync} from 'node:child_process';
 
 // First-team wage bands (analysis/wage_bands.py): the contract screen's "Avg." includes youth.
@@ -65,8 +66,9 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
   // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
   // with the form open for a decision (Cancel Negotiations asks to confirm; its Cancel keeps talks).
   const bands = firstTeamBands();
-  const cap = bands ? bands.median * rules.max_salary_vs_first_team_median : Infinity;
-  Object.assign(entry, {firstTeamMedian: bands?.median ?? null, cap: Number.isFinite(cap) ? Math.round(cap) : null});
+  const swap = wageException(player);
+  const cap = Math.max(bands ? bands.median * rules.max_salary_vs_first_team_median : Infinity, swap?.max ?? 0);
+  Object.assign(entry, {firstTeamMedian: bands?.median ?? null, cap: Number.isFinite(cap) ? Math.round(cap) : null, ...(swap ? {swap} : {})});
   if (demand > cap) {
     await log({...entry, outcome: 'escalated'});
     throw new NeedsAnalyst(`${player} wants £${demand}/week, above our cap £${Math.round(cap)} (${rules.max_salary_vs_first_team_median}× first-team median £${bands.median}); decide`, entry);

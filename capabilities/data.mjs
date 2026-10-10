@@ -2,17 +2,31 @@
 // Capabilities call `analysis(script, args)` and get compact JSON back. The export is reused
 // unless `fresh` (the save changed): exporting takes ~30 s, the analysis ~1 s.
 import {execFileSync} from 'node:child_process';
-import {existsSync, readFileSync, appendFileSync, mkdirSync} from 'node:fs';
+import {existsSync, readFileSync, appendFileSync, mkdirSync, writeFileSync} from 'node:fs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const club = () => JSON.parse(readFileSync(new URL('../config/club.json', import.meta.url), 'utf8'));
 export const saveName = () => club().save_pattern.replace(/\.fm$/, '').replace(/[*?]/g, '');
 export const exportPath = () => `${ROOT}local/exports/${saveName()}.csv`;
 
-export function analysis(script, args = [], {fresh = false, input} = {}) {
+// The game's date: the export carries none, and the analysis used to guess it from the latest
+// signing at our club (2028-02-02 in July 2028: contracts that ended on 30 June looked active).
+// Read from the live screen when the game is up, else the last date seen (local/runs/game-date.json).
+const DATE_FILE = `${ROOT}local/runs/game-date.json`;
+export async function gameDate() {
+  try {
+    const {Screen, isoDate} = await import('../game/ui/index.mjs');
+    const d = await Promise.race([Screen.read().then(s => s.date()), new Promise(r => setTimeout(() => r(null), 4000))]);
+    if (d) { const iso = isoDate(d); mkdirSync(`${ROOT}local/runs`, {recursive: true}); writeFileSync(DATE_FILE, JSON.stringify({date: iso})); return iso; }
+  } catch { /* game or bridge not running */ }
+  try { return JSON.parse(readFileSync(DATE_FILE, 'utf8')).date; } catch { return null; }
+}
+
+export function analysis(script, args = [], {fresh = false, input, date} = {}) {
   const csv = !fresh && existsSync(exportPath()) ? ['--csv', exportPath()] : [];
   const out = execFileSync('python3', [`analysis/${script}`, ...args, ...csv],
-    {cwd: ROOT, input, stdio: [input ? 'pipe' : 'ignore', 'pipe', 'pipe'], timeout: 600000, maxBuffer: 64 << 20});
+    {cwd: ROOT, input, stdio: [input ? 'pipe' : 'ignore', 'pipe', 'pipe'], timeout: 600000, maxBuffer: 64 << 20,
+     env: {...process.env, ...(date ? {FM_GAME_DATE: date} : {})}});
   return JSON.parse(out);
 }
 

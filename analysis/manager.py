@@ -10,6 +10,7 @@ Usage:
     python3 analysis/manager.py xi    [--csv EXPORT]
 """
 import argparse
+import os
 import datetime as dt
 import json
 import statistics as st
@@ -92,7 +93,10 @@ def years_left(p, today):
 
 
 def today_of(rows):
-    """The save's 'now': the latest join date at our club (exports carry no game date)."""
+    """The save's 'now'. Exports carry no game date: fm passes the live one (FM_GAME_DATE); without
+    it, fall back to the latest join date at our club (can be months old)."""
+    if os.environ.get('FM_GAME_DATE'):
+        return dt.date.fromisoformat(os.environ['FM_GAME_DATE'])
     dates = [p['joined_club'][:10] for p in rows if p['contract_club'] == CLUB and p.get('joined_club')]
     return dt.date.fromisoformat(max(dates)) if dates else dt.date.today()
 
