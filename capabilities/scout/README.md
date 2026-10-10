@@ -1,5 +1,11 @@
 # scout: who we could buy (playbook §5)
-Four lenses, each blind where another sees. Use them all and weigh them; no single number decides.
+**Start with `fm review`** (analysis/review.py on analysis/scorecard.py): per position, attribute fit =
+the role's key attributes (sr.ROLES) and the stat profile = the position's core numbers (CORE: DM =
+progressive passes + possession won, CB = possession won + headers won, …), league-adjusted, each a
+percentile among PL regulars; score = their average; verdict = where they agree. Regulars only:
+the export holds ~the last 20 league games for other clubs, so the minutes floor is 60% of that
+window (manager.minutes_floor). Free/expiring players without minutes are scored on attributes only.
+The lenses below are older second opinions.
 | Lens | Command | Finds | Blind spot |
 |---|---|---|---|
 | **output** | `fm scout [--positions …] [--budget N]` | proven production in our role (weighted stats ranked within each league); starters need the 40th attribute percentile vs our league | volume-biased (deep-defending teams); players without minutes |

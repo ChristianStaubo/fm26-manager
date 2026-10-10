@@ -13,8 +13,9 @@ description: Run the FM26 club as its Moneyball manager — plan and run transfe
 ## Capabilities (each README in `capabilities/<name>/` has the details)
 | Capability | Command | Decides / gives you |
 |---|---|---|
+| review | `fm review [--max-value N] [--max-age N]` | **start here**: who to sell and who to buy (best, value, free/expiring), each player scored on attributes (prediction) + the position's core stats (evidence) |
 | squad | `fm squad` | depth per position, needs, sell candidates, youth |
-| scout | `fm scout` · `--raw` · `--ability` · `--free` | four lenses: output, plain stats, ability vs price, free/expiring/fringe |
+| scout | `fm scout` · `--best` · `--raw` · `--ability` · `--free` | the older lenses: a second opinion on a shortlist |
 | value | `fm value "<name>"` | our minimum/target for a player |
 | buy | `fm buy "<name>" --club … --max N` | negotiates a signing to a max |
 | sell | `fm run` answers bids; `fm sell "<name>"` lists | sale decisions against our minimum |
@@ -24,15 +25,19 @@ description: Run the FM26 club as its Moneyball manager — plan and run transfe
 After saving the game, add `--fresh` to the first data command (re-exports the save, ~30 s).
 
 ## A transfer window
-1. `fm squad`: needs and sell candidates. `fm xi`: who starts now.
+1. `fm review`: the sell and buy lists. `fm squad`: depth and needs. `fm xi`: who starts now.
+   Read each score as two halves: attributes (will he be good?) and stats (has he been?). Both
+   high = pay for it; stats without attributes = regression risk (sell ours, avoid theirs);
+   attributes without stats = possible bargain; "attributes only" = no recent minutes (free/expiring).
 2. **Sell first where it improves us:**
-   - surplus players, 30+ on big wages, expensive players who don't play
-   - at most one Influential-or-above player per window, and only if he's really costing us
+   - the review's sell list: weak on both, stats not backed by attributes, lucky finishers, a
+     market price far above the score; plus surplus and 30+ on big wages
+   - at most one Highly Influential-or-above player per window, and only if he's really costing us
    - never leave a position below two without the replacement lined up (`fm value` for the price)
-3. **Buy for the needs:** run all four scout lenses for each need (`fm scout`, `--raw`, `--ability`,
-   `--free`), shortlist players who show up well in more than one or are clearly undervalued
-   (fee **and** wages), at least as good as the player they replace. Check `fm value` for the
-   walk-away price, then `fm buy`.
+3. **Buy for the needs**, three ways: the **best** upgrade we can afford, the best **value** (points
+   gained per £10M, fee **and** wages), and **free/expiring** players. Few, targeted moves; each at
+   least as good as the player he replaces. `fm price` for the walk-away, then `fm buy`. A swap may
+   pay above the wage cap up to the outgoing player's wage (`--wage-max N --replaces X`).
 4. Renew whoever the playbook says to keep (`fm renew`).
 5. Advance with `fm run` until the window closes; it answers bids by the rules.
 6. Check `fm xi` and make sure the XI is set in the game; then `fm holiday --season`.
