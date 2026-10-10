@@ -56,6 +56,9 @@ These are the user's rules (decided 2026-10-09).
 - Never sell without knowing who replaces him (already in the squad, or a target we can afford).
 
 ## 5. Buying
+- **First season of a new save: no signings** (user, 2026-10-10), except to keep a position at two
+  or free/expiring players who clearly beat our starter. Collect a season of data on our own squad
+  first; judge, then buy. (Last time 12 signings in one window broke the team.)
 - **Needs first:** buy for a position that is short (below two) or where a starter is
   underperforming. The signing must be **at least as good** as the player he replaces.
 - **Targets:**
