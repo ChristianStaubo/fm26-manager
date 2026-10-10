@@ -24,6 +24,15 @@ CORE = {
 }
 ROLE = {'GK': 'GK', 'CB': 'CB', 'FB': 'WB (attacking)', 'DM': 'DM', 'CM': 'CM', 'W': 'Winger', 'AM': 'AMC', 'ST': 'ST'}
 RATE = {'save_pct', 'pass_pct', 'header_pct'}
+# Attribute weights within a role (default 1). Speed wins in FM's match engine (user, 2026-10-10:
+# wingers must have acceleration; Schade, Pace/Acc 16, was underrated by a flat average).
+WEIGHTS = {'Winger': {'Acceleration': 2.0, 'Pace': 1.5}}
+
+
+def attr_fit(p, role):
+    w = WEIGHTS.get(role, {})
+    attrs = sr.ROLES[role][2]
+    return sum(sr.num(p, a) * w.get(a, 1) for a in attrs) / sum(w.get(a, 1) for a in attrs)
 
 
 def verdict(a, s):
@@ -52,7 +61,7 @@ def scorecard(rows, groups=None, max_value=None, per=6, max_age=None, thin_until
             continue
         role, core = ROLE[g], CORE[g]
         attrs = sr.ROLES[role][2]
-        afit = lambda p: st.mean(sr.num(p, a) for a in attrs)
+        afit = lambda p: attr_fit(p, role)
         peers = [p for p in rows if p['competition'] == m.LEAGUE and p['pos'] & pos and enough(p)]
         dist = {k: sorted(adj(p, k) for p in peers) for k in core}
         adist = sorted(afit(p) for p in peers)
