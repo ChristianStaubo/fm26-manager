@@ -2,12 +2,23 @@
 // Capabilities call `analysis(script, args)` and get compact JSON back. The export is reused
 // unless `fresh` (the save changed): exporting takes ~30 s, the analysis ~1 s.
 import {execFileSync} from 'node:child_process';
-import {existsSync, readFileSync, appendFileSync, mkdirSync, writeFileSync} from 'node:fs';
+import {existsSync, readFileSync, appendFileSync, mkdirSync, writeFileSync, readdirSync, statSync} from 'node:fs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const club = () => JSON.parse(readFileSync(new URL('../config/club.json', import.meta.url), 'utf8'));
 export const saveName = () => club().save_pattern.replace(/\.fm$/, '').replace(/[*?]/g, '');
-export const exportPath = () => `${ROOT}local/exports/${saveName()}.csv`;
+// The exporter names its CSV after the save file (claude-3.1.fm -> claude-3.1.csv): read the export
+// of the newest save matching the pattern (skipping FM's "(v02)" backups), not one named after the
+// pattern, or a renamed save leaves us reading a stale export (2029-06: a day behind, Kubo "free").
+const SAVE_DIR = process.env.FM26_SAVE_DIR || `${process.env.HOME}/Library/Application Support/Sports Interactive/Football Manager 26/games`;
+function latestSave() {
+  const re = new RegExp('^' + club().save_pattern.replace(/[.]/g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+  try {
+    return readdirSync(SAVE_DIR).filter(f => re.test(f) && !f.includes(' (v'))
+      .map(f => ({f, t: statSync(`${SAVE_DIR}/${f}`).mtimeMs})).sort((a, b) => b.t - a.t)[0]?.f;
+  } catch { return null; }
+}
+export const exportPath = () => `${ROOT}local/exports/${(latestSave() || saveName() + '.fm').replace(/\.fm$/, '')}.csv`;
 
 // The game's date: the export carries none, and the analysis used to guess it from the latest
 // signing at our club (2028-02-02 in July 2028: contracts that ended on 30 June looked active).

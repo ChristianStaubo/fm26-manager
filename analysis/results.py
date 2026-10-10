@@ -33,7 +33,7 @@ def main():
     rows, _ = m.load(a.csv)
     save = m.sr.CLUB_CONFIG['save_pattern'].replace('.fm', '').replace('*', '')
     snap = {'date': a.date, 'label': a.label, 'position': a.position, 'points': a.points,
-            **snapshot(rows, ROOT / 'local' / 'exports' / f'{save}_clubs.csv')}
+            **snapshot(rows, ROOT / 'local' / 'exports' / f'{m.sr.latest_save().stem}_clubs.csv')}
     out = ROOT / 'local' / 'reports' / f'{save}-results.md'
     money = lambda v: '-' if v is None else f"£{v / 1e6:.1f}M"
     if not out.exists():
