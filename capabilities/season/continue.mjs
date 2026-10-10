@@ -13,7 +13,7 @@ export async function control({maxSteps=10, durationMs=50000, pollMs=200}={}, io
   const read=io.read || getState, act=io.act || request;
   const now=io.now || Date.now, sleep=io.sleep || (ms=>new Promise(r=>setTimeout(r,ms)));
   const deadline=now()+durationMs;
-  let state=null, steps=0, awaitingProcessing=null, ignoredBefore=null;
+  let state=null, steps=0, awaitingProcessing=null, ignoredBefore=null, newsSince=null;
   const result=(reason, extra={})=>({reason,steps,state,requiresExplicitResume:true,...extra});
   try {
     while(now()<deadline) {
@@ -27,6 +27,10 @@ export async function control({maxSteps=10, durationMs=50000, pollMs=200}={}, io
         else if(ignoredBefore!==null && state.ignoredContinues>ignoredBefore && !state.actionInFlight) {awaitingProcessing=null;steps--;}
         else {await sleep(pollMs);continue;}
       }
+      // NewsAggregator is usually a moment of processing, but FM can also stop there until the
+      // News Site is opened (Continue slot reads "News Site", 2028-06-23): hand off when it lasts.
+      if(state.stateName==='NewsAggregator' && !state.actionInFlight) { newsSince??=now(); if(now()-newsSince>5000) return result('handoff',{stalled:'NewsAggregator'}); }
+      else newsSince=null;
       if(category==='busy' || state.actionInFlight) {await sleep(pollMs);continue;}
       if(category==='required-action') {
         if(now()>=deadline) return result('time-limit');

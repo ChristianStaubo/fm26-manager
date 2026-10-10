@@ -46,6 +46,12 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           try { decisions.push(await pressConference()); continue; }
           catch (e) { return stop(e instanceof NeedsAnalyst ? 'needs-analyst' : 'error', {handler: 'press-conference', why: e.message, details: e.details, screen: summarize(await Screen.read())}); }
         }
+        // A button in the Continue slot ("News Site", …) is what a person would press next.
+        const label = s.continueLabel();
+        if (label && !/^(Continue|Processing)/.test(label) && ++handoffs <= 3) {
+          try { await click(label, {name: 'continue-button'}); } catch (e) { /* re-read below */ }
+          await settle(1500); continue;
+        }
         if (st.automationState === 'ready' && ++handoffs <= 3) continue;
         return stop('unfamiliar-state', {state: st.stateName, screen: summarize(s)});
       }
