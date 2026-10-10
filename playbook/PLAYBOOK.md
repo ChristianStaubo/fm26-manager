@@ -71,7 +71,7 @@ These are the user's rules (decided 2026-10-09).
   - **any age**: value per pound is what counts (younger = resale)
 - Price: open at FM's value (the middle of his range; bids far below it are flatly rejected) and walk away above 1.1× the top (or a lower max).
   A flat "the offer is unacceptable" means walk away.
-- Wages: up to **1.3× our first-team median** (top 25 earners). Above that, skip the target, **unless it is a swap**: a signing replacing an outgoing player may earn up to that player's wage (`fm buy … --wage-max N --replaces X`). Bakayoko on £116K for Touré on £130K lowers the bill.
+- Wages are **not a filter** for quality signings (user, 2026-10-10): pay what a better player costs, within the club's **wage budget** (`fm offers`: payroll available). Personal terms stop only above 2.5× our first-team median (a runaway demand). A swap that lowers the bill is always fine.
 
 ## 6. Contracts
 - The **Director of Football negotiates**. We decide who and for how long.

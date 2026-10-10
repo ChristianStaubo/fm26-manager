@@ -62,7 +62,8 @@ def scorecard(rows, groups=None, max_value=None, per=6, max_age=None, thin_until
             a = pct(adist, afit(p))
             sp = {k: pct(dist[k], adj(p, k)) for k in core}
             s = round(st.mean(sp.values()))
-            c = {'name': p['name'], 'age': int(p['age'] or 0), 'club': p['contract_club'] or p['club'], 'league': p['competition'],
+            club = p['contract_club'] or p['club']
+            c = {'name': p['name'], 'age': int(p['age'] or 0), 'club': 'unknown club: check in game' if club.startswith('club#') else club, 'league': p['competition'],
                  'minutes': int(p['mins']), 'attr_fit': round(afit(p), 1), 'attr_pct': a,
                  'stats': {k.replace('_p90', ''): f"{sr.num(p, k):.2f} ({sp[k]}%)" for k in core}, 'stat_pct': s,
                  'score': round((a + s) / 2), 'verdict': verdict(a, s), 'value': int(p['value']), 'wage': int(p['wage'] or 0),
@@ -71,7 +72,9 @@ def scorecard(rows, groups=None, max_value=None, per=6, max_age=None, thin_until
             if g in ('ST', 'W', 'AM') and gx >= 3:
                 c['luck'] = f"+{gx:.1f} goals over xG"
             return c
-        mine = [p for p in rows if p['contract_club'] == m.CLUB and p['pos'] & pos and not p['on_loan_at']]
+        # Our first team only (top 25 earners): the B team and academy are in the export too.
+        first = {p['name'] for p in sorted((p for p in rows if p['contract_club'] == m.CLUB), key=lambda p: -sr.num(p, 'wage'))[:25]}
+        mine = [p for p in rows if p['contract_club'] == m.CLUB and p['pos'] & pos and not p['on_loan_at'] and p['name'] in first]
         ours = sorted((card(p) for p in mine if p['competition'] == m.LEAGUE and enough(p)), key=lambda c: -c['score'])
         thin = [f"{p['name']} ({int(p['mins'])} min)" for p in mine if not (p['competition'] == m.LEAGUE and enough(p))]
         slots = 2 if g in ('CB', 'DM', 'W', 'FB') else 1

@@ -101,7 +101,8 @@
     "salary_factors": [0.95, 1.0, 1.1, 1.2],
     "_salary_factors": "Personal terms for signings: keep the agent's bonuses/clauses, offer this share of the demanded salary in turn, never above the wage cap (user rule: agents give a little on salary, are firm on the rest). Up to 1.2x since 2028-06 (Tanaka: 0.85-1.0x all got 'go away and think', and stalling made us cancel a 2.5M deal).",
     "_max_salary": "Personal terms: accept a demand up to this x our FIRST-TEAM median wage (top 25 earners, analysis/wage_bands.py; ~£51K in July 2026), negotiating via salary_factors; above it, stop for a decision. The contract screen's 'Avg.' includes youth/reserves (squad median £7K) and is no longer used (user, 2026-10-08: Camara's £36-44.5K is a normal first-team wage).",
-    "max_salary_vs_first_team_median": 1.3,
+    "max_salary_vs_first_team_median": 2.5,
+    "_max_salary_2026_10_10": "User, 2026-10-10: wage is not a filter for quality signings (we buy better players now); 2.5x the first-team median (~GBP 115K) only stops runaway demands. The real limit is the club wage budget (fm offers: payrollAvailable).",
     "max_years_by_age": {
       "<=28": 5,
       "29": 4,

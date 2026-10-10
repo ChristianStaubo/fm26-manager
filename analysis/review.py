@@ -66,8 +66,8 @@ def show(r, per=3):
         if not cs:
             continue
         pick = lambda key, flt=lambda c: True: sorted([c for c in cs if c['backed'] and flt(c)], key=key)[:per]
-        rows = [('best', pick(lambda c: -c['score'], lambda c: c['stat_pct'] is not None)),
-                ('value', pick(lambda c: -c['per10m'], lambda c: c['stat_pct'] is not None)),
+        rows = [('best', pick(lambda c: -c['score'], lambda c: c['stat_pct'] is not None and c['wage'] <= 2 * r['cap'])),
+                ('value', pick(lambda c: -c['per10m'], lambda c: c['stat_pct'] is not None and (c['wage_ok'] or c['swap_ok']))),
                 ('free/expiring', pick(lambda c: -c['score'], lambda c: c['expiring']))]
         print(f"  {g} (our starter {r['bars'][g]})")
         seen = set()
