@@ -270,6 +270,18 @@ def xi(rows, tactic, date=None):
 
 
 # ---- Raw scouting: plain output per 90, scaled by league strength (no role weights, no attribute floor)
+
+def minutes_floor(rows):
+    """Per league: the minutes a regular starter has in the export's data window (other clubs'
+    players carry only ~their last 20 league games): buying.min_minutes_share x the 97th percentile (an ever-present)."""
+    by = {}
+    for p in rows:
+        if p['competition'] and p['contract_club'] != CLUB and p['mins'] > 0:
+            by.setdefault(p['competition'], []).append(p['mins'])
+    share = POLICY['buying']['min_minutes_share']
+    return {c: share * sorted(m)[int(0.97 * (len(m) - 1))] for c, m in by.items() if len(m) >= 20}
+
+
 RAW = {  # position group: (natural positions, metric label, metric(p))
     'ST': ({'ST'}, 'xG+xA /90', lambda p: sr.num(p, 'xg_p90') + sr.num(p, 'xa_p90')),
     'W': ({'AML', 'AMR', 'ML', 'MR'}, 'xG+xA /90', lambda p: sr.num(p, 'xg_p90') + sr.num(p, 'xa_p90')),
@@ -302,8 +314,7 @@ def league_strength(rows):
     return {k: v / base for k, v in avg.items()}
 
 
-def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=None):
-    min_minutes = min_minutes or POLICY['buying']['min_minutes_sample']
+def scout_raw(rows, groups=None, budget=None, per=10, min_minutes=900):
     strength = league_strength(rows)
     def adjusted(p, metric, group):
         v, f = metric(p), strength.get(p['competition'])
@@ -487,7 +498,8 @@ RATE_STATS = {'pass_pct', 'header_pct', 'save_pct'}  # percentages: not scaled b
 
 
 def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, per=12, min_minutes=None, include_loans=False):
-    min_minutes = min_minutes or POLICY['buying']['min_minutes_sample']
+    floor = minutes_floor(rows)
+    enough = lambda p: p['mins'] >= (min_minutes or floor.get(p['competition'], 10**9))
     strength = league_strength(rows)
     def adj(p, k):
         v, f = sr.num(p, k), strength.get(p['competition'], 0)
@@ -501,7 +513,7 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
         if groups and g not in groups:
             continue
         stats = BEST_STATS[g]
-        peers = [p for p in rows if p['competition'] == LEAGUE and p['pos'] & pos and p['mins'] >= min_minutes]
+        peers = [p for p in rows if p['competition'] == LEAGUE and p['pos'] & pos and enough(p)]
         dist = {k: sorted(adj(p, k) for p in peers) for k in stats}
         def pct(k, v):
             d = dist[k]
@@ -518,14 +530,14 @@ def scout_best(rows, groups=None, max_value=None, max_wage=None, max_age=None, p
                     'stats': {k: f"{vals[k]} ({pcts[k]}%)" for k in stats}, '_vals': vals,
                     'value': int(p['value']), 'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:4] or None,
                     'minutes': int(p['mins'])}
-        ours = sorted((card(p) for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and p['mins'] >= min_minutes and not p['on_loan_at']),
+        ours = sorted((card(p) for p in rows if p['contract_club'] == CLUB and p['pos'] & pos and p['mins'] >= floor.get(LEAGUE, 900) and not p['on_loan_at']),
                       key=lambda c: -c['quality'])
         # The bar: our weakest starter at the position (2nd best where the shape has two: CB, DM, W, FB).
         slots = 2 if g in ('CB', 'DM', 'W', 'FB') else 1
         best_ours = ours[min(slots, len(ours)) - 1] if ours else None
         found = []
         for p in rows:
-            if (p['contract_club'] == CLUB or not (p['pos'] & pos) or p['mins'] < min_minutes or not p['competition']
+            if (p['contract_club'] == CLUB or not (p['pos'] & pos) or not enough(p) or not p['competition']
                     or p['club'].startswith('club#') or int(p['value']) >= sr.NOT_FOR_SALE):
                 continue
             if (max_value and int(p['value']) > max_value) or (max_wage and int(p['wage'] or 0) > max_wage) or (max_age and int(p['age'] or 99) > max_age):
