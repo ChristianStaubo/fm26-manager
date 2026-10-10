@@ -451,7 +451,7 @@ def scout_free(rows, groups=None, per=8, date=None):
 
 
 def price(rows, name):
-    """Our price for any player (targets too): open at buying.open_at x the bottom of his range, walk
+    """Our price for any player (targets too): open at buying.open_at x his value (FM's value, mid-range), walk
     away above buying.default_max x the top; the range is his value +-10% (the game shows a scouted range)."""
     b = POLICY['buying']
     cands = [p for p in rows if p['name'].lower() == name.lower()] or [p for p in rows if name.lower() in p['name'].lower()]
@@ -461,7 +461,7 @@ def price(rows, name):
     v = int(p['value']); lo, hi = v * 0.9, v * 1.1
     cap = wage_bands.bands(rows, CLUB)['median'] * POLICY['contracts']['max_salary_vs_first_team_median']
     return {'name': p['name'], 'club': p['contract_club'] or (f"{p['club']} (contract not in export: check in game)" if p['club'] else '(free agent)'), 'age': int(p['age']), 'positions': p['positions'],
-            'value': v, 'range_estimate': [round(lo), round(hi)], 'open_at': round(lo * b['open_at']), 'walk_away': round(hi * b['default_max']),
+            'value': v, 'range_estimate': [round(lo), round(hi)], 'open_at': round(v * b['open_at']), 'walk_away': round(hi * b['default_max']),
             'wage': int(p['wage'] or 0), 'wage_cap': round(cap), 'wage_ok': int(p['wage'] or 0) <= cap,
             'contract_until': (p['contract_expires'] or '')[:10] or None, 'ours': p['contract_club'] == CLUB,
             'note': 'live range from his profile beats this estimate (fm player)'}

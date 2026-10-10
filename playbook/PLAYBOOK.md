@@ -62,7 +62,7 @@ These are the user's rules (decided 2026-10-09).
   - for players meant to **start**, attributes at least the **40th percentile** of our league
     (PL-readiness)
   - **any age**: value per pound is what counts
-- Price: open at 0.9× the bottom of his range and walk away above 1.1× the top (or a lower max).
+- Price: open at FM's value (the middle of his range; bids far below it are flatly rejected) and walk away above 1.1× the top (or a lower max).
   A flat "the offer is unacceptable" means walk away.
 - Wages: up to **1.3× our first-team median** (top 25 earners). Above that, skip the target.
 

@@ -75,9 +75,9 @@
   },
   "buying": {
     "_section": "5",
-    "open_at": 0.9,
-    "open_at_if_club_keen_to_sell": 0.75,
-    "_open": "x v_low, up-front.",
+    "open_at": 1.0,
+    "open_at_if_club_keen_to_sell": 0.85,
+    "_open": "x FM's value (middle of the range), up-front. Was 0.9 x v_low until 2026-10-10: clubs flatly reject bids far below value (Maza, ~70M value, opened at ~45M), and a flat rejection ends the deal.",
     "raise_step": 0.1,
     "_raise": "Each raise adds this x v_low.",
     "default_max": 1.1,

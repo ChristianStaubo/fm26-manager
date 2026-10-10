@@ -12,10 +12,11 @@ import {Screen, waitFor, click, setFee, recover, openPlayer, actionPath, peekAct
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 
-// Opening bid: rules.buying.open_at × the bottom of the valuation (lower if the club wants to sell).
+// Opening bid: rules.buying.open_at × FM's value, the middle of the range (lower if the club wants
+// to sell). Bids well below value get a flat "unacceptable", which ends the deal.
 export function openingBid(facts, {keenToSell = false} = {}) {
-  const b = loadRules().buying;
-  return Math.round(facts.valueRange[0] * (keenToSell ? b.open_at_if_club_keen_to_sell : b.open_at));
+  const b = loadRules().buying, mid = (facts.valueRange[0] + facts.valueRange[1]) / 2;
+  return Math.round(mid * (keenToSell ? b.open_at_if_club_keen_to_sell : b.open_at));
 }
 export const defaultMax = facts => Math.round(facts.valueRange[1] * loadRules().buying.default_max);
 
