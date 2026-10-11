@@ -70,3 +70,10 @@ What works, recorded from a player's click:
    the first meaningful call after `SIClickable.ProcessUpEvent`.
 3. Add the class to `game/bridge/agent/10-classes.js` and an action to `ELEMENT_ACTIONS` in
    `game/bridge/agent/40-ui-actions.js`; `fm reload`; document it here.
+
+## Club → Finances panel: don't drive it with the bridge (2030-07, claude-3.1)
+The finance tiles open an embedded panel over Club Overview. Bridge clicks on its tiles fail
+("Element is occluded"), dropdown `select` on the secondary-tab menus (Finances, More) didn't
+navigate, and after a `key Escape` the player's real clicks stopped working (`fm input-reset` found
+no virtual devices; stopping the bridge didn't help; restarting FM did). For screenshots: let the
+user navigate and capture with `screencapture -x` (needs Screen Recording permission for the terminal).
