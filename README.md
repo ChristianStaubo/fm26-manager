@@ -54,8 +54,9 @@ game/bridge/setup-macos.sh
    original, which stays untouched) and a Python environment with Frida in `~/fm26-debug/`.
    Details: `game/bridge/README.md`.
 2. Give your terminal permission to attach: System Settings → Privacy & Security → Developer Tools.
-3. Edit `config/club.json` (your club, save name pattern) and `config/tactic.json` (your
-   formation's slots, used by the reports).
+3. Point it at your save: `config/club.json` (your club, league, save name) and
+   `config/tactic.json` (your formation). See `config/README.md`, or just open `claude` here and
+   say *"set this up for my save"*: `CLAUDE.md` tells it how.
 
 ## Use
 ```bash

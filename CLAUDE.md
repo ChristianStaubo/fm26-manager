@@ -12,6 +12,18 @@ work autonomously and narrate briefly.
 3. Machine-specific paths (game copy, Frida venv): `local/paths.md`, else `game/bridge/README.md`.
 4. `node cli/fm.mjs doctor`: are the game, bridge, save and screen ready? (`--fix` starts the bridge.)
 
+## First run on someone's own save
+`config/` ships with our experiment's club (Brentford). If the user's club or save differs, set it up
+before anything else (details: `config/README.md`):
+1. Ask for their club and save, or find the newest `.fm` in the FM26 `games` folder.
+2. Export it with FM26 Scout (`python3 ../fm26-scout/fm26_export.py "<save>"`) and take the club
+   and league names exactly as the CSV writes them (`club`, `competition` columns).
+3. Write `config/club.json` (`club`, `league`, `save_pattern`) and `config/tactic.json` (their
+   formation's slots, roles and current starters; ask, or read Match Day → Match Squad).
+4. Run `node cli/fm.mjs squad --fresh` and check the squad it prints is theirs.
+5. Walk them through `playbook/PLAYBOOK.md`: these are our rules, and they may want their own.
+   If their formation isn't a 4-2-3-1, `fm window` needs its `SLOTS` edited.
+
 ## Layout
 - `playbook/`: the principles (`PLAYBOOK.md`) and every number (`policy.json`). Rules live only here.
 - `capabilities/<name>/`: one module per decision. Each has a small public API and a README

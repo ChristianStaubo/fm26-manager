@@ -83,7 +83,7 @@ These are the user's rules (decided 2026-10-09).
   players go.
 
 ## 7. Team selection
-- **Keep the current tactic** (4-2-3-1 Gegenpress). Buy and select for it.
+- **Keep the current tactic** (ours: 4-2-3-1 Gegenpress, `config/tactic.json`). Buy and select for it.
 - The XI is the best output per position in that shape, and **new signings start** (they were
   bought to play).
 - On holiday, "Use team selection where possible" is **unticked** for 2028/29 (user, 2026-10-10): the assistant picks the XI. (2027/28 had it ticked.)
