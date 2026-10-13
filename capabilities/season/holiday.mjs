@@ -1,6 +1,5 @@
 // Go on vacation: Portal date button → Calendar → "Go On Vacation" → options → Confirm.
-// Settings come from season.json (holiday.*). "Use team selection where possible" is TICKED since
-// 2026-10-09 (user: the chosen XI must play); it used to be never ticked (rotation/injuries).
+// Settings come from playbook/policy.json (holiday.*): which boxes to tick and the return date.
 import {Screen, waitFor, click, clickWhere, toggle, setNumber, recover, isoDate} from '../../game/ui/index.mjs';
 import {loadSeason, nextDate, daysBetween} from './season.mjs';
 import {log} from '../log.mjs';
@@ -10,7 +9,7 @@ import {loadPolicy} from '../sell/decide.mjs';
 const checkboxBefore = label => s => { const k = s.items.findIndex(i => i.kind === 'text' && i.label === label); return k < 0 ? null : s.items.slice(0, k).reverse().find(i => i.kind === 'toggle'); };
 const radio = prefix => s => s.items.find(i => i.kind === 'toggle' && i.label.startsWith(prefix));
 
-/** holiday({days?, until?: 'YYYY-MM-DD', dryRun?}) — default: back on season.json holiday.return_on */
+/** holiday({days?, until?: 'YYYY-MM-DD', dryRun?}) — default: back on policy.json holiday.return_on */
 export async function holiday({days, until, dryRun = false} = {}) {
   const cfg = loadPolicy().holiday;
   await recover();

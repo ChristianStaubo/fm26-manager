@@ -2,12 +2,13 @@
   "name": "fm26-manager",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "description": "Operate Football Manager 26 from Claude Code: a Frida bridge into the game's UI plus Moneyball transfer tools.",
   "type": "module",
   "bin": {"fm": "cli/fm.mjs"},
   "scripts": {
     "fm": "node cli/fm.mjs",
-    "bridge": "python3 game/bridge/server.py",
+    "bridge": "node cli/fm.mjs doctor --fix",
     "test": "node --test capabilities/*/*.test.mjs test/*.test.mjs"
   },
   "engines": {"node": ">=20"}

@@ -30,37 +30,55 @@ Write-up: _[article link]_. Every rule in `playbook/` came from a failure we wat
 | `analysis/` | Moneyball squad/market reports from the save file (via [FM26 Scout]) |
 | `cli/fm.mjs` | the command Claude uses: `node cli/fm.mjs help` |
 | `.claude/skills/` | instructions Claude loads: `fm-manager` (decisions), `fm-operate` (the game) |
-| `docs/` | analysis method, decision guidelines, FM26 UI notes and quirks |
+| `docs/` | analysis method, screen map and screen notes (`screens/`), FM26 UI notes and quirks |
 
 ## Requirements
-- macOS on Apple Silicon, FM26 (Steam), Node.js 20+, Python 3.12, [Claude Code](https://claude.com/claude-code)
+- **macOS on Apple Silicon** and FM26 from Steam. The bridge (how Claude reads and clicks the game)
+  is built for that setup only. On Windows or an Intel Mac it won't run as is, but the approach
+  carries over: point your own Claude Code at `game/bridge/` and ask it to port it.
+- Node.js 20+ and [pnpm](https://pnpm.io) (pinned in `package.json`), Python 3, [Claude Code](https://claude.com/claude-code)
 - [FM26 Scout] next to this folder (`../fm26-scout`, or set `FM26_SCOUT_PATH`) for the analysis
 - Tested with FM26 build 23583635. Game updates may need small changes in `game/bridge/agent/`.
+
+You don't install Frida yourself: the setup script installs a pinned, hash-checked version into its
+own Python environment. There are no npm packages to install either.
 
 ## Setup
 ```bash
 git clone https://github.com/ChristianStaubo/fm26-scout      # save exporter (analysis)
 git clone https://github.com/ChristianStaubo/fm26-manager    # this repo, next to it
 cd fm26-manager
+game/bridge/setup-macos.sh
 ```
-1. `game/bridge/setup-macos.sh` — makes a re-signed **copy** of the game (Frida cannot attach to the
-   original) and a Python venv with the pinned Frida. See `game/bridge/README.md`.
-2. Edit `config/club.json` (your club, save name pattern) and `config/tactic.json` (your
+1. `setup-macos.sh` makes a re-signed **copy** of the game (Frida can't attach to the Steam
+   original, which stays untouched) and a Python environment with Frida in `~/fm26-debug/`.
+   Details: `game/bridge/README.md`.
+2. Give your terminal permission to attach: System Settings → Privacy & Security → Developer Tools.
+3. Edit `config/club.json` (your club, save name pattern) and `config/tactic.json` (your
    formation's slots, used by the reports).
-3. Optional: tune `playbook/policy.json` (counter-offer multiples, payoff rule, …) and
-   `capabilities/season/season.json` (window dates, holiday options).
 
 ## Use
 ```bash
-open ~/fm26-debug/fm.app                 # start the copy, load your save
-~/fm26-debug/venv/bin/python game/bridge/server.py > /tmp/fm26-bridge/bridge.log 2>&1 &
+open ~/fm26-debug/fm.app                 # start the copy (not Steam's), load your save
+node cli/fm.mjs doctor --fix             # checks everything and starts the bridge
 claude                                   # in this folder; then just ask
 ```
 Or by hand: `node cli/fm.mjs status | screen | sell "Name" --club "Club" --dry-run | run | holiday`.
+Tests: `pnpm test`.
 
 Each summer (early July, after FM rolls the season over): `node cli/fm.mjs window` for the squad,
 targets and sell list (attribute + stats scores per position), and `node cli/fm.mjs results` to log
 the money and the table.
+
+## Make it yours: the rules
+Everything Claude decides follows **our** rules: how we value players, when we sell, how hard we
+negotiate, who renews. They live in two files, and the code only applies them:
+- `playbook/PLAYBOOK.md`: the principles, in plain English
+- `playbook/policy.json`: every number (counter-offer multiples, wage cap, minutes floor, …)
+
+They came from three runs of watching things go wrong, so they're a good start, not the truth.
+Change them to manage your way. Each capability's README says which playbook section and which
+`policy.json` keys it uses.
 
 ## Self-improving loop
 A cheaper model (`.claude/agents/fm-player.md`) plays and stops with `fm stuck "<…>"` when a tool
@@ -70,7 +88,8 @@ the game's UI calls while a person does them (`fm record start` / `fm record sto
 
 ## Notes
 - Single-player only. Use at your own risk; this injects code into a copy of the game.
-- Not affiliated with Sports Interactive or SEGA. No game files or player data are included.
+- Not affiliated with Sports Interactive or SEGA. No game files, saves or player database are
+  included (test fixtures hold a few recorded screens).
 - Every action is verified against the live UI; refusals are retried, uncertain actions never are.
 - Decisions and actions are logged to `local/runs/decisions.jsonl` (gitignored with saves/exports).
 

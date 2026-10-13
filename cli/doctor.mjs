@@ -21,7 +21,7 @@ function startBridge() {
 
 export async function doctor({fix = false} = {}) {
   const checks = [], add = (name, ok, detail, fixHint) => { checks.push({name, ok, detail, ...(ok ? {} : {fix: fixHint})}); return ok; };
-  const setup = 'run bridge/setup-macos.sh (copies the game, creates the venv; macOS prunes /private/tmp after idle days and on reboot)';
+  const setup = 'run game/bridge/setup-macos.sh (copies the game, creates the venv; macOS prunes /private/tmp after idle days and on reboot)';
 
   add('game copy', !!GAME, GAME, setup);
   // /private/tmp is pruned by macOS after a few idle days: files vanish, the folder stays.

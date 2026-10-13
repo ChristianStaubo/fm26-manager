@@ -26,4 +26,4 @@ python3 -m venv "$VENV"
 "$VENV/bin/pip" install --no-cache-dir --no-deps --only-binary=:all: --require-hashes -r "$HERE/requirements-macos-arm64.txt"
 echo
 echo "Done. Launch the copy (not Steam's):  open \"$DEST\""
-echo "Then start the bridge:                \"$VENV/bin/python\" bridge/server.py"
+echo "Then start the bridge:                node cli/fm.mjs doctor --fix"

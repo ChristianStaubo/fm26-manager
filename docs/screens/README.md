@@ -36,7 +36,7 @@ When a fix teaches us a screen, add or update its row here in the same commit.
 | Transfer Activity deal list | Recruitment → Transfer Activity; deals are **toggles** "<Player> <Stage>" (select with a toggle, not a click); details pane on the right (value, wage, Accept/Stall/Reject Offer or Cancel Offer) | `fm offers` (list), `fm deal "<player>"` (club + stage + fee in the middle pane, e.g. "Aston Villa / Contract £7M (£13M)") | verified 2026-06-26 |
 
 ## Routine NeedAction screens (autopilot handlers)
-See `game/screens/admin/README.md`, `capabilities/sell/README.md`, `capabilities/contracts/README.md`. Each
+See `game/screens/admin/README.md`, `transfers.md`, `contracts.md` and `season.md` in this folder. Each
 handler's match is a stable button label; screens with no handler stop `fm run` with
 `needs-analyst`.
 

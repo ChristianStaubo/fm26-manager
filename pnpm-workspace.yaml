@@ -1,0 +1,5 @@
+packages:
+  - "."
+
+# Seven days, in minutes: never install a package version younger than a week.
+minimumReleaseAge: 10080

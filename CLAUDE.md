@@ -38,7 +38,7 @@ A cheap **player** (`.claude/agents/fm-player.md`, Sonnet) plays one segment and
    - an unknown route → `docs/screens/README.md`
    - a known dialog → `KNOWN_DIALOGS` (`game/ui/overlays.mjs`)
 3. Leave a guard: `fm friction fixture <id> <name>` + a test replaying it.
-4. `npm test`, commit (small, straight to main), `fm friction resolve <id> "<fix, commit>"`.
+4. `pnpm test`, commit (small, straight to main), `fm friction resolve <id> "<fix, commit>"`.
 5. Spawn the next player segment.
 
 ## Rules
