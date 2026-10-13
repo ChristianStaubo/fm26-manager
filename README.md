@@ -10,6 +10,10 @@ Claude: exports the save → Moneyball report → plan → lists players, bids, 
         → runs the window (counter-offers, agent payoffs) → holiday until 28 May → season report
 ```
 
+> **Completely vibe coded.** Claude Code wrote every line of this repo; I didn't touch the code.
+> It was built for one Mac, one save and one club, so expect to adapt some things to your own
+> setup (your Claude can do that too). But this is everything your own agent needs to play FM26.
+
 ## The experiment
 Same club (Brentford), same £30M starting balance, three runs:
 
