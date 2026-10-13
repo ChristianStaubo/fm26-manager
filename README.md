@@ -95,6 +95,8 @@ the game's UI calls while a person does them (`fm record start` / `fm record sto
 - Single-player only. Use at your own risk; this injects code into a copy of the game.
 - Not affiliated with Sports Interactive or SEGA. No game files, saves or player database are
   included (test fixtures hold a few recorded screens).
+- Comments and `policy.json` notes cite the case that taught each rule: player names from our saves,
+  dates (in-game, or the day a rule was set), and "(user, …)" for rules I set.
 - Every action is verified against the live UI; refusals are retried, uncertain actions never are.
 - Decisions and actions are logged to `local/runs/decisions.jsonl` (gitignored with saves/exports).
 
