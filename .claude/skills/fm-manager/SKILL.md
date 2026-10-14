@@ -13,6 +13,7 @@ description: Run the FM26 club as its Moneyball manager — plan and run transfe
 ## Capabilities (each README in `capabilities/<name>/` has the details)
 | Capability | Command | Decides / gives you |
 |---|---|---|
+| plan | `fm plan --budget N` | **start every window here**: alerts, departures since the last snapshot, a priced buy list within budget, sells (proposals for the user's approval) |
 | window | `fm window [--slots LB,RW]` | **start here**: the standard window report (every slot: depth, blended + moneyball scores, best/value/bench/free, sell list) |
 | results | `fm results --label … [--position N]` | scoreboard row: money + table |
 | review | `fm review` | older sell/buy list (superseded by `fm window`) |
@@ -28,10 +29,12 @@ After saving the game, add `--fresh` to the first data command (re-exports the s
 
 ## A transfer window (the standard workflow)
 1. **Timing:** save the game in the **first days of July** (after the season rollover, before the
-   first league match) and run `fm window --fresh`. That is the only moment the export has
+   first league match) and run `fm plan --budget N --fresh`. That is the only moment the export has
    everyone's full-season stats; later, scores lean on attributes alone (the report warns).
-2. **Read `fm window`:** every 4-2-3-1 slot (GK, LB, CB, RB, DM pair, AM, LW, RW, ST) with depth
-   (two solid per slot, three CBs, three for the DM pair) and two scores per player, both
+   **Act on the plan's `alerts` and `changes` first** (no contract: renew or release; regulars in
+   the U21; starters who left). Its `buy` list is the proposal you bring to the user.
+2. **Read `fm window`** for the detail behind a slot: every slot of our shape (`config/tactic.json`)
+   with depth (two solid per slot, one more CB than we start) and two scores per player, both
    percentiles vs Premier League regulars:
    - **blended** = role attributes (the prediction: attributes travel between clubs) + core stats
    - **moneyball** = the core stats alone (the job in numbers, league-adjusted)

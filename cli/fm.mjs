@@ -55,6 +55,9 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
   review [--max-value N] [--max-age N] [--fresh]
                                  who to sell and who to buy: attribute fit (prediction) + the position's
                                  core stats (evidence) vs PL regulars; best, value and free/expiring (§4-5)
+  plan --budget N [--snapshot file.csv] [--fresh]
+                                 START OF EVERY WINDOW: alerts, who left/arrived since the last snapshot,
+                                 slots, a priced buy list within budget, sell list (proposals for approval)
   window [--slots LB,RW] [--max-value N] [--max-age N] [--bench-max N] [--fresh]
                                  THE window report: every slot of our shape with depth, blended + moneyball
                                  scores, best/value/bench/free targets and the sell list. Run it in the
@@ -155,6 +158,12 @@ try {
       const date = await gameDate();
       out(analysis('review.py', ['--json', ...(date ? ['--date', date] : []),
         ...['max-value', 'max-age'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(f === 'max-age' ? flags[f] : num(flags[f]))])], {fresh: !!flags.fresh, date}));
+      break;
+    }
+    case 'plan': {
+      if (!flags.budget) throw new Error('fm plan needs --budget N (the transfer budget, e.g. 200m)');
+      out(analysis('plan.py', ['--budget', String(num(flags.budget)), ...(flags.snapshot ? ['--snapshot', flags.snapshot] : []),
+        ...(flags['max-value'] ? ['--max-value', String(num(flags['max-value']))] : [])], {fresh: !!flags.fresh, date: await gameDate()}));
       break;
     }
     case 'window': {
