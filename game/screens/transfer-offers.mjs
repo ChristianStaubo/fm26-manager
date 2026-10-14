@@ -2,7 +2,7 @@
 // agent payoff demands. Each handler: match(screen) → bool, run(screen, {dryRun}) → outcome.
 // Decisions come from decide.mjs + policy.json; anything outside the rules throws NeedsAnalyst.
 import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../ui/index.mjs';
-import {decideSale, decidePayoff, decideLoan} from '../../capabilities/sell/decide.mjs';
+import {decideSale, decidePayoff, decideLoan, loadRules} from '../../capabilities/sell/decide.mjs';
 import {negotiate, offerValueRange, defaultMax, buyStep} from '../../capabilities/buy/buy.mjs';
 import {log, history} from '../../capabilities/log.mjs';
 import * as pricebook from '../../capabilities/value/pricebook.mjs';
@@ -219,4 +219,35 @@ export const loanOfferPage = {
   },
 };
 
-export const HANDLERS = [loanOfferPage, incomingOffer, agentPayoff, bidResponse, loanOffer];
+// A loan offer message for a youth player ("Adelaide loan offer for Sullivan", 2030-07-18): blocks
+// Continue. Youth deals are the user's delegated staff's (playbook §5), but offers made before the
+// delegation still land here. Supervisor rule (2026-10-15, logged for the user's review): accept a
+// loan paying at least policy.selling.youth_loan_min_wage_share of his wage (he plays, he develops),
+// reject the rest. Players over youth_max_age are first-team: the user decides.
+export function readYouthLoan(s) {
+  const head = s.texts().map(t => /^(.+) loan offer for (.+)$/.exec(t)).find(Boolean);
+  if (!head) return null;
+  const val = label => s.after(label, i => i.kind === 'text')?.label;
+  const age = Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN);
+  return {club: head[1], player: head[2], age, fee: parseMoney(val('Fee') ?? '') ?? 0,
+    wageShare: Number(/(\d+)%/.exec(val('Playing Salary Percentage') || '')?.[1] ?? NaN) / 100, duration: val('Duration')};
+}
+export const youthLoanOffer = {
+  name: 'youth-loan-offer',
+  match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readYouthLoan(s),
+  async run(s, {dryRun = false} = {}) {
+    const l = readYouthLoan(s), sell = loadRules().selling;
+    const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l};
+    if (!(l.age <= sell.youth_max_age)) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry); }
+    entry.decision = l.wageShare >= sell.youth_loan_min_wage_share ? 'accept' : 'reject';
+    entry.why = `${Math.round(l.wageShare * 100)}% of his wage vs ${Math.round(sell.youth_loan_min_wage_share * 100)}% (supervisor rule)`;
+    if (dryRun) return {...entry, dryRun: true};
+    await click(entry.decision === 'accept' ? 'Accept' : 'Reject');
+    await log({...entry, executed: true});
+    const {record} = await import('../../capabilities/interventions.mjs');
+    record({capability: 'sell', kind: 'supervisor-decision', date: entry.date, decided: `${entry.decision} ${l.club} loan for ${l.player}: ${entry.why}`});
+    return entry;
+  },
+};
+
+export const HANDLERS = [loanOfferPage, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
