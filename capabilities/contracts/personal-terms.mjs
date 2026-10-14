@@ -14,6 +14,7 @@ import {Screen, waitFor, click, clickWhere, setFee, settle, parseMoney, NeedsAna
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {wageException} from './wage-exceptions.mjs';
+import {held} from '../approvals.mjs';
 import {execFileSync} from 'node:child_process';
 
 // First-team wage bands (analysis/wage_bands.py): the contract screen's "Avg." includes youth.
@@ -156,6 +157,7 @@ export const handBackContract = {
   async run(s, {dryRun = false} = {}) {
     const player = s.texts().map(t => /^Handle (.+) contract negotiations$/.exec(t)?.[1] || /have accepted our offer of .+ for (.+)\.$/.exec(t)?.[1]).find(Boolean) || '?';
     if (dryRun) throw new NeedsAnalyst(`Personal terms for ${player} (dry run)`);
+    if (held(player)) throw new NeedsAnalyst(`${player}: the user holds this deal (fm hold); stop for their decision`, {held: player});
     return negotiatePersonalTerms({player});
   },
 };

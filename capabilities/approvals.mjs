@@ -36,6 +36,16 @@ export function revoke(kind, player, {file = FILE} = {}) {
   save(data, file);
   return {revoked: before - data.approvals.length};
 }
+// Holds: deals the user is deciding (Ortega, 2030-07-14: he suggested the terms himself). The
+// autopilot stops on them instead of negotiating. local/runs/approvals.json → holds.
+export function hold(player, {off = false, file = FILE} = {}) {
+  const data = load(file);
+  data.holds = (data.holds || []).filter(h => norm(h) !== norm(player));
+  if (!off) data.holds.push(player);
+  save(data, file);
+  return {holds: data.holds};
+}
+export const held = (player, {file = FILE} = {}) => (load(file).holds || []).some(h => norm(h) === norm(player));
 export const find = (kind, player, {file = FILE} = {}) =>
   load(file).approvals.find(a => a.kind === kind && norm(a.player) === norm(player)) || null;
 

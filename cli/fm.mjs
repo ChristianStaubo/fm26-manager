@@ -100,6 +100,7 @@ The judge and the autonomy metric (notes/loop-engineering.md)
                                  net transfer profit, relegation floor. Exit 2 on a failure; --friction files it
   intervene <capability> approved-unchanged|approved-changed|rejected|correction
             [--proposed "…"] [--decided "…"] [--rule "…"] [--guard <test>]   log a user decision (main session)
+  hold "<name>" [--off]          the user is deciding this deal: the autopilot stops on it (main session)
   autonomy                       interventions per capability, streaks, who is eligible for 'auto'
 
 When stuck / setup
@@ -231,6 +232,7 @@ try {
     }
     case 'intervene': out(interventions.record({capability: a1, kind: a2, proposed: flags.proposed, decided: flags.decided, rule: flags.rule, guard: flags.guard, date: await gameDate()})); break;
     case 'autonomy': out(interventions.summary()); break;
+    case 'hold': out(approvals.hold(a1, {off: !!flags.off})); break;
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;

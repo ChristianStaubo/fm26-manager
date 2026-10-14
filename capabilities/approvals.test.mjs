@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {pathToFileURL} from 'node:url';
-import {approve, revoke, find, gate, mode} from './approvals.mjs';
+import {approve, revoke, find, gate, mode, hold, held} from './approvals.mjs';
 import {loadPolicy} from './sell/decide.mjs';
 
 const tmp = () => pathToFileURL(`${mkdtempSync(`${tmpdir()}/approvals-`)}/approvals.json`);
@@ -45,4 +45,12 @@ test('auto capabilities pass without approval; approvals can be replaced and rev
   assert.equal(revoke('buy', 'X', {file}).revoked, 1);
   assert.equal(find('buy', 'X', {file}), null);
   assert.throws(() => approve('buy', 'Y', {file}), /needs --max/);
+});
+
+test('holds: the user is deciding a deal (Ortega); accents ignored; --off releases it', () => {
+  const file = tmp();
+  hold('Camilo Ortega', {file});
+  assert.equal(held('camilo ortega', {file}), true);
+  hold('Camilo Ortega', {off: true, file});
+  assert.equal(held('Camilo Ortega', {file}), false);
 });
