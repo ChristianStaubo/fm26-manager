@@ -32,6 +32,15 @@ export function renewalVerdict({currentWage, value, demand, years, loyaltyBonus 
   return {cost: Math.round(cost), value, ratio, verdict};
 }
 
+// A renewal's context from the save export (current wage, value): the DoF's hand-back message
+// ("Handle Casadó contract renewal") names the player, not his numbers.
+export async function renewalContext(name) {
+  const {exportPath} = await import('../data.mjs');
+  const {execFileSync} = await import('node:child_process');
+  const code = 'import csv, json, sys\nfor p in csv.DictReader(open(sys.argv[1], encoding="utf8")):\n    if p["name"] == sys.argv[2] and p["contract_club"]:\n        print(json.dumps({"currentWage": float(p["wage"] or 0), "value": float(p["value"] or 0)})); break';
+  try { return JSON.parse(execFileSync('python3', ['-c', code, exportPath(), name], {encoding: 'utf8'}) || 'null'); } catch { return null; }
+}
+
 // Renew one of ours ourselves (user, 2026-10-14: "you can handle this instead of the DoF"):
 // profile → Actions → Contract → Enter Contract Negotiations, then the same talks as for a signing
 // (promises → contract form → salary ticks from his demand; personal-terms.mjs).

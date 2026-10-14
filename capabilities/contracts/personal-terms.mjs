@@ -53,7 +53,7 @@ const salaryMinus = x => { const f = salaryControl(x); const j = x.items.indexOf
 export const tickMoves = ticks => ticks.map((t, k) => (k ? ticks[k - 1] : 0) - t);
 const salaryPlus = x => { const f = salaryControl(x); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '+'); };
 async function salaryTicksUp(n) {
-  if (!salaryPlus(await Screen.read())) { const now = salaryOf(await Screen.read()); return setSalaryField(now + n * wageStep(now)); }
+  if (!salaryPlus(await Screen.read())) throw new NeedsAnalyst('No salary + on the form; talks left open', {});
   for (let k = 0; k < n; k++) { await clickWhere(salaryPlus, 'salary +'); await settle(300); }
   return salaryOf(await Screen.read());
 }
@@ -61,13 +61,10 @@ async function salaryTicksUp(n) {
 // demand minus the same number of the game's steps (£1K a step from £50K/wk, £250 below; Güreler
 // 95K → 92K in 3 ticks).
 export const wageStep = w => (w >= 50000 ? 1000 : 250);
-async function setSalaryField(v) {
-  await setNumber(x => salaryControl(x)?.kind === 'number-field' ? salaryControl(x) : null, Math.round(v), 'salary field');
-  await settle(500);
-  return salaryOf(await Screen.read());
-}
 async function salaryTicksDown(n) {
-  if (!salaryMinus(await Screen.read())) { const now = salaryOf(await Screen.read()); return setSalaryField(now - n * wageStep(now)); }
+  // No steppers = the payroll budget blocks the form (they appear once it allows the terms). Never
+  // type a salary: FM money fields don't keep typed values (a typed £70K became £490/wk).
+  if (!salaryMinus(await Screen.read())) throw new NeedsAnalyst("No salary −/+ on the form: the payroll budget is too small for these terms; move transfer budget to payroll (Recruitment → Adjust Transfer and Payroll Budget) — the user's decision; talks left open", {payrollBudget: 'too small'});
   for (let k = 0; k < n; k++) { await clickWhere(salaryMinus, 'salary −'); await settle(300); }
   return salaryOf(await Screen.read());
 }
@@ -76,11 +73,13 @@ async function salaryTicksDown(n) {
 // amount until the warning goes; Suggest Terms stays disabled while any is over.
 const overAllowance = x => { const w = x.items.findIndex(i => i.kind === 'text' && i.label === "Exceeds board's max allowance"); if (w < 0) return null;
   return x.items.slice(w + 1, w + 5).find(i => i.kind === 'button' && i.label === '-' && i.enabled); };
-async function lowerOverAllowance(max = 60) {
-  for (let k = 0; k < max && overAllowance(await Screen.read()); k++) { await clickWhere(overAllowance, 'over-allowance −'); await settle(250); }
-}
 async function lowerAgentFeeUntilAllowed(max = 40) {
-  await lowerOverAllowance();
+  // "Exceeds board's max allowance" means the PAYROLL BUDGET is too small, not that a bonus is too
+  // high (user's mapping session, 2030-07-17: Recruitment → Adjust Transfer and Payroll Budget, slider
+  // £2.33M → £2.81M/wk payroll for £25M of transfer budget; every warning cleared). Lowering bonuses
+  // crushed them to almost nothing (£2M loyalty → £24.5K). Stop for the decision instead.
+  if (overAllowance(await Screen.read()) || (await Screen.read()).hasText("Exceeds board's max allowance"))
+    throw new NeedsAnalyst("Payroll budget too small for these terms (\"Exceeds board's max allowance\"): move transfer budget to payroll (Recruitment → Adjust Transfer and Payroll Budget) — a money decision for the user; talks left open", {payrollBudget: 'too small'});
   for (let k = 0; k < max; k++) {
     const s = await Screen.read();
     if (suggestEnabled(s)) return true;
@@ -94,7 +93,7 @@ async function lowerAgentFeeUntilAllowed(max = 40) {
 
 // The talks' own "Negotiate Contract" (StandardButton), not the Continue button of the same label.
 const negotiateButton = x => x.buttons('Negotiate Contract').find(b => b.name !== 'continue-button');
-export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null} = {}) {
+export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null, preview = false} = {}) {
   const rules = loadRules().contracts;
   ticks ??= rules.salary_ticks_down;
   // Wait for the message to give way: it has its own "Hand Over to …" button, which read as the
@@ -159,6 +158,13 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   for (const [k, t] of ticks.entries()) {
     const set = {set: moves[k] < 0 ? await salaryTicksDown(-moves[k]) : await salaryTicksUp(moves[k])};
     if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({ticks: t, salary: set.set, blocked: 'agent fee'}); continue; }
+    // Preview (user, 2026-10-15: "we can check before you click Suggest Terms"): the form as it
+    // would be sent, then stop. Nothing is suggested; the talks stay open.
+    if (preview) {
+      const p = {...entry, outcome: 'preview', would_suggest: contractTerms(await Screen.read()), ticks: t};
+      await log(p);
+      return p;
+    }
     // Wait for the agent's line to CHANGE (or Finalize Deal): Suggest Terms stays enabled right after
     // the click, and the old line ("…initial contract demands…") was read as his answer (Lemaitre).
     const before = agentLine(await Screen.read());
@@ -197,9 +203,11 @@ export const handBackContract = {
   match: s => s.buttons('Enter Contract Negotiations').length === 1 && s.buttons('Walk Away').length === 1
     && (s.hasText(/contract demands to be unacceptable/) || s.hasText(/have accepted our offer of/)),
   async run(s, {dryRun = false} = {}) {
-    const player = s.texts().map(t => /^Handle (.+) contract negotiations$/.exec(t)?.[1] || /have accepted our offer of .+ for (.+)\.$/.exec(t)?.[1]).find(Boolean) || '?';
+    const player = s.texts().map(t => /^Handle (.+) contract (?:negotiations|renewal)$/.exec(t)?.[1] || /have accepted our offer of .+ for (.+)\.$/.exec(t)?.[1]).find(Boolean) || '?';
     if (dryRun) throw new NeedsAnalyst(`Personal terms for ${player} (dry run)`);
     if (held(player)) throw new NeedsAnalyst(`${player}: the user holds this deal (fm hold); stop for their decision`, {held: player});
-    return negotiatePersonalTerms({player});
+    // The DoF handing a renewal back ("Handle Casadó contract renewal"): judge it by the renewal test.
+    const renewal = s.hasText(new RegExp(`^Handle .+ contract renewal$`)) ? await (await import('./renew.mjs')).renewalContext(player) : null;
+    return negotiatePersonalTerms({player, renewal});
   },
 };
