@@ -9,6 +9,8 @@ export async function goTo(tab) {
   return waitFor(s => !overlays(s).length, {what: tab});
 }
 
+export const fold = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[łŁ]/g, 'l').replace(/ß/g, 'ss').toLowerCase().trim();
+export const sameName = (a, b) => { const w = t => fold(t).split(/\s+/).filter(Boolean).sort().join(' '); return w(a) === w(b); };
 // Open a player's profile through the global search. `club` disambiguates namesakes.
 export async function openPlayer(name, club) {
   await goTo('Portal'); // search results depend on the page; from the Portal they include people
@@ -22,8 +24,10 @@ export async function openPlayer(name, club) {
       const row = [];
       for (let j = i + 1; j < items.length && !(items[j].kind === 'button' && items[j].name === 'PlayerSearchButton'); j++) row.push(items[j].label);
       // Search rows show the club's short name ("LOSC" for "LOSC Lille"): match either way.
-      const clubMatch = !club || row.some(l => l.length >= 3 && (l.toLowerCase() === club.toLowerCase() || club.toLowerCase().includes(l.toLowerCase()) || l.toLowerCase().includes(club.toLowerCase())));
-      if (row.includes(name) && clubMatch) return items[i];
+      // Accents and word order differ between the export and the game ("Zukic"/"Žukić", Japanese
+      // family-name-first): compare normalised, as sets of words (portfolio buys, 2030-07-21).
+      const clubMatch = !club || row.some(l => l.length >= 3 && (fold(l) === fold(club) || fold(club).includes(fold(l)) || fold(l).includes(fold(club))));
+      if (row.some(l => sameName(l, name)) && clubMatch) return items[i];
     }
     return null;
   };
