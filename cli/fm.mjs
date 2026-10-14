@@ -11,7 +11,7 @@ import {holiday, holidaySeason} from '../capabilities/season/holiday.mjs';
 import {listPlayer} from '../capabilities/sell/list.mjs';
 import {buyPlayer} from '../capabilities/buy/buy.mjs';
 import {askAgent} from '../capabilities/buy/ask.mjs';
-import {delegateRenewal} from '../capabilities/contracts/renew.mjs';
+import {delegateRenewal, renewSelf} from '../capabilities/contracts/renew.mjs';
 import {movePlayer} from '../capabilities/squad/move.mjs';
 import {allow as allowWage} from '../capabilities/contracts/wage-exceptions.mjs';
 import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
@@ -85,7 +85,7 @@ Transfers
                                  --wage-max: a swap may pay up to the outgoing player's wage above the cap
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
   move "<name>" --club <club> [--to senior|u18] [--dry-run]   move one of ours between squads (U21 → senior)
-  renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
+  renew "<name>" --club <club> [--dof] [--dry-run]      we negotiate a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
 
@@ -240,7 +240,7 @@ try {
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
-    case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;
+    case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun})); break;   // we negotiate (tick rule); --dof hands over
     case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
     case 'input-reset': out(await ui.removeVirtual()); break;

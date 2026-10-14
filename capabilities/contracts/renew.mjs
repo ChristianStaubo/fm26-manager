@@ -18,3 +18,24 @@ export async function delegateRenewal(name, club, {dryRun = false} = {}) {
   await log(result);
   return {...result, options: after};
 }
+
+// Renew one of ours ourselves (user, 2026-10-14: "you can handle this instead of the DoF"):
+// profile → Actions → Contract → Enter Contract Negotiations, then the same talks as for a signing
+// (promises → contract form → salary ticks from his demand; personal-terms.mjs).
+export async function renewSelf(name, club, {dryRun = false} = {}) {
+  const {openPlayer, peekActions, actionPath} = await import('../../game/ui/index.mjs');
+  const {negotiatePersonalTerms} = await import('./personal-terms.mjs');
+  await openPlayer(name, club);
+  const {sub} = await peekActions('Contract');
+  if (!sub.includes('Enter Contract Negotiations')) return {action: 'renew-self', name, done: false, options: sub};
+  if (dryRun) return {action: 'renew-self', name, done: false, dryRun: true, options: sub};
+  await actionPath(['Contract', 'Enter Contract Negotiations']);
+  await answerEnterDialog();
+  return negotiatePersonalTerms({player: name, entered: true});
+}
+// "Enter contract negotiations?" (talking to the player without the agent chat first): Yes.
+export async function answerEnterDialog() {
+  const {Screen, overlays, click, settle} = await import('../../game/ui/index.mjs');
+  await settle(1200);
+  if (overlays(await Screen.read()).some(o => o.kind === 'dialog' && o.title === 'Enter contract negotiations?')) { await click('Yes', {recoverOnOcclusion: false}); await settle(1500); }
+}

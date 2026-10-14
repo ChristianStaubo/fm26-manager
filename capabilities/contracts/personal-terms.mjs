@@ -48,15 +48,35 @@ const salaryMinus = x => { const f = amountAfter(x, 'Salary'); const j = x.items
 export const tickMoves = ticks => ticks.map((t, k) => (k ? ticks[k - 1] : 0) - t);
 const salaryPlus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '+'); };
 async function salaryTicksUp(n) {
+  if (!salaryPlus(await Screen.read())) {
+    const now = parseMoney(amountAfter(await Screen.read(), 'Salary').label);
+    return (await setFee('Salary', now + n * wageStep(now))).set;
+  }
   for (let k = 0; k < n; k++) { await clickWhere(salaryPlus, 'salary +'); await settle(300); }
   return parseMoney(amountAfter(await Screen.read(), 'Salary').label);
 }
+// Some forms have no Salary steppers, one wide field (Lawrence's renewal, 2030-07-17): type the
+// demand minus the same number of the game's steps (£1K a step from £50K/wk, £250 below; Güreler
+// 95K → 92K in 3 ticks).
+export const wageStep = w => (w >= 50000 ? 1000 : 250);
 async function salaryTicksDown(n) {
+  if (!salaryMinus(await Screen.read())) {
+    const now = parseMoney(amountAfter(await Screen.read(), 'Salary').label);
+    return (await setFee('Salary', now - n * wageStep(now))).set;
+  }
   for (let k = 0; k < n; k++) { await clickWhere(salaryMinus, 'salary −'); await settle(300); }
   return parseMoney(amountAfter(await Screen.read(), 'Salary').label);
 }
 
+// "Exceeds board's max allowance" under Loyalty Bonus / Agent Fee (Lawrence, 2030-07-17): lower that
+// amount until the warning goes; Suggest Terms stays disabled while any is over.
+const overAllowance = x => { const w = x.items.findIndex(i => i.kind === 'text' && i.label === "Exceeds board's max allowance"); if (w < 0) return null;
+  return x.items.slice(w + 1, w + 5).find(i => i.kind === 'button' && i.label === '-' && i.enabled); };
+async function lowerOverAllowance(max = 60) {
+  for (let k = 0; k < max && overAllowance(await Screen.read()); k++) { await clickWhere(overAllowance, 'over-allowance −'); await settle(250); }
+}
 async function lowerAgentFeeUntilAllowed(max = 40) {
+  await lowerOverAllowance();
   for (let k = 0; k < max; k++) {
     const s = await Screen.read();
     if (suggestEnabled(s)) return true;
@@ -83,7 +103,15 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   const form = x => !!amountAfter(x, 'Salary') && x.hasText('Payroll Budget Impact');
   const link = x => x.buttons().find(b => b.name === 'transfer-link-button' && /^Contract £/.test(b.label));
   const steps = x => x.buttons(/^(Finalize Promises|Hand Over to .+)$/).length > 0 || !!negotiateButton(x);
-  let s = await waitFor(x => form(x) || steps(x) || !!link(x), {what: 'contract negotiation', timeout: 15000});
+  // A refusal ends the talks at once: "My client isn't currently interested in entering into contract
+  // negotiations with your club. He is currently unhappy at the club." (Franculino, 2030-07-17).
+  const refused = x => /isn't currently interested in entering into contract negotiations|not interested in (a new contract|negotiating)/i.test(agentLine(x));
+  let s = await waitFor(x => form(x) || steps(x) || !!link(x) || refused(x), {what: 'contract negotiation', timeout: 15000});
+  if (refused(s)) {
+    const e = {action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'refused', reply: agentLine(s).slice(0, 240)};
+    await log(e);
+    return e;
+  }
   if (!form(s) && !steps(s)) { await clickWhere(link, 'Contract link'); s = await waitFor(x => form(x) || steps(x), {what: 'contract negotiation (via deal)', timeout: 15000}); }
   // Talks the Director of Football hasn't tried yet: hand them over (playbook: staff negotiate
   // contracts; Grimes, 2028-06-27 waited on "Hand Over to Phil Giles").

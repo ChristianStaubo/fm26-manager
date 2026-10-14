@@ -11,6 +11,7 @@ export const KNOWN_DIALOGS = {
   'DOF to negotiate contract?': 'Yes',   // asking the Director of Football to negotiate a renewal
   'Submit the current set of squad numbers?': 'Yes',   // squad numbers (assistant assigned them)
   'Submit completed squad list?': 'Confirm',           // squad registration
+  'Enter contract negotiations?': 'Yes',   // renewing ourselves without the agent chat first (Franculino, 2030-07-17)
   'Cancel Negotiations': 'Cancel',   // never drop a deal by accident: keep talking (2028-06-27, Tanaka)
 };
 
