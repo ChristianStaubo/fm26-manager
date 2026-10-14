@@ -41,12 +41,12 @@ def changes(rows, prev):
             'left_fringe': len([x for x in left if x['minutes_for_us'] < LEFT_MIN]), 'arrived': arrived}
 
 
-def shopping(report, rows, tactic, budget):
+def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
     """Per slot: how many starters we lack (solid players vs XI slots), then depth (solid vs need).
     Starters come from best/value with a real sample (moneyball score), cheapest strong first;
     depth from bench/free. Each pick is priced with fm price and must fit the remaining budget."""
     used = {s['slot'] for s in tactic['slots']}
-    picks, skipped, left, taken = [], [], budget, set()
+    picks, skipped, left, taken, shortlist = [], [], budget, set(), {}
     order = sorted(report['slots'], key=lambda s: (s['solid'] - len([x for x in STARTERS.get(s['slot'], (s['slot'],)) if x in used])))
     for s in order:
         xi = len([x for x in STARTERS.get(s['slot'], (s['slot'],)) if x in used]) or 1
@@ -63,6 +63,9 @@ def shopping(report, rows, tactic, budget):
                 p = m.price(rows, c['name'])
                 if 'error' in p:
                     continue
+                if not p['wage_ok']:   # the runaway cap (contracts.max_salary_vs_first_team_median): Pineda wanted £568K/wk
+                    skipped.append({'slot': s['slot'], 'name': c['name'], 'wage': p['wage'], 'why': 'wage over our cap'})
+                    continue
                 if p['walk_away'] > cap:   # depth: the price, not the list it came from (Pulisic, 'free' next June, £42M)
                     continue
                 if p['walk_away'] > left:
@@ -70,34 +73,47 @@ def shopping(report, rows, tactic, budget):
                     continue
                 taken.add(c['name']); left -= p['walk_away']
                 picks.append({'slot': s['slot'], 'role': why, 'name': c['name'], 'club': p['club'], 'age': c['age'], 'league': c['league'],
-                              'blended': c['blended'], 'moneyball': c['moneyball'], 'chabot': c['chabot'], 'minutes': c['minutes'],
+                              'attributes': c['attributes'], 'blended': c['blended'], 'moneyball': c['moneyball'], 'chabot': c['chabot'], 'minutes': c['minutes'],
                               'value': p['value'], 'open_at': p['open_at'], 'walk_away': p['walk_away'], 'wage': p['wage'], 'wage_ok': p['wage_ok'],
                               'beats_our_best_by': c['blended'] - (s['ours'][0]['blended'] if s['ours'] else 0)})
                 return True
             return False
         # Every list counts (Kovář, 75/100 for £3.8M, sat in 'bench'); starters need a real sample.
-        every = {c['name']: c for c in s['best'] + s['value'] + s['bench'] + s['free']}.values()
-        strong = sorted((c for c in every if c['moneyball'] is not None and c['blended'] >= w.SOLID), key=lambda c: (-c['blended'], c['value']))
+        every = [c for c in {c['name']: c for c in s['best'] + s['value'] + s['bench'] + s['free'] + s.get('by_attributes', [])}.values() if c['age'] <= max_age]
+        if lens == 'attributes':
+            # Attributes alone (user, 2026-10-14): better and younger, a higher price is fine; resale later.
+            # The bar is our best player's attributes there, so a pick is an upgrade on paper.
+            bar = s.get('attr_bar', w.SOLID)
+            strong = sorted((c for c in every if c['attributes'] > bar), key=lambda c: (-c['attributes'], c['age'], c['value']))
+        else:
+            strong = sorted((c for c in every if c['moneyball'] is not None and c['blended'] >= w.SOLID), key=lambda c: (-c['blended'], c['value']))
         # Depth is cheap: the cheapest solid option up to DEPTH_MAX (not Zaragoza at £52M as a backup).
-        solid = sorted((c for c in every if c['blended'] >= w.SOLID and c['value'] <= DEPTH_MAX), key=lambda c: c['value'])
+        solid = [c for c in every if c['blended'] >= w.SOLID and c['value'] <= DEPTH_MAX]
+        if starter_gap:   # the options behind the pick: the user chooses (Lemaitre 89 attrs, 0 minutes, £0.8M?)
+            pool = sorted(every, key=lambda c: (-c['attributes'], c['age'], c['value'])) if lens == 'attributes' else strong
+            bar = s.get('attr_bar', w.SOLID)
+            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'moneyball', 'minutes', 'value', 'wage')},
+                                     'beats_our_weakest_starter': c['attributes'] > bar} for c in pool[:8]]
         for _ in range(starter_gap):
             if not choose(strong, 'starter'):
                 skipped.append({'slot': s['slot'], 'why': 'no starter with a full sample fits the budget: read fm window'})
         for _ in range(depth_gap):
-            if not choose(sorted((c for c in s['bench'] + s['free'] if c['blended'] >= w.SOLID), key=lambda c: (c['value'], -c['blended'])) or solid, 'depth', DEPTH_MAX):
+            cheap = [c for c in s['bench'] + s['free'] if c['blended'] >= w.SOLID and c['age'] <= max_age]
+            depth_key = (lambda c: (-c['attributes'], c['value'])) if lens == 'attributes' else (lambda c: (c['value'], -c['blended']))
+            if not choose(sorted(cheap, key=depth_key) or sorted(solid, key=depth_key), 'depth', DEPTH_MAX):
                 skipped.append({'slot': s['slot'], 'why': 'no depth option: read fm window'})
-    return picks, skipped, left
+    return picks, skipped, left, shortlist
 
 
-def plan(rows, tactic, budget, prev=None, max_value=60e6):
-    report = w.report(rows, None, max_value, 29, 8e6, tactic)
-    picks, skipped, left = shopping(report, rows, tactic, budget)
+def plan(rows, tactic, budget, prev=None, max_value=60e6, lens='moneyball', max_age=29):
+    report = w.report(rows, None, max_value, max_age, 8e6, tactic, young_age=max_age if lens == 'attributes' else None)
+    picks, skipped, left, shortlist = shopping(report, rows, tactic, budget, lens, max_age)
     xi = {s['slot']: (s['ours'][0]['name'] if s['ours'] else None) for s in report['slots']}
     return {'date': report['date'], 'data': report['data'], 'alerts': report['alerts'],
             'changes': changes(rows, prev) if prev else 'no snapshot export to compare with',
             'slots': [{'slot': s['slot'], 'status': s['status'], 'solid': s['solid'], 'need': s['need'],
                        'ours': [f"{c['name']} {c['blended']}" for c in s['ours'][:4]]} for s in report['slots']],
-            'buy': picks, 'not_bought': skipped,
+            'lens': lens, 'max_age': max_age, 'buy': picks, 'shortlist': shortlist, 'not_bought': skipped,
             'budget': {'given': budget, 'walk_away_total': budget - left, 'left_at_worst': left},
             # Fringe (under LEFT_MIN minutes) is listed by name only: no evidence either way, not a sale.
             'sell': [{'name': c['name'], 'slot': c['slot'], 'blended': c['blended'], 'minutes': c['minutes'], 'value': c['value'], 'wage': c['wage'], 'why': c['why']}
@@ -114,11 +130,13 @@ if __name__ == '__main__':
     ap.add_argument('--snapshot')
     ap.add_argument('--max-value', type=float, default=60e6)
     ap.add_argument('--csv')
+    ap.add_argument('--lens', choices=['moneyball', 'attributes'], default='moneyball')
+    ap.add_argument('--max-age', type=int, default=29)
     a = ap.parse_args()
     current = a.csv or sr.export_save('latest')   # export once (--fresh runs without --csv)
     rows, tactic = m.load(current)
     snap = Path(a.snapshot) if a.snapshot else snapshot_path(current)
     prev = sr.load(str(snap)) if snap else None
-    out = plan(rows, tactic, a.budget, prev, a.max_value)
+    out = plan(rows, tactic, a.budget, prev, a.max_value, a.lens, a.max_age)
     out['snapshot'] = str(snap.name) if snap else None
     print(json.dumps(out, indent=1, ensure_ascii=False, default=str))

@@ -54,10 +54,11 @@ def shape(tactic):
 CUP = re.compile(r'UEFA|Cup|Copa|Coupe|Pokal|Coppa|Taça|Trophy|Shield|Libertadores|Sudamericana|Champions|Conference|Europa', re.I)
 MIN_SAMPLE = 1200          # league minutes for a stats score
 STRONG = 0.85              # league strength (vs ours) for a stats score
+YOUNG_FLOOR = 40           # least attributes percentile for the young lens
 SOLID = 50                 # blended score that counts as a solid player
 
 
-def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=None):
+def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=None, young_age=None):
     shaped = shape(tactic) if tactic else SLOTS
     strength = m.league_strength(rows)
     buy = m.POLICY['buying']
@@ -106,12 +107,22 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             f, a = fits[p['name']], int(p['age'] or 0)
             sim = [int(q['value']) for q in market if abs(fits[q['name']] - f) <= 0.4 and abs(int(q['age'] or 0) - a) <= 2]
             return round(int(p['value']) / st.median(sim), 2) if len(sim) >= 6 else None
-        targets, bench, free = [], [], []
+        targets, bench, free, young = [], [], [], []
+        # Bar for the young lens: our weakest starter's attributes there (need - 1 starters: the 3rd CB,
+        # the 1st GK), floor 40. Our best (Torrente 83 at CB) or the PL median (GK) let almost no one in.
+        ranked = sorted((pct(adist, sc.attr_fit(p, role)) for p in squad if p['pos'] & natural), reverse=True)
+        top_attr = max(ranked[need - 2] if len(ranked) >= need - 1 and need >= 2 else 0, YOUNG_FLOOR)
         for p in market:
             if p['contract_club'] == m.CLUB or p['club'] == m.CLUB or p['on_loan_at'] or p['club'].startswith('club#'):
                 continue
             if slot == 'DM' and p['pos'] & (FULLBACK | WIDE):
                 continue
+            # Young on attributes (plan --lens attributes): the whole market up to young_age, before the
+            # consistency / big-match filters that young players rarely pass; injury-prone still out.
+            if young_age and int(p['age'] or 99) <= young_age and int(p['value']) <= max_value and sr.num(p, 'Injury Proneness') <= 13:
+                c = card(p)
+                if c['attributes'] >= YOUNG_FLOOR:   # the shortlist shows near-misses too; the pick needs attr_bar
+                    young.append(c)
             if sr.num(p, 'Injury Proneness') > 13 or sr.num(p, 'Consistency') < buy['min_consistency'] \
                     or sr.num(p, 'Important Matches') < buy['min_important_matches'] - 1:
                 continue
@@ -133,6 +144,9 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             'role': role, 'core': core, 'peers': len(peers), 'ours': ours,
             'best': sorted(targets, key=lambda c: -c['blended'])[:3],
             'value': sorted(targets, key=lambda c: -c['per10m'])[:3],
+            # Attributes alone (plan --lens attributes): younger, better players we can sell on later.
+            'attr_bar': top_attr,
+            'by_attributes': sorted(young, key=lambda c: (-c['attributes'], c['age'], c['value']))[:10],
             'bench': sorted((c for c in bench if c['blended'] >= 35), key=lambda c: (-c['blended'], c['value']))[:3],
             'free': sorted((c for c in free if c['blended'] >= 40), key=lambda c: -c['blended'])[:4],
         })
