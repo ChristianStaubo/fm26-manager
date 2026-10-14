@@ -88,7 +88,26 @@ const squadNumbers = {
   },
 };
 
-export const HANDLERS = [
+// Work permit rejected for a signing ("Lemaitre's work permit application rejected", 2030-07-18):
+// Appeal (£5K) or Don't Appeal; the deal is on hold. policy.buying.work_permit_appeal decides:
+// 'appeal' (approved signings), 'decline', or 'ask' (stop for the user).
+export const workPermitRejected = {
+  name: 'work-permit-rejected',
+  match: s => s.buttons('Appeal').length === 1 && s.buttons("Don't Appeal").length === 1 && s.hasText(/work permit application rejected$/),
+  async run(s, {dryRun = false} = {}) {
+    const {loadPolicy} = await import('../../../capabilities/sell/decide.mjs');
+    const player = s.texts().map(t => /^(.+)'s work permit application rejected$/.exec(t)?.[1]).find(Boolean) || '?';
+    const cost = parseMoney(/cost of (£[\d,.]+[KM]?)/.exec(s.texts().find(t => /work permit appeal/.test(t)) || '')?.[1] ?? '');
+    const rule = loadPolicy().buying.work_permit_appeal || 'ask';
+    const entry = {action: 'work-permit', date: isoDate(s.date()), player, cost, rule};
+    if (rule === 'ask' || dryRun) { if (!dryRun) await log({...entry, executed: false}); throw new NeedsAnalyst(`${player}: work permit rejected; appeal (${cost ? '£' + cost : 'cost unknown'}) or not? (policy buying.work_permit_appeal = ask)`, entry); }
+    await click(rule === 'appeal' ? 'Appeal' : "Don't Appeal");
+    await log({...entry, executed: true, choice: rule});
+    return entry;
+  },
+};
+
+export const HANDLERS = [workPermitRejected, 
   squadNumbers,
   // "<Club> squad to be decided": register every eligible 21+ player, then submit (registration.mjs).
   registrationHandler,
