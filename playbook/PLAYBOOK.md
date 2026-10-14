@@ -89,8 +89,8 @@ These are the user's rules (decided 2026-10-09).
 - Renew starters and good-value rotation players before they expire; let declining or surplus
   players go.
 
-- **Personal terms** (user, 2026-10-14): start from the agent's opening demand and lower only the
-  salary, three "−" steps (then 2, 1, 0); bonuses, clauses and length untouched.
+- **Personal terms** (user, 2026-10-15): only the salary moves. Probe: open 4 ticks under his demand
+  (5 for expensive wages), then read his counter: firm → 1 tick under it, flexible → 2; then take it.
 - *Next (user, 2026-10-14, not automated yet):*
   - on the **promises** screen, try one step lower on playing time than asked (e.g. "Important
     Player" → "Regular Starter") before accepting their demand;

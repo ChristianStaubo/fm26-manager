@@ -29,3 +29,12 @@ test('renewal test (user, 2026-10-15): renew when the value protected is ≥ 1.5
   assert.equal(renewalVerdict({currentWage: 50000, value: 10e6, demand: 120000, years: 5, loyaltyBonus: 5e6}, rules).verdict, 'sell');
   assert.equal(renewalVerdict({currentWage: 40000, value: 1e6, demand: 60000, years: 2, age: 32, minutes: 300}, rules).verdict, 'run-down');
 });
+
+test('probe (user, 2026-10-15): firm counter → 1 tick under it, flexible → 2; expensive wages open 5 ticks under', async () => {
+  const {nextOfferTicks} = await import('../capabilities/contracts/personal-terms.mjs');
+  const p = loadPolicy().contracts.probe;
+  assert.equal(nextOfferTicks({demand: 73000, counter: 66000, tick: 1000}, p), 2, 'Lawrence: countered 7 ticks down → flexible → £64K');
+  assert.equal(nextOfferTicks({demand: 125000, counter: 125000, tick: 5000}, p), 1, 'held at the demand → firm');
+  assert.equal(nextOfferTicks({demand: 125000, counter: 120000, tick: 5000}, p), 1, 'one tick down → still firm');
+  assert.equal(p.open_ticks_expensive, 5); assert.equal(p.expensive_over, 75000);
+});

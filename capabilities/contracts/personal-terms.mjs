@@ -48,6 +48,12 @@ export const termsAccepted = s => /pleased with the negotiations|solution everyo
 
 // The Salary row's "−" button (the form's own wage steps).
 const salaryMinus = x => { const f = salaryControl(x); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
+// After his counter: how many ticks under it (user, 2026-10-15). Within firm_within_ticks of the
+// demand he's firm (1 tick under); a bigger drop shows room (2 ticks under).
+export function nextOfferTicks({demand, counter, tick}, p) {
+  const dropped = Math.round((demand - counter) / tick);
+  return dropped <= p.firm_within_ticks ? p.below_counter_firm : p.below_counter_flexible;
+}
 // Presses per try from one Reset: [3,2,1,0] → [-3, +1, +1, +1] (− lowers the salary). Reset restores
 // our last suggestion, not the demand, so we never Reset between tries (Lemaitre, 2030-07-14).
 export const tickMoves = ticks => ticks.map((t, k) => (k ? ticks[k - 1] : 0) - t);
@@ -150,20 +156,26 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     await log({...entry, outcome: 'escalated'});
     throw new NeedsAnalyst(`${player} wants £${demand}/week, above our cap £${Math.round(cap)} (${rules.max_salary_vs_first_team_median}× first-team median £${bands.median}); decide`, entry);
   }
-  // Reset ONCE, to their opening demand. Later Resets restore our last suggestion, not the demand
-  // (Lemaitre 2030-07-14: "2 ticks" after a 3-tick try gave £19K, below the 3-tick £19.5K). So:
-  // ticks[0] presses of −, then step back up with + between tries.
+  // The probe (user, 2026-10-15): open contracts.probe ticks under his demand (more when the wage is
+  // expensive) to make the agent show his floor, then read his counter, which he writes into the form:
+  // at or within a tick of the demand = firm → 1 tick under it; lower = flexible → 2 ticks under it;
+  // the last round takes his counter. Lawrence: £73K → (user opened £60K) → counter £66K → £64K agreed.
+  // Reset once to his demand (later Resets restore OUR last suggestion); the tick is measured from
+  // our own presses (£1K around £70K, £5K around £125K).
+  const p = rules.probe;
   await click('Reset', {name: 'button-secondary-label'}); await settle(800);
-  const moves = tickMoves(ticks);
-  for (const [k, t] of ticks.entries()) {
-    const set = {set: moves[k] < 0 ? await salaryTicksDown(-moves[k]) : await salaryTicksUp(moves[k])};
-    if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({ticks: t, salary: set.set, blocked: 'agent fee'}); continue; }
-    // Preview (user, 2026-10-15: "we can check before you click Suggest Terms"): the form as it
+  const open = demand >= p.expensive_over ? p.open_ticks_expensive : p.open_ticks;
+  let offered = await salaryTicksDown(open);
+  const step = Math.max(1, Math.round((demand - offered) / open));
+  Object.assign(entry, {openTicks: open, tick: step});
+  for (let round = 1; round <= p.max_rounds; round++) {
+    if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({round, salary: offered, blocked: 'agent fee'}); break; }
+    // Preview (user, 2026-10-15: "we can check before you click Suggest Terms"): the opening offer as it
     // would be sent, then stop. Nothing is suggested; the talks stay open.
     if (preview) {
-      const p = {...entry, outcome: 'preview', would_suggest: contractTerms(await Screen.read()), ticks: t};
-      await log(p);
-      return p;
+      const pv = {...entry, outcome: 'preview', would_suggest: contractTerms(await Screen.read()), openTicks: open, tick: step};
+      await log(pv);
+      return pv;
     }
     // Wait for the agent's line to CHANGE (or Finalize Deal): Suggest Terms stays enabled right after
     // the click, and the old line ("…initial contract demands…") was read as his answer (Lemaitre).
@@ -171,28 +183,33 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     await click('Suggest Terms', {name: 'StandardButton'});
     const r = await waitFor(x => x.buttons('Finalize Deal').length > 0 || (agentLine(x) !== before && suggestEnabled(x)), {what: 'agent reply', timeout: 20000}).catch(() => Screen.read());
     if (agentLine(r) === before && !r.buttons('Finalize Deal').length) {
-      await log({...entry, outcome: 'no-reply', salary: set.set});
-      throw new NeedsAnalyst(`${player}: no reply from the agent after suggesting £${set.set}/wk; talks left open, read the screen`, entry);
+      await log({...entry, outcome: 'no-reply', salary: offered});
+      throw new NeedsAnalyst(`${player}: no reply from the agent after suggesting £${offered}/wk; talks left open, read the screen`, entry);
     }
-    entry.tries.push({ticks: t, salary: set.set, reply: agentLine(r).slice(0, 200)});
+    entry.tries.push({round, salary: offered, reply: agentLine(r).slice(0, 200)});
     // Accepted, decision pending: no Finalize Deal, the player "would like to go away and think" /
-    // "These terms are acceptable but I wish to evaluate all my options" (Tanaka, Grimes 2028-06-27:
-    // read as a no, the handler kept raising the salary). Stop here; the player answers in days.
+    // "These terms are acceptable but I wish to evaluate all my options" (Tanaka, Grimes 2028-06-27).
     if (!r.buttons('Finalize Deal').length && termsAccepted(r)) {
-      await log({...entry, outcome: 'accepted-pending', salary: set.set});
-      return {...entry, outcome: 'accepted-pending', salary: set.set};
+      await log({...entry, outcome: 'accepted-pending', salary: offered});
+      return {...entry, outcome: 'accepted-pending', salary: offered};
     }
     if (r.buttons('Finalize Deal').length) {
       await click('Finalize Deal');
       await waitFor(x => x.buttons('Exit Talks').length > 0, {what: 'deal finalized'});
       await click('Exit Talks');
-      await log({...entry, outcome: 'agreed', salary: set.set});
-      return {...entry, outcome: 'agreed', salary: set.set};
+      await log({...entry, outcome: 'agreed', salary: offered});
+      return {...entry, outcome: 'agreed', salary: offered};
     }
+    // His counter is in the form now.
+    const counter = salaryOf(r);
+    entry.tries.at(-1).counter = counter;
+    if (counter == null || (cap && counter > cap && !entry.renewal)) break;
+    const k = round >= p.max_rounds - 1 ? 0 : nextOfferTicks({demand, counter, tick: step}, p);
+    offered = k ? await salaryTicksDown(k) : counter;
   }
   // No agreement: leave the talks open (cancelling loses the player and the agreed fee) and ask.
   await log({...entry, outcome: 'no-agreement'});
-  throw new NeedsAnalyst(`${player}: no agreement from ${ticks[0]} ticks below his demand up to the demand itself (£${demand}/wk); talks left open`, entry);
+  throw new NeedsAnalyst(`${player}: no agreement after ${entry.tries.length} offers (demand £${demand}/wk); talks left open`, entry);
 }
 
 // Autopilot handler.

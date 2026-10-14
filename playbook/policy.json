@@ -110,6 +110,16 @@
       "sell_over": 2000000,
       "run_down_age": 30
     },
+    "probe": {
+      "_about": "User, 2026-10-15: open open_ticks under his demand (open_ticks_expensive when the demand is expensive_over+) to see his floor; his counter within firm_within_ticks of the demand = firm → offer below_counter_firm ticks under it; a bigger drop = flexible → below_counter_flexible ticks under; the last round takes his counter. Lawrence (by hand): £73K → £60K → counter £66K → £64K agreed.",
+      "open_ticks": 4,
+      "open_ticks_expensive": 5,
+      "expensive_over": 75000,
+      "firm_within_ticks": 1,
+      "below_counter_firm": 1,
+      "below_counter_flexible": 2,
+      "max_rounds": 3
+    },
     "salary_ticks_down": [3, 2, 1, 0],
     "_salary_ticks_down": "User, 2026-10-14: take the agent's opening demand and press the Salary minus button this many times, nothing else (bonuses, clauses, length untouched); then fewer ticks, ending at the demand itself. Replaces salary_factors (typed shares of the demand).",
     "salary_factors": [0.95, 1.0, 1.1, 1.2],
