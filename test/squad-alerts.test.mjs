@@ -9,15 +9,18 @@ import {tmpdir} from 'node:os';
 const ROOT = new URL('..', import.meta.url).pathname;
 const py = code => execFileSync('python3', ['-c', code], {cwd: `${ROOT}analysis`, encoding: 'utf8'});
 
-test('alerts: no contract, and a league regular registered in our U21; youth regulars are not', () => {
+test('alerts: no contract, a league regular registered in our U21, a regular in his final year (Franculino); youth regulars are not', () => {
   const rows = [
     {name: 'Kristoffer Ajer', club: 'Brentford', contract_club: '', on_loan_at: '', age: '32', positions: 'DC', competition: 'Premier League', minutes: '2888', wage: '55000'},
     {name: 'Julian Eyestone', club: 'Brentford U21', contract_club: 'Brentford', on_loan_at: '', age: '24', positions: 'GK', competition: 'Premier League', minutes: '4230', wage: '21914'},
     {name: 'Sol Foster', club: 'Brentford U18', contract_club: 'Brentford', on_loan_at: '', age: '18', positions: 'DM', competition: 'U18 Premier League', minutes: '6257', wage: '0'},
-    {name: 'Michael Kayode', club: 'Brentford', contract_club: 'Brentford', on_loan_at: '', age: '26', positions: 'DR', competition: 'Premier League', minutes: '4000', wage: '90000'},
+    {name: 'Michael Kayode', club: 'Brentford', contract_club: 'Brentford', on_loan_at: '', age: '26', positions: 'DR', competition: 'Premier League', minutes: '4000', wage: '90000', contract_expires: '2034-06-30'},
+    {name: 'Franculino', club: 'Brentford', contract_club: 'Brentford', on_loan_at: '', age: '26', positions: 'ST', competition: 'Premier League', minutes: '3165', wage: '124448', value: '37929268', contract_expires: '2031-06-30'},
   ];
   const file = `${mkdtempSync(`${tmpdir()}/alerts-`)}/rows.json`;
   writeFileSync(file, JSON.stringify(rows));
-  const out = JSON.parse(py(`import json, manager as m\nm.CLUB, m.LEAGUE = 'Brentford', 'Premier League'\nprint(json.dumps(m.alerts(json.load(open(${JSON.stringify(file)})))))`));
-  assert.deepEqual(out.map(a => [a.name, a.issue]), [['Julian Eyestone', 'regular in Brentford U21'], ['Kristoffer Ajer', 'no contract']]);
+  const out = JSON.parse(py(`import json, datetime as dt, manager as m
+m.CLUB, m.LEAGUE = 'Brentford', 'Premier League'
+print(json.dumps(m.alerts(json.load(open(${JSON.stringify(file)})), dt.date(2030, 7, 14))))`));
+  assert.deepEqual(out.map(a => [a.name, a.issue]), [['Julian Eyestone', 'regular in Brentford U21'], ['Franculino', 'final year'], ['Kristoffer Ajer', 'no contract']]);
 });

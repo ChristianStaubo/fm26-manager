@@ -18,6 +18,7 @@ import manager as m, window as w
 sr = m.sr
 STARTERS = {'CB': ('LCB', 'CB', 'RCB'), 'DM': ('LDM', 'RDM')}   # slots per group in the XI
 DEPTH_MAX = 15e6   # most we pay for a depth signing
+DEPTH_MAX_AGE = 31   # depth: any age up to this (the lens's --max-age is for starters)
 LEFT_MIN = 900   # a departure worth naming: league minutes for us last season
 
 
@@ -102,22 +103,36 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
             if not choose(strong, 'starter'):
                 skipped.append({'slot': s['slot'], 'why': 'no starter with a full sample fits the budget: read fm window'})
         for _ in range(depth_gap):
-            cheap = [c for c in s['bench'] + s['free'] if c['blended'] >= w.SOLID and c['age'] <= max_age]
-            depth_key = (lambda c: (-c['attributes'], c['value'])) if lens == 'attributes' else (lambda c: (c['value'], -c['blended']))
+            # Depth is cheap and any age (user, 2026-10-14: young players only where they'll play a lot,
+            # so they develop; a bench player is a cheaper, older one). Not the lens's age limit.
+            cheap = [c for c in s['bench'] + s['free'] if c['blended'] >= w.SOLID and c['age'] <= DEPTH_MAX_AGE]
+            depth_key = lambda c: (c['value'], -c['blended'])
             if not choose(sorted(cheap, key=depth_key) or sorted(solid, key=depth_key), 'depth', DEPTH_MAX):
                 skipped.append({'slot': s['slot'], 'why': 'no depth option: read fm window'})
     return picks, skipped, left, shortlist
 
 
-def plan(rows, tactic, budget, prev=None, max_value=60e6, lens='moneyball', max_age=29):
-    report = w.report(rows, None, max_value, max_age, 8e6, tactic, young_age=max_age if lens == 'attributes' else None)
+def incoming_signings(since):
+    """This window's agreed buys from the decision log (local/runs/decisions.jsonl), minus held deals."""
+    root = Path(__file__).resolve().parent.parent / 'local' / 'runs'
+    try:
+        log = [json.loads(l) for l in (root / 'decisions.jsonl').read_text().splitlines() if l.strip()]
+        holds = json.loads((root / 'approvals.json').read_text()).get('holds', [])
+    except FileNotFoundError:
+        return []
+    ok = {'agreed', 'accepted-demands', 'release-clause'}
+    return sorted({d['name'] for d in log if d.get('action') == 'buy' and d.get('outcome') in ok and (not d.get('date') or d['date'] >= since) and d['name'] not in holds})
+
+
+def plan(rows, tactic, budget, prev=None, max_value=60e6, lens='moneyball', max_age=29, incoming=()):
+    report = w.report(rows, None, max_value, max_age, 8e6, tactic, young_age=max_age if lens == 'attributes' else None, incoming=incoming)
     picks, skipped, left, shortlist = shopping(report, rows, tactic, budget, lens, max_age)
     xi = {s['slot']: (s['ours'][0]['name'] if s['ours'] else None) for s in report['slots']}
     return {'date': report['date'], 'data': report['data'], 'alerts': report['alerts'],
             'changes': changes(rows, prev) if prev else 'no snapshot export to compare with',
             'slots': [{'slot': s['slot'], 'status': s['status'], 'solid': s['solid'], 'need': s['need'],
                        'ours': [f"{c['name']} {c['blended']}" for c in s['ours'][:4]]} for s in report['slots']],
-            'lens': lens, 'max_age': max_age, 'buy': picks, 'shortlist': shortlist, 'not_bought': skipped,
+            'lens': lens, 'max_age': max_age, 'incoming': list(incoming), 'buy': picks, 'shortlist': shortlist, 'not_bought': skipped,
             'budget': {'given': budget, 'walk_away_total': budget - left, 'left_at_worst': left},
             # Fringe (under LEFT_MIN minutes) is listed by name only: no evidence either way, not a sale.
             'sell': [{'name': c['name'], 'slot': c['slot'], 'blended': c['blended'], 'minutes': c['minutes'], 'value': c['value'], 'wage': c['wage'], 'why': c['why']}
@@ -141,6 +156,8 @@ if __name__ == '__main__':
     rows, tactic = m.load(current)
     snap = Path(a.snapshot) if a.snapshot else snapshot_path(current)
     prev = sr.load(str(snap)) if snap else None
-    out = plan(rows, tactic, a.budget, prev, a.max_value, a.lens, a.max_age)
+    t = m.today_of(rows)
+    season = f"{t.year - (0 if t.month >= 7 else 1)}-07-01"
+    out = plan(rows, tactic, a.budget, prev, a.max_value, a.lens, a.max_age, incoming_signings(season))
     out['snapshot'] = str(snap.name) if snap else None
     print(json.dumps(out, indent=1, ensure_ascii=False, default=str))

@@ -101,15 +101,22 @@ def today_of(rows):
     return dt.date.fromisoformat(max(dates)) if dates else dt.date.today()
 
 
-def alerts(rows):
+def alerts(rows, today=None):
     """Players the squad tables leave out, which a manager must see (user, 2026-10-14):
     - at our club with no contract: expired on 30 June, still training with us (Ajer, Katić in July
       2030; the profile says 'N/A'). Renew, release or replace before they walk.
     - first-team regulars (league minutes) registered in our U21/U18 (Eyestone, 4,230 PL min, in 'Brentford U21'):
       they can't be picked for the XI until moved back."""
+    # - regulars in the final year of their contract (Franculino, Casadó in July 2030): renew or
+    #   sell this window; a starter's value falls as he nears a free transfer (user, 2026-10-14).
+    t = today or today_of(rows)
+    last_june = f"{t.year + (1 if t.month >= 7 else 0)}-06-30"
     out = []
     for p in rows:
         mins = int(float(p.get('minutes') or 0))
+        if p['contract_club'] == CLUB and not p['on_loan_at'] and p['club'] == CLUB and mins >= 1500 and (p.get('contract_expires') or '9999')[:10] <= last_june:
+            out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': 'final year', 'minutes': mins,
+                        'expires': p['contract_expires'][:10], 'value': int(p['value'] or 0), 'wage': sr.num(p, 'wage'), 'do': 'renew (fm renew) or sell this window'})
         if p['club'] == CLUB and not p['contract_club'] and not p['on_loan_at']:
             out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': 'no contract',
                         'minutes': mins, 'wage': sr.num(p, 'wage'), 'do': 'renew (fm renew), release, or replace'})

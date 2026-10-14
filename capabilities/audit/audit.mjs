@@ -11,15 +11,18 @@ const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLow
 const m = v => `£${(v / 1e6).toFixed(2)}M`;
 
 // Squad: what the XI and the squad tables must never hide.
-export function checkSquad({alerts = [], tactic}) {
-  const fail = [], warn = [];
+// fail = a defect the tools must fix (files friction); decide = the user's call (no friction);
+// warn = worth a look. `released`: players the user let go (no-contract alerts then pass).
+export function checkSquad({alerts = [], tactic, released = []}) {
+  const fail = [], warn = [], decide = [];
   const slots = tactic?.slots || [];
   if (slots.length !== 11 || !slots.some(s => s.slot === 'GK')) fail.push(`tactic.json has ${slots.length} slots${slots.some(s => s.slot === 'GK') ? '' : ', no GK'}: the shape must be the 11 we play`);
   for (const a of alerts) {
-    if (a.issue === 'no contract') (a.minutes >= 900 ? fail : warn).push(`${a.name} (${a.positions}, ${a.minutes} min) has no contract: renew, release or replace`);
+    if (a.issue === 'no contract') { if (!released.some(r => norm(r) === norm(a.name))) decide.push(`${a.name} (${a.positions}, ${a.minutes} min) has no contract: renew, release or replace`); }
+    else if (a.issue === 'final year') decide.push(`${a.name} (${a.positions}, ${a.age}, ${a.minutes} min, ${m(a.value)}) is in his final year (to ${a.expires}): renew or sell this window`);
     else fail.push(`${a.name} (${a.positions}, ${a.minutes} league min) is a ${a.issue}: fm move him to the senior squad before the XI is picked`);
   }
-  return {fail, warn};
+  return {fail, warn, decide};
 }
 
 // Deals this season: what we paid against what the user approved; what contracts do to resale.
@@ -94,8 +97,8 @@ export async function audit({alerts, position, since} = {}) {
   const ledger = existsSync(`${ROOT}local/runs/ledger.json`) ? JSON.parse(readFileSync(`${ROOT}local/runs/ledger.json`, 'utf8')) : null;
   const median = decisions.filter(d => d.firstTeamMedian).at(-1)?.firstTeamMedian;
   const cap = median ? median * policy.contracts.max_salary_vs_first_team_median : null;
-  const parts = [checkSquad({alerts, tactic}), checkDeals({decisions, approvals: loadApprovals().approvals, cap, rules}),
+  const parts = [checkSquad({alerts, tactic, released: loadApprovals().released || []}), checkDeals({decisions, approvals: loadApprovals().approvals, cap, rules}),
     checkMoney({club: clubRow(), ledger, position: position ?? lastPosition(), rules})];
-  const fail = parts.flatMap(p => p.fail), warn = parts.flatMap(p => p.warn);
-  return {ok: fail.length === 0, score: parts[2].score, fail, warn, since: since || null};
+  const fail = parts.flatMap(p => p.fail), warn = parts.flatMap(p => p.warn), decide = parts.flatMap(p => p.decide || []);
+  return {ok: fail.length === 0, score: parts[2].score, fail, decide, warn, since: since || null};
 }

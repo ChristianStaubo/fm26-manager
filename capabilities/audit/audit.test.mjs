@@ -7,12 +7,14 @@ import {loadPolicy} from '../sell/decide.mjs';
 const rules = loadPolicy().scoreboard;
 const tactic = n => ({slots: [{slot: 'GK'}, ...Array.from({length: n - 1}, (_, i) => ({slot: `S${i}`}))]});
 
-test('squad: Ajer without a contract and Eyestone in the U21s fail; a fringe player warns; the shape needs 11 with a GK', () => {
-  const r = checkSquad({tactic: tactic(11), alerts: [
+test('squad: Eyestone in the U21s fails; no contract and final year are the user\'s decisions; released players pass', () => {
+  const r = checkSquad({tactic: tactic(11), released: ['Mikkel Damsgaard'], alerts: [
     {name: 'Kristoffer Ajer', positions: 'DC', minutes: 2888, issue: 'no contract'},
     {name: 'Mikkel Damsgaard', positions: 'AMC', minutes: 715, issue: 'no contract'},
+    {name: 'Franculino', positions: 'ST', age: 26, minutes: 3165, value: 37.9e6, expires: '2031-06-30', issue: 'final year'},
     {name: 'Julian Eyestone', positions: 'GK', minutes: 4230, issue: 'regular in Brentford U21'}]});
-  assert.equal(r.fail.length, 2); assert.equal(r.warn.length, 1);
+  assert.equal(r.fail.length, 1); assert.equal(r.decide.length, 2);
+  assert.match(r.decide[1], /Franculino .* final year .* renew or sell this window/);
   assert.match(checkSquad({tactic: {slots: [{slot: 'LB'}]}}).fail[0], /no GK/);
 });
 

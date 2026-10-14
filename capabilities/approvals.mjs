@@ -46,6 +46,14 @@ export function hold(player, {off = false, file = FILE} = {}) {
   save(data, file);
   return {holds: data.holds};
 }
+// Released: out-of-contract players the user lets go on a free (Ajer, Katić, Damsgaard, 2030-07-17).
+export function release(player, {file = FILE} = {}) {
+  if (!player) throw new Error('fm release "<name>"');
+  const data = load(file);
+  data.released = [...(data.released || []).filter(r => norm(r) !== norm(player)), player];
+  save(data, file);
+  return {released: data.released};
+}
 export const held = (player, {file = FILE} = {}) => (load(file).holds || []).some(h => norm(h) === norm(player));
 export const find = (kind, player, {file = FILE} = {}) =>
   load(file).approvals.find(a => a.kind === kind && norm(a.player) === norm(player)) || null;

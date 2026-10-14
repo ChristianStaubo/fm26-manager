@@ -55,3 +55,14 @@ picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.st
 print(json.dumps([x['name'] for x in picks if x['role'] == 'starter']))`);
   assert.deepEqual(out, ['Cheap']);
 });
+
+test('depth (user): cheapest solid backup at any age, even under the young lens', () => {
+  const c = (name, blended, age, value) => ({name, blended, attributes: blended, moneyball: 60, value, age, wage: 1, league: 'X', chabot: false, minutes: 2000});
+  const report = {slots: [{slot: 'RW', need: 2, solid: 1, attr_bar: 50, ours: [c('Doak', 56, 24, 6e7)], best: [], value: [], by_attributes: [],
+    bench: [c('Old cheap', 55, 29, 2e6), c('Young dear', 60, 21, 9e6)], free: []}]};
+  const out = run(`import json, plan as p
+p.m.price = lambda rows, n: {'club': 'C', 'value': 1, 'open_at': 1, 'walk_away': 1, 'wage': 1, 'wage_ok': True}
+picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.stringify(report))}), [], {'slots': [{'slot': 'RW'}]}, 1e8, 'attributes', 24)
+print(json.dumps([[x['role'], x['name']] for x in picks]))`);
+  assert.deepEqual(out, [['depth', 'Old cheap']]);
+});

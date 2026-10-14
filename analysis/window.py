@@ -58,7 +58,7 @@ YOUNG_FLOOR = 40           # least attributes percentile for the young lens
 SOLID = 50                 # blended score that counts as a solid player
 
 
-def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=None, young_age=None):
+def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=None, young_age=None, incoming=()):
     shaped = shape(tactic) if tactic else SLOTS
     strength = m.league_strength(rows)
     buy = m.POLICY['buying']
@@ -71,7 +71,10 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
     real = lambda p: p['mins'] >= MIN_SAMPLE and strength.get(p['competition'], 0) >= STRONG and not CUP.search(p['competition'] or 'x')
     by_wage = sorted((p for p in rows if p['contract_club'] == m.CLUB and not p['on_loan_at']), key=lambda p: -sr.num(p, 'wage'))
     loaned_in = [p for p in rows if p['club'] == m.CLUB and p['contract_club'] not in ('', m.CLUB)]
-    squad = [p for p in by_wage[:28] if not (int(p['age'] or 0) <= 21 and sr.num(p, 'wage') < 15000)] + loaned_in
+    # Incoming: this window's agreed signings (plan reads them from the decision log): they count
+    # in their slot, else the plan proposes the same positions again (2030-07: GK, CB re-proposed).
+    arriving = [p for p in rows if p['name'] in incoming and p['contract_club'] != m.CLUB]
+    squad = [p for p in by_wage[:28] if not (int(p['age'] or 0) <= 21 and sr.num(p, 'wage') < 15000)] + loaned_in + arriving
     best_slot = {}   # each of our players is judged once, at his best slot (Schlager: DM, not CM)
     pl = [p for p in rows if p['competition'] == m.LEAGUE]
     history = sum(p.get('stats_source') == 'history' for p in pl)
@@ -96,7 +99,8 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
                     'chabot': s is not None and a >= 75 and s >= 70 and p.get('stats_source') == 'history' and strength.get(p['competition'], 0) >= 0.9,
                     'rating': p['avg_rating'] or None, 'minutes': int(p['mins']), 'value': int(p['value'] or 0),
                     'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:10] or None,
-                    'loan': p['contract_club'] not in ('', m.CLUB) and p['club'] == m.CLUB,
+                    'loan': p['contract_club'] not in ('', m.CLUB) and p['club'] == m.CLUB and p['name'] not in incoming,
+                    'incoming': p['name'] in incoming,
                     # Just signed: a contract that runs ~5 seasons (FM's longest) was signed this summer;
                     # the player won't talk to us for a season (Banks, to 2035 in July 2030: "doesn't want
                     # to join Brentford under any circumstances").
