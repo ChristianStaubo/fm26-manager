@@ -95,8 +95,8 @@ These are the user's rules (decided 2026-10-09).
 
 - **Personal terms** (user's recorded sessions, 2026-10-15): open **~10% under his demand** (at least
   8 ticks, at most 15%), then read his counter: firm → 1 tick under it, flexible → 2; then take it.
-  Bonuses, clauses and length untouched. **Promises:** take the game's "(Recommended)" playing time
-  when it is lower than he asked (Fresneda: Regular Starter). Fresneda £87K → £79K, accepted at once;
+  Bonuses, clauses and length untouched. **Promises: always try one lower** than he asked (user): the
+  "(Recommended)" option when lower, else the next one down (Fresneda: Regular Starter). Fresneda £87K → £79K, accepted at once;
   Lawrence £73K → £60K → counter £66K → £64K.
 - *Next (user, 2026-10-14, not automated yet):*
   - on the **promises** screen, try one step lower on playing time than asked (e.g. "Important
@@ -110,7 +110,8 @@ These are the user's rules (decided 2026-10-09).
   transfer value ≥ **1.5×** what renewing costs (wage rise × 52 × years + loyalty bonus + agent
   fee), even above the wage cap; slightly higher wages are fine because he stays sellable. Else
   **sell this window** (worth £2M+), or **let him run down** (cheap, or 30+ and fringe). A player
-  who refuses to talk is sold. We negotiate renewals ourselves (`fm renew`), never below 3 ticks
+  who refuses to talk is sold. A high earner asking a big rise is a sale, not a renewal (Brown, £155K
+  asking £160-195K, 2030-07: "good, valued high, but we can replace"). We negotiate renewals ourselves (`fm renew`), never below 3 ticks
   under his demand, lowering bonuses only to the board's allowance.
 
 ## 7. Team selection

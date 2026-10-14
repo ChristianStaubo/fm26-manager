@@ -59,7 +59,8 @@ test('promises (user, Fresneda): take the "(Recommended)" playing time when it i
   const {lowerPromise} = await import('../capabilities/contracts/personal-terms.mjs');
   const opts = ['Star Player', 'Important Player', 'Regular Starter (Recommended)', 'Squad Player', 'Fringe Player'];
   assert.deepEqual(lowerPromise('Important Player', opts), {from: 'Important Player', to: 'Regular Starter', option: 'Regular Starter (Recommended)', index: 2});
-  assert.equal(lowerPromise('Regular Starter', opts), null, 'already at the recommendation');
-  assert.equal(lowerPromise('Squad Player', opts), null, 'never raise a promise');
-  assert.equal(lowerPromise('Important Player', ['Star Player', 'Important Player']), null, 'no recommendation shown');
+  assert.deepEqual(lowerPromise('Regular Starter', opts), {from: 'Regular Starter', to: 'Squad Player', option: 'Squad Player', index: 3}, 'always one lower (user)');
+  assert.deepEqual(lowerPromise('Squad Player', opts)?.to, 'Fringe Player', 'one lower still');
+  assert.equal(lowerPromise('Fringe Player', opts), null, 'nothing lower: keep it');
+  assert.equal(lowerPromise('Important Player', ['Star Player', 'Important Player']), null, 'no lower option shown');
 });

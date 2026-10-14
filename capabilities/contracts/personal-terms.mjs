@@ -112,11 +112,16 @@ async function lowerAgentFeeUntilAllowed(max = 40) {
 // Promises. Take the "(Recommended)" option when it is LOWER than what he asked; anything unexpected
 // leaves his promise as it is.
 export const PLAYING_TIME = ['Star Player', 'Important Player', 'Regular Starter', 'Squad Player', 'Impact Sub', 'Fringe Player', 'Emergency Backup', 'Breakthrough Prospect', 'Hot Prospect for the Future', 'Future Prospect'];
+// Always try one lower (user, 2026-10-15): the "(Recommended)" option when it is lower, else the
+// next option down from what he asked. Never raise a promise.
 export function lowerPromise(current, options) {
+  const plain = o => o.replace(/ \(Recommended\)$/, '');
+  const a = PLAYING_TIME.indexOf(current);
+  if (a < 0) return null;
   const rec = options.find(o => /\(Recommended\)$/.test(o));
-  if (!rec) return null;
-  const name = rec.replace(/ \(Recommended\)$/, ''), a = PLAYING_TIME.indexOf(current), b = PLAYING_TIME.indexOf(name);
-  return a >= 0 && b > a ? {from: current, to: name, option: rec, index: options.indexOf(rec)} : null;
+  if (rec && PLAYING_TIME.indexOf(plain(rec)) > a) return {from: current, to: plain(rec), option: rec, index: options.indexOf(rec)};
+  const next = options.map((o, i) => ({o, i, rank: PLAYING_TIME.indexOf(plain(o))})).filter(x => x.rank > a).sort((x, y) => x.rank - y.rank)[0];
+  return next ? {from: current, to: plain(next.o), option: next.o, index: next.i} : null;
 }
 async function lowerPlayingTime() {
   const {ui} = await import('../../game/bridge/client.mjs');
