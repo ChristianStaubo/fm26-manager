@@ -25,6 +25,7 @@ import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
+import {watch} from './watch.mjs';
 import * as approvals from '../capabilities/approvals.mjs';
 import * as interventions from '../capabilities/interventions.mjs';
 import {audit} from '../capabilities/audit/audit.mjs';
@@ -116,6 +117,7 @@ When stuck / setup
 Bridge
   reload                         reload the agent after editing bridge/agent/*.js
   input-reset                    remove virtual keyboard devices (if real clicks stop working)
+  watch [--seconds N] [--out file.jsonl]   mapping session: log what changes on screen while the user acts
   record start | record stop [file.json]   log FM UI calls while you act by hand
 `;
 
@@ -242,6 +244,7 @@ try {
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun})); break;   // we negotiate (tick rule); --dof hands over
     case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;
+    case 'watch': out(await watch({seconds: Number(flags.seconds || 300), interval: Number(flags.interval || 1000), out: flags.out})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
     case 'input-reset': out(await ui.removeVirtual()); break;
     case 'record':
