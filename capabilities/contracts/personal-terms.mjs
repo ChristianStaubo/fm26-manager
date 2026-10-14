@@ -133,6 +133,10 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   }
   if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'}); }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
+  // Reset first: an earlier preview leaves our edits in the form, and reading before Reset took that
+  // edit (£110K) for his demand (£125K) (Casadó, 2030-07-17). Reset restores his demand while nothing
+  // has been suggested.
+  if (s.buttons('Reset').some(b => b.name === 'button-secondary-label')) { await click('Reset', {name: 'button-secondary-label'}); await settle(800); s = await Screen.read(); }
   const demand = salaryOf(s);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), tries: []};
