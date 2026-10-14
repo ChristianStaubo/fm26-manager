@@ -38,6 +38,10 @@ After saving the game, add `--fresh` to the first data command (re-exports the s
    - **★ Chabot profile** = elite on both over a full season in a strong league: the safest buy.
    FM's current ability (CA) is never a ranking (user). Stats from a few games or a weaker league
    don't travel (Franculino, Katić); attributes did.
+Buying, selling and taking bids need the user's approval (playbook §10, `fm approvals`): propose
+each move with its price (buy: player, club, open, max; sell: player, minimum, why), then stop for
+the user. `fm buy`/`fm sell` refuse anything not approved, and `fm run` stops on bids it would take.
+
 3. **Sell first** from the sell list (weak, overpriced per point, small-sample stats the attributes
    don't back), max one Highly Influential per window, never below depth without the replacement.
 4. **Buy per slot:** a NEED slot gets a starter (best / value with x-market, cheaper = better), depth

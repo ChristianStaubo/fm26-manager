@@ -12,6 +12,7 @@ import {Screen, waitFor, click, setFee, recover, openPlayer, actionPath, peekAct
 import {writeFileSync, mkdirSync} from 'node:fs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
+import {gate} from '../approvals.mjs';
 
 // Opening bid: rules.buying.open_at × FM's value, the middle of the range (lower if the club wants
 // to sell). Bids well below value get a flat "unacceptable", which ends the deal.
@@ -143,6 +144,9 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
  * openingBid); max: walk-away deal value (default 1.1 × top of value).
  */
 export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = false} = {}) {
+  // Buying needs the user's approval while policy.json autonomy.buy is 'approve': the approved
+  // limit caps --max. A dry run is how the manager prices a proposal, so it passes.
+  const approved = dryRun ? null : gate('buy', 'buy', name, {price: max, what: `buy ${name} (${club})`});
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   const {top, sub} = await peekActions('Transfer');
@@ -161,7 +165,7 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   facts.valueRange ??= offerValueRange(s);
   if (!facts.valueRange && (open === undefined || max === undefined)) { await leave(); throw new NeedsAnalyst(`No valuation for ${name}; pass --open and --max`, facts); }
   const keenToSell = s.hasText(/keen to offload|looking to sell|placed him on the transfer list/i);
-  const walkAway = max ?? defaultMax(facts);
+  const walkAway = Math.min(max ?? defaultMax(facts), approved?.limit ?? Infinity);
   let fee = Math.min(open ?? openingBid(facts, {keenToSell}), walkAway);
   // Pre-filled extras stay in the offer: set the fee so the TOTAL is our opening bid. Measure them
   // on every screen (total − fee): the pre-filled page sometimes shows Suggest Terms too, and

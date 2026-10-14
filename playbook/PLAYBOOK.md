@@ -99,3 +99,14 @@ These are the user's rules (decided 2026-10-09).
   (`local/notebook/<save>.md`): what worked, what didn't, and what to do differently. It reads the
   notebook before the next window or season.
 - Lessons the user confirms move into this playbook.
+
+## 10. Autonomy: what the manager does alone
+- Each capability either acts on its own or needs the user's sign-off per action and price
+  (`policy.json` `autonomy`). It starts on approval and is promoted to auto once its tests pass
+  consistently: the agent earns autonomy one capability at a time.
+- Now (user, 2026-10-14): **buying, selling and taking bids need approval**; contracts, agent
+  payoffs, the season (Continue, holiday, popups), scouting and the XI run alone. Rejecting a bid
+  stays automatic.
+- An approval is one player, one action and a price: buy up to a maximum, sell from a minimum.
+  The manager proposes (`fm buy … --dry-run` prices it); the user approves in chat; the main
+  session records it (`fm approve`). The tools refuse anything outside it.

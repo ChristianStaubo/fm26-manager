@@ -2,6 +2,7 @@
 import {Screen, waitFor, click, choose, setFee, parseMoney, openPlayer, actionPath, profileFacts, isoDate, NeedsAnalyst} from '../../game/ui/index.mjs';
 import {loadRules} from './decide.mjs';
 import {log} from '../log.mjs';
+import {gate} from '../approvals.mjs';
 import * as pricebook from '../value/pricebook.mjs';
 
 // Default asking price: rules.selling.asking_price × the top of the player's valuation (1.0: we
@@ -37,6 +38,10 @@ function bookAlreadyListed(name, club, facts, min, date, result) {
 export async function listPlayer(name, club, {price, deter = false, min, force = false, dryRun = false} = {}) {
   if (!loadRules().selling.list_players && !force)
     throw new NeedsAnalyst(`We don't transfer-list players (user policy, policy.json selling.list_players): bids are judged as they come. Pass --force only if the user asked to list ${name}.`);
+  // Listing needs the user's approval while autonomy.sell is 'approve'; the approved minimum is
+  // the price book floor unless --min asks for more.
+  const approved = dryRun ? null : gate('sell', 'sell', name, {price: min, what: `list ${name} for sale`});
+  if (approved && min === undefined) min = approved.limit;
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   try { await actionPath(['Transfer', 'Set Transfer Status']); }

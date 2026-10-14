@@ -23,6 +23,7 @@ import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
+import * as approvals from '../capabilities/approvals.mjs';
 
 const HELP = `fm <command> [args] [--flags]
 
@@ -78,6 +79,12 @@ Transfers
   renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
+
+Approvals (policy.json autonomy: buying and selling need the user's sign-off)
+  approvals                      autonomy per capability + the approvals on record
+  approve buy "<name>" --max N | approve sell "<name>" --min N [--note "…"]
+                                 record the USER's approval (main session only; never the player agent)
+  approve revoke buy|sell "<name>"
 
 When stuck / setup
   doctor [--fix]                 check game, bridge, save, overlays; --fix starts the bridge
@@ -180,6 +187,11 @@ try {
       if (flags['wage-max'] && !dryRun) allowWage(a1, num(flags['wage-max']), `swap${flags.replaces ? ': replaces ' + flags.replaces : ''}`);
       out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
     }
+    case 'approvals': out({autonomy: Object.fromEntries(Object.entries(approvals.loadPolicy().autonomy || {}).filter(([k]) => !k.startsWith('_'))), ...approvals.load()}); break;
+    case 'approve':
+      if (a1 === 'revoke') out(approvals.revoke(a2, pos[3]));
+      else out(approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note}));
+      break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;

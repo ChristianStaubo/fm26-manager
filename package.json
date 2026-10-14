@@ -9,7 +9,7 @@
   "scripts": {
     "fm": "node cli/fm.mjs",
     "bridge": "node cli/fm.mjs doctor --fix",
-    "test": "node --test capabilities/*/*.test.mjs test/*.test.mjs"
+    "test": "node --test capabilities/*.test.mjs capabilities/*/*.test.mjs test/*.test.mjs"
   },
   "engines": {"node": ">=20"}
 }

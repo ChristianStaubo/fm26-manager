@@ -6,6 +6,12 @@ import {decideSale, decidePayoff, decideLoan} from '../../capabilities/sell/deci
 import {negotiate, offerValueRange, defaultMax, buyStep} from '../../capabilities/buy/buy.mjs';
 import {log, history} from '../../capabilities/log.mjs';
 import * as pricebook from '../../capabilities/value/pricebook.mjs';
+import {gate, load as loadApprovals, mode} from '../../capabilities/approvals.mjs';
+
+// Taking money for a player (accept, or counter = willing to sell at that fee) needs the user's
+// approval while autonomy.incoming_offers is 'approve'. Rejecting stays automatic.
+const approveSale = (player, decision, amount) =>
+  ['accept', 'counter'].includes(decision.action) && gate('incoming_offers', 'sell', player, {price: amount, what: `${decision.action} ${player} at £${(amount / 1e6).toFixed(2)}M (${decision.reason || 'playbook'})`});
 
 const monthsBetween = (a, b) => (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
 
@@ -63,6 +69,8 @@ export const incomingOffer = {
     const decision = decideSale(offer);
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }
+    try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.upfront : offer.total ?? offer.guaranteed); }
+    catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     if (decision.action === 'counter') {
       const fee = await setFee('Fee', decision.upfront, {mode: 'nearest'});
       entry.counterSet = fee.set;
@@ -116,7 +124,10 @@ export const bidResponse = {
     const o = await waitFor(x => x.buttons(/^(Accept Demands|Suggest Terms|Make Offer)$/).length > 0 && x.hasText('Transfer Value'), {what: 'offer screen'});
     const valueRange = offerValueRange(o);
     if (!valueRange) throw new NeedsAnalyst(`${headline}: no valuation on the offer screen`);
-    const max = defaultMax({valueRange});
+    // Our bid: its approval (the player named in the headline) caps what we pay.
+    const approved = mode('buy') === 'auto' ? null : loadApprovals().approvals.find(a => a.kind === 'buy' && s.texts().some(t => t.includes(a.player)));
+    if (mode('buy') !== 'auto' && !approved) throw new NeedsAnalyst(`${headline}: needs the user's approval (no fm approve buy for this player)`, {approval: 'missing', headline});
+    const max = Math.min(defaultMax({valueRange}), approved?.limit ?? Infinity);
     const entry = {action: 'bid-response', date: isoDate(o.date()), headline, valueRange, max};
     if (dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`${headline} (dry run)`, entry); }
     const r = await negotiate({firstFee: null, max, step: buyStep({valueRange}), rounds: 3});
@@ -161,6 +172,8 @@ export const loanOffer = {
       return loanOfferPage.run(page);
     }
     if (decision.action === 'escalate' || !book || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan approach for ${loan.player} (${loan.club}): ${decision.reason}`, entry); }
+    try { approveSale(loan.player, decision, (loan.obligationFee ?? 0) + (loan.loanFee ?? 0)); }
+    catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     await click(decision.action === 'accept' ? 'Accept' : 'Reject');
     await log({...entry, executed: true});
     return entry;
@@ -198,6 +211,8 @@ export const loanOfferPage = {
     entry.decision = decideSale({guaranteed: (l.overall ?? NaN) + l.wageRelief, vLow, vHigh, negotiable: false, countersSoFar: 0,
       ...(book ? {minimum: book.minimum, target: book.target} : {})});
     if (entry.decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan-to-buy for ${l.player}: ${entry.decision.reason}`, entry); }
+    try { approveSale(l.player, entry.decision, l.overall); }
+    catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     await click(entry.decision.action === 'accept' ? 'Accept Offer' : 'Reject Offer');
     await log({...entry, executed: true});
     return entry;

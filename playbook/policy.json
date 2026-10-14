@@ -116,6 +116,18 @@
     "_payoff": "Fractions of the agent's first ask. Always settle: counter at counter_at, then accept any reply at or below accept_at_or_below (user rule, 2026-10-04).",
     "escalate_above_pct_of_fee": 0.1
   },
+  "autonomy": {
+    "_section": "10",
+    "_about": "Which capabilities act on their own ('auto') and which need the user's sign-off per action and price ('approve'). Promote one to 'auto' once its tests pass consistently (user, 2026-10-14: start with buying and selling on approval).",
+    "buy": "approve",
+    "sell": "approve",
+    "incoming_offers": "approve",
+    "contracts": "auto",
+    "agent_payoffs": "auto",
+    "season": "auto",
+    "scouting": "auto",
+    "xi": "auto"
+  },
   "escalate": {
     "_about": "Situations where the loop stops for analysis instead of a handler.",
     "offer_v_high_over": 20000000,
@@ -123,7 +135,7 @@
     "any_purchase": false,
     "squad_depth_blocker": true,
     "unknown_screen": true,
-    "_any_purchase": "False since 2026-10-09: the manager buys on its own within the playbook (no approval gates)."
+    "_any_purchase": "Superseded by autonomy (2026-10-14): buying is on approval again; this flag is not read."
   },
   "holiday": {
     "_section": "7-8",

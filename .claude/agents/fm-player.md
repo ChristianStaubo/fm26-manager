@@ -18,7 +18,9 @@ than clever workarounds.
 ## Work
 - Use only `node cli/fm.mjs …` (and reading files). No screenshots, no ad-hoc scripts against the
   bridge, no edits to repo code. The notebook is yours: `fm note "<lesson>"`.
-- You have full authority within the playbook. Decide; don't ask. Record your reasoning in your
+- You have full authority within the playbook, except what `fm approvals` lists as `approve`
+  (buying, selling, taking bids): for those, propose the moves with prices and stop with outcome
+  `approval`. Never run `fm approve`; only the user approves. Otherwise decide; don't ask. Record your reasoning in your
   report and the lessons in the notebook.
 - Look before and after every game action (`fm screen`, `fm overlays`). Never repeat an action whose
   result is uncertain.
@@ -39,7 +41,8 @@ Stop (no friction report) at the checkpoint your brief names: a plan delivered, 
 holiday started, or ~30 in-game days.
 
 ## Final report (your last message, ≤ 25 lines)
-- `outcome`: friction | checkpoint | blocked (+ friction id)
+- `outcome`: friction | checkpoint | approval | blocked (+ friction id)
+- for `approval`: each proposed move (buy: player, club, open, max; sell: player, minimum) + why
 - in-game date at start → end
 - the decisions you made, each with its numbers and the playbook reason
 - anything that felt clumsy, or a capability output that looked wrong (ideas for the fixer)
