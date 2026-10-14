@@ -1,86 +1,64 @@
 {
-  "name": "4-2-3-1 DM AM Wide - Gegenpress",
+  "name": "Gegenpress 5-2-3 (3-4-3 DM Wide in possession)",
   "style": "Gegenpress",
   "mentality": "Balanced",
   "slots": [
     {
       "slot": "GK",
-      "in": "BGK",
-      "out": "SK",
       "role": "GK",
-      "player": "Caoimhin Kelleher"
+      "player": "Julian Eyestone"
     },
     {
       "slot": "LB",
-      "in": "FB",
-      "out": "FB",
-      "role": "FB (defensive)",
-      "player": "Rico Henry"
+      "role": "WB (attacking)",
+      "player": "Nathaniel Brown"
     },
     {
       "slot": "LCB",
-      "in": "CB",
-      "out": "CB",
       "role": "CB",
-      "player": "Ethan Pinnock"
+      "player": "Kristoffer Ajer"
+    },
+    {
+      "slot": "CB",
+      "role": "CB",
+      "player": ""
     },
     {
       "slot": "RCB",
-      "in": "BCB",
-      "out": "CB",
       "role": "CB",
-      "player": "Nathan Collins"
+      "player": "Tarik Muharemović"
     },
     {
       "slot": "RB",
-      "in": "WB",
-      "out": "FB",
       "role": "WB (attacking)",
       "player": "Michael Kayode"
     },
     {
       "slot": "LDM",
-      "in": "DLP",
-      "out": "PDM",
       "role": "DM",
-      "player": "Jordan Henderson"
+      "player": "Matvey Kislyak"
     },
     {
       "slot": "RDM",
-      "in": "DM",
-      "out": "DM",
       "role": "DM",
-      "player": "Mathias Jensen"
+      "player": "Marc Casadó"
     },
     {
       "slot": "LW",
-      "in": "IF",
-      "out": "WMF",
       "role": "Winger",
-      "player": "Kevin Schade"
-    },
-    {
-      "slot": "AM",
-      "in": "SS",
-      "out": "CFD",
-      "role": "AMC",
-      "player": "Mikkel Damsgaard"
+      "player": "Savinho"
     },
     {
       "slot": "RW",
-      "in": "IW",
-      "out": "WMF",
       "role": "Winger",
-      "player": "Keane Lewis-Potter"
+      "player": "Ben Gannon Doak"
     },
     {
       "slot": "ST",
-      "in": "CFD",
-      "out": "CFD",
       "role": "ST",
-      "player": "Thiago"
+      "player": "Franculino"
     }
   ],
-  "_source": "Brentford claude-2.fm, Match Day > Match Squad, 2026-06-01 (was the Brighton pilot XI)",
-  "_note": "Shape only: slots and roles. No style-specific stat weights (user, 2026-10-10: find the best players regardless of tactics)."
+  "_source": "Brentford claude-3.1.fm, Match Day > Match Squad + Tactics, 2030-07-14 (user: we play a 5-2-3). LB/RB are the wing-backs. The XI on screen had no GK and only two CBs selected.",
+  "_note": "Shape only: slots and roles. Starters come from the live XI selection; names here go stale."
 }

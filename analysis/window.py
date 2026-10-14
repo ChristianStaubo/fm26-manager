@@ -1,6 +1,7 @@
 """The transfer-window report: one standard pass per window (playbook §2-5).
 
-For every slot of the 4-2-3-1: our players, depth (two solid per slot, three CBs), and the market.
+For every slot of our shape (config/tactic.json: 4-2-3-1 or the back five): our players, depth
+(two solid per slot, one more CB than we start), and the market.
 Every player gets two scores, both percentiles vs Premier League regulars at the position:
   - blended  = (role attributes + core stats) / 2; attributes alone when there's no real sample
   - moneyball = the core stats alone (the job in numbers, league-adjusted)
@@ -35,13 +36,29 @@ SLOTS = {
     'RW': ({'AMR', 'MR'}, WIDE, 'Winger', sc.CORE['W'], 2),
     'ST': ({'ST'}, {'ST'}, 'ST', sc.CORE['ST'], 2),
 }
+
+
+def shape(tactic):
+    """SLOTS for the tactic in config/tactic.json: drop slots it doesn't use (no AM in a back five),
+    one more CB than it starts (3 → 4), and wing-backs judged as attacking WBs (user, 2026-10-14: 5-2-3)."""
+    used = {s['slot'] for s in tactic['slots']}
+    cbs = sum(1 for x in used if m.GROUP.get(x) == 'CB')
+    out = {}
+    for slot, spec in SLOTS.items():
+        if slot == 'CB' and cbs: out[slot] = spec[:4] + (cbs + 1,)
+        elif slot == 'DM' and {'LDM', 'RDM'} & used: out[slot] = spec
+        elif slot in used: out[slot] = spec
+    return out
+
+
 CUP = re.compile(r'UEFA|Cup|Copa|Coupe|Pokal|Coppa|Taça|Trophy|Shield|Libertadores|Sudamericana|Champions|Conference|Europa', re.I)
 MIN_SAMPLE = 1200          # league minutes for a stats score
 STRONG = 0.85              # league strength (vs ours) for a stats score
 SOLID = 50                 # blended score that counts as a solid player
 
 
-def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6):
+def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=None):
+    shaped = shape(tactic) if tactic else SLOTS
     strength = m.league_strength(rows)
     buy = m.POLICY['buying']
     today = m.today_of(rows).isoformat()
@@ -60,7 +77,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6):
            'warning': None if history >= len(pl) / 2 else 'Few players have full-season stats: run this in the first days of July (save after the rollover, before the first league match), else most stats are partial and scores lean on attributes.'},
            'slots': [], 'sell': []}
 
-    for slot, (natural, pool, role, core, need) in SLOTS.items():
+    for slot, (natural, pool, role, core, need) in shaped.items():
         if slots and slot not in slots:
             continue
         peers = [p for p in pl if p['pos'] & natural and p['mins'] >= MIN_SAMPLE]
@@ -170,6 +187,6 @@ if __name__ == '__main__':
     ap.add_argument('--slots'); ap.add_argument('--max-value', type=float, default=60e6); ap.add_argument('--max-age', type=int, default=29)
     ap.add_argument('--bench-max', type=float, default=8e6); ap.add_argument('--csv'); ap.add_argument('--json', action='store_true')
     a = ap.parse_args()
-    rows, _ = m.load(a.csv)
-    res = report(rows, a.slots.split(',') if a.slots else None, a.max_value, a.max_age, a.bench_max)
+    rows, tactic = m.load(a.csv)
+    res = report(rows, a.slots.split(',') if a.slots else None, a.max_value, a.max_age, a.bench_max, tactic)
     print(json.dumps(res, default=str)) if a.json else show(res)

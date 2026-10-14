@@ -56,7 +56,7 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
                                  who to sell and who to buy: attribute fit (prediction) + the position's
                                  core stats (evidence) vs PL regulars; best, value and free/expiring (§4-5)
   window [--slots LB,RW] [--max-value N] [--max-age N] [--bench-max N] [--fresh]
-                                 THE window report: every 4-2-3-1 slot with depth, blended + moneyball
+                                 THE window report: every slot of our shape with depth, blended + moneyball
                                  scores, best/value/bench/free targets and the sell list. Run it in the
                                  first days of July (after the rollover, before the first league match)
   results [--label "…"] [--position N] [--points N] [--fresh]

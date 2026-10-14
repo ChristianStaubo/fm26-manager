@@ -26,10 +26,10 @@ POLICY = json.loads((ROOT / 'playbook' / 'policy.json').read_text())
 CLUB, LEAGUE = sr.CLUB_CONFIG['club'], sr.CLUB_CONFIG.get('league', 'Premier League')
 
 # Tactic slot → the positions that make a player a specialist there (FM rating 20 = natural).
-SLOT_POSITIONS = {'GK': ['GK'], 'LB': ['DL', 'WBL'], 'RB': ['DR', 'WBR'], 'LCB': ['DC'], 'RCB': ['DC'],
+SLOT_POSITIONS = {'GK': ['GK'], 'LB': ['DL', 'WBL'], 'RB': ['DR', 'WBR'], 'LCB': ['DC'], 'CB': ['DC'], 'RCB': ['DC'],
                   'LDM': ['DM'], 'RDM': ['DM'], 'LW': ['AML', 'ML'], 'RW': ['AMR', 'MR'], 'AM': ['AMC'], 'ST': ['ST']}
-# Slots that share one position group (two CBs, two DMs).
-GROUP = {'LCB': 'CB', 'RCB': 'CB', 'LDM': 'DM', 'RDM': 'DM'}
+# Slots that share one position group (two or three CBs, two DMs). A back five: LB/RB are the wing-backs.
+GROUP = {'LCB': 'CB', 'CB': 'CB', 'RCB': 'CB', 'LDM': 'DM', 'RDM': 'DM'}
 
 
 def rating(p, pos):
