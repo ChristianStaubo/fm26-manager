@@ -21,3 +21,10 @@ test('release clause: read from the offer screen, and every extra found (appeara
   assert.equal(releaseClause(s), 12750000);
   assert.equal(clauseRows(s).length, 3);
 });
+
+test('loan back: kept for portfolio buys, removed otherwise; the row label is read from its line', async () => {
+  const {clauseRows, rowLabel} = await import('../capabilities/buy/buy.mjs');
+  const s = loadScreen('offer-sell-on-gaitan');
+  const labels = clauseRows(s).map(b => rowLabel(s, b));
+  assert.deepEqual(labels, ['Per League Appearance', 'Loan Back Length', 'Percentage Of Profit From Next Sale']);
+});

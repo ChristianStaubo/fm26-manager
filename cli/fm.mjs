@@ -82,7 +82,7 @@ Transfers
        [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
   prices                         the price book: listed players with our minimum and target
   ask "<name>" --club <club>     ask his agent about availability (one-time per player): will he join, fee range, demands
-  buy "<name>" --club <club> [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]
+  buy "<name>" --club <club> [--loan-back] [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]
                                  --wage-max: a swap may pay up to the outgoing player's wage above the cap
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
   move "<name>" --club <club> [--to senior|u18] [--dry-run]   move one of ours between squads (U21 → senior)
@@ -217,7 +217,7 @@ try {
     case 'buy': {
       // A swap may pay up to the outgoing player's wage above the cap (playbook §5).
       if (flags['wage-max'] && !dryRun) allowWage(a1, num(flags['wage-max']), `swap${flags.replaces ? ': replaces ' + flags.replaces : ''}`);
-      out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun, ask: !flags['no-ask']})); break;
+      out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun, ask: !flags['no-ask'], loanBack: !!flags['loan-back']})); break;
     }
     case 'approvals': out({autonomy: Object.fromEntries(Object.entries(approvals.loadPolicy().autonomy || {}).filter(([k]) => !k.startsWith('_'))), ...approvals.load()}); break;
     case 'approve':

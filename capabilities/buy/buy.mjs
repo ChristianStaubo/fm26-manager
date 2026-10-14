@@ -74,15 +74,22 @@ export function clauseRows(s) {
   if (!head) return [];
   return s.items.filter(i => i.kind === 'button' && i.name === 'buttons-controls-pc-default' && i.bounds[1] > head.bounds[1] && (!stop || i.bounds[1] < stop.bounds[1]));
 }
-async function removeAllClauses() {
-  for (let n = clauseRows(await Screen.read()).length; n > 0; n--) {
-    await clickWhere(s => clauseRows(s)[0], 'clause remove button');
-    await waitFor(x => clauseRows(x).length < n, {what: 'clause removed'});
+// The label on a clause row's line ("Loan Back Length", "Percentage Of Profit From Next Sale", …).
+// The form's labels sit at x ≈ 458; the inbox list further left (x < 400) is not the row's.
+export const rowLabel = (s, btn) => s.items.filter(i => i.kind === 'text' && i.bounds[0] >= 400 && i.bounds[0] < btn.bounds[0] && Math.abs(i.bounds[1] - btn.bounds[1]) < 20)
+  .sort((a, b) => Math.abs(a.bounds[1] - btn.bounds[1]) - Math.abs(b.bounds[1] - btn.bounds[1]))[0]?.label || '';
+// Portfolio buys keep a loan back (user, 2026-10-15: "ideally their club asks for the loan back, and
+// we accept that"): the kid stays and plays. First-team buys strip it (Gaitán's loan back).
+const removable = (s, keepLoanBack) => clauseRows(s).filter(b => !(keepLoanBack && /Loan Back/i.test(rowLabel(s, b))));
+async function removeAllClauses({keepLoanBack = false} = {}) {
+  for (let n = removable(await Screen.read(), keepLoanBack).length; n > 0; n--) {
+    await clickWhere(s => removable(s, keepLoanBack)[0], 'clause remove button');
+    await waitFor(x => removable(x, keepLoanBack).length < n, {what: 'clause removed'});
   }
 }
 // Pay the release clause: no clauses, fee = the clause, Suggest Terms (or Make Offer), finalize.
-export async function payReleaseClause(fee) {
-  await removeAllClauses();
+export async function payReleaseClause(fee, {keepLoanBack = false} = {}) {
+  await removeAllClauses({keepLoanBack});
   const set = await setFee('Fee', fee);
   await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
   const reply = await suggest();
@@ -139,11 +146,11 @@ async function finalize() {
  * asks for more than `max`, makes one final offer worth exactly `max` (keeping their add-ons),
  * then withdraws if still refused. Returns {outcome: 'agreed'|'accepted-demands'|'walked-away', history}.
  */
-export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, final = false}) {
+export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, final = false, keepLoanBack = false}) {
   // A release clause within our max ends the negotiation: pay exactly it (Gaitán, £12.75M; we had
   // opened above it from his value range).
   const release = releaseClause(await Screen.read());
-  if (release != null && release <= max) return {...await payReleaseClause(release), history: []};
+  if (release != null && release <= max) return {...await payReleaseClause(release, {keepLoanBack}), history: []};
   const history = [];
   let fee = firstFee, finalOffer = final, sellOnTries = 0;
   for (let round = 1; round <= rounds; round++) {
@@ -204,7 +211,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
  * Opens Make An Offer and negotiates in one sitting (Suggest Terms). open: first fee (default
  * openingBid); max: walk-away deal value (default 1.1 × top of value).
  */
-export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = false, ask = true} = {}) {
+export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = false, ask = true, loanBack = false} = {}) {
   // Buying needs the user's approval while policy.json autonomy.buy is 'approve': the approved
   // limit caps --max. A dry run is how the manager prices a proposal, so it passes.
   const approved = dryRun ? null : gate('buy', 'buy', name, {price: max, what: `buy ${name} (${club})`});
@@ -254,7 +261,7 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
     return {...base, dryRun: true, wouldOpenAt: fee};
   }
   if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
-  const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras});
+  const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras, keepLoanBack: loanBack});
   await log({...base, ...r});
   return {...base, ...r};
 }
