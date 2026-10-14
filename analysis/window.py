@@ -127,6 +127,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             if young_age and int(p['age'] or 99) <= young_age and int(p['value']) <= max_value and sr.num(p, 'Injury Proneness') <= 13:
                 c = card(p)
                 if c['attributes'] >= YOUNG_FLOOR:   # the shortlist shows near-misses too; the pick needs attr_bar
+                    c['x_market'] = x_market(p)   # price vs same fit and age: the backtest's "cheap" signal
                     young.append(c)
             if sr.num(p, 'Injury Proneness') > 13 or sr.num(p, 'Consistency') < buy['min_consistency'] \
                     or sr.num(p, 'Important Matches') < buy['min_important_matches'] - 1:

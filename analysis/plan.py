@@ -86,7 +86,9 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
             # Attributes alone (user, 2026-10-14): better and younger, a higher price is fine; resale later.
             # The bar is our best player's attributes there, so a pick is an upgrade on paper.
             bar = s.get('attr_bar', w.SOLID)
-            strong = sorted((c for c in every if c['attributes'] > bar), key=lambda c: (-c['attributes'], c['age'], c['value']))
+            # Attributes first (bands of 5), then cheap for them: the resale backtest (2026-10-14) found
+            # strong attributes AND a low price vs the same fit and age doubles the 1-year +50% rate.
+            strong = sorted((c for c in every if c['attributes'] > bar), key=lambda c: (-(c['attributes'] // 5), c.get('x_market') or 9, c['age']))
         else:
             strong = sorted((c for c in every if c['moneyball'] is not None and c['blended'] >= w.SOLID), key=lambda c: (-c['blended'], c['value']))
         # Depth is cheap: the cheapest solid option up to DEPTH_MAX (not Zaragoza at £52M as a backup).
@@ -94,7 +96,7 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
         if starter_gap:   # the options behind the pick: the user chooses (Lemaitre 89 attrs, 0 minutes, £0.8M?)
             pool = sorted(everyone, key=lambda c: (-c['attributes'], c['age'], c['value'])) if lens == 'attributes' else strong
             bar = s.get('attr_bar', w.SOLID)
-            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'moneyball', 'minutes', 'value', 'wage', 'just_signed')},
+            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'x_market', 'moneyball', 'minutes', 'value', 'wage', 'just_signed')},
                                      'beats_our_weakest_starter': c['attributes'] > bar} for c in pool[:8]]
         for _ in range(starter_gap):
             if not choose(strong, 'starter'):

@@ -44,3 +44,14 @@ print(json.dumps({'picks': [x['name'] for x in picks if x['role'] == 'starter'],
   assert.deepEqual(out.picks, ['Gadou'], 'Rich is over the wage cap, Old over the age limit, Banks only equals the bar');
   assert.deepEqual(out.short, [['Rich', true], ['Gadou', true], ['Banks', false]]);
 });
+
+test('attributes lens ranks cheap-for-their-attributes first within an attribute band (resale backtest)', () => {
+  const young = (name, attributes, x_market) => ({name, attributes, x_market, blended: attributes, moneyball: null, value: 1e7, age: 21, wage: 1, league: 'X', chabot: false, minutes: 0});
+  const report = {slots: [{slot: 'ST', need: 2, solid: 0, attr_bar: 50, ours: [], best: [], value: [], bench: [], free: [],
+    by_attributes: [young('Pricey', 82, 2.5), young('Cheap', 81, 0.4), young('Lower', 74, 0.1)]}]};
+  const out = run(`import json, plan as p
+p.m.price = lambda rows, n: {'club': 'C', 'value': 1e7, 'open_at': 1e7, 'walk_away': 1.2e7, 'wage': 1, 'wage_ok': True}
+picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.stringify(report))}), [], {'slots': [{'slot': 'ST'}]}, 1e8, 'attributes', 24)
+print(json.dumps([x['name'] for x in picks if x['role'] == 'starter']))`);
+  assert.deepEqual(out, ['Cheap']);
+});
