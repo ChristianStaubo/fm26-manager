@@ -6,6 +6,7 @@
 // another round (he sometimes lowers his demands). His reply says whether the player would join,
 // the fee range the club wants ("I believe FC Augsburg will want somewhere between £26M and £31M"),
 // and the player's demands; the profile's value range then updates to that range.
+// Then Contest the demands (user): he lowers his wage demand or stays firm.
 // One-time per player: once asked, the action is gone from his menu.
 import {Screen, waitFor, click, openPlayer, actionPath, peekActions, profileFacts, parseMoney, isoDate} from '../../game/ui/index.mjs';
 import {log} from '../log.mjs';
@@ -55,9 +56,21 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
     const r = await waitFor(x => options(x, name).every(o => o.label !== opts[1].label) || chat(x).some(t => /£|join|interested/i.test(t)), {what: 'agent reply', timeout: 10000});
     transcript.push({agent: chat(r).filter(t => !options(r, name).some(o => o.label === t))});
   }
+  // Contest (user, 2026-10-15): after our answer the agent states the demands with Agree / Contest /
+  // Stall. The user's step is Contest: he either lowers his wage demand or stays firm. Never Agree.
+  let contested = null;
+  const s1 = await Screen.read();
+  if (s1.buttons('Contest').length) {
+    const before = readReply(chat(s1)), lines = chat(s1).join(' ');
+    await click('Contest');
+    const r = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
+    const after = readReply(chat(r));
+    contested = {wageBefore: before.wage, wageAfter: after.wage, firm: after.wage == null || after.wage >= (before.wage ?? Infinity)};
+    transcript.push({we: 'Contest'}, {agent: chat(r).slice(0, 12)});
+  }
   const s = await Screen.read();
   const reply = readReply(chat(s));
-  const entry = {action: 'ask-agent', date: isoDate(s.date()), name, club, asked: true, ...reply, transcript, valueRangeBefore: facts.valueRange};
+  const entry = {action: 'ask-agent', date: isoDate(s.date()), name, club, asked: true, ...reply, contested, transcript, valueRangeBefore: facts.valueRange};
   await log(entry);
   return entry;
 }
