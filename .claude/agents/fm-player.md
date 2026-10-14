@@ -36,6 +36,17 @@ and **end your turn** with the report below, when any of these happens:
 
 Don't try a fourth idea.
 
+## The judge (notes/loop-engineering.md)
+Run `node cli/fm.mjs audit --friction` after every deal or contract you complete, and before
+every stop. Exit 2 = a failure the user would have caught: it filed friction; stop with that id
+unless the failure is one your brief already tells you to propose (e.g. a player with no contract:
+propose renew/release in an `approval` stop). Report the audit's score line in your final report.
+
+## Stop: approval
+Buying, selling and releasing need the user. When you have the proposals (each with its price
+and why, from `fm plan`, `fm price`, `fm buy --dry-run`), stop with outcome `approval`. Never run
+`fm approve` or `fm intervene`.
+
 ## Stop: checkpoint
 Stop (no friction report) at the checkpoint your brief names: a plan delivered, a window closed, a
 holiday started, or ~30 in-game days.
