@@ -25,7 +25,7 @@ import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
-import {watch} from './watch.mjs';
+import {watch, watchRunning} from './watch.mjs';
 import * as approvals from '../capabilities/approvals.mjs';
 import * as interventions from '../capabilities/interventions.mjs';
 import {audit} from '../capabilities/audit/audit.mjs';
@@ -133,7 +133,10 @@ const num = v => v === undefined ? undefined : Number(String(v).replace(/[£,_]/
 const dryRun = !!flags['dry-run'];
 const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
 
+// One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
+const ACTING = new Set(['recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
 try {
+  if (ACTING.has(cmd) && watchRunning()) throw new Error(`fm watch is recording (pid ${watchRunning()}): stop it before acting, or wait`);
   switch (cmd) {
     case 'status': { const s = await getState(); out({state: s.stateName, automation: s.automationState, actionReady: s.actionReady, inFlight: s.actionInFlight}); break; }
     case 'screen': out(fm.describe(await fm.Screen.read(), a1)); break;

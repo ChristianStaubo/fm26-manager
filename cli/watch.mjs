@@ -2,7 +2,7 @@
 // does an action by hand, read the screen every `interval` ms and log what changed: controls that
 // appeared, disappeared or changed label/value/enabled, overlays, and the agent line. The bridge's
 // recorder logs UI calls without labels (2026-10-14: three unlabelled clicks); this logs meaning.
-import {writeFileSync, appendFileSync} from 'node:fs';
+import {writeFileSync, appendFileSync, rmSync, readFileSync} from 'node:fs';
 import {Screen, overlays} from '../game/ui/index.mjs';
 
 const key = i => `${i.kind}|${i.name || ''}|${Math.round(i.bounds[0] / 8)}|${Math.round(i.bounds[1] / 8)}`;
@@ -21,8 +21,17 @@ export function diff(a, b) {
   return {added, removed, changed};
 }
 
+// Its screen reads replace the bridge's snapshot, so actions taken meanwhile fail as "Stale UI
+// snapshot" (Doak's listing, 2030-07-19). A lock tells acting fm commands to wait.
+export const LOCK = new URL('../local/runs/watch.lock', import.meta.url);
+export function watchRunning() {
+  try { const pid = Number(readFileSync(LOCK, 'utf8')); process.kill(pid, 0); return pid; } catch { return null; }
+}
 export async function watch({seconds = 300, interval = 1000, out} = {}) {
   const file = out || `local/runs/watch-${Date.now()}.jsonl`;
+  writeFileSync(LOCK, String(process.pid));
+  const unlock = () => { try { rmSync(LOCK); } catch {} };
+  process.on('exit', unlock); process.on('SIGTERM', () => { unlock(); process.exit(0); }); process.on('SIGINT', () => { unlock(); process.exit(0); });
   writeFileSync(file, '');
   let prev = await Screen.read(), n = 0;
   appendFileSync(file, JSON.stringify({t: 0, start: true, date: prev.date()?.toISOString().slice(0, 10), items: prev.items.length}) + '\n');
@@ -40,5 +49,6 @@ export async function watch({seconds = 300, interval = 1000, out} = {}) {
       prev = cur;
     }
   }
+  unlock();
   return {file, changes: n, seconds};
 }
