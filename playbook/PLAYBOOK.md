@@ -89,6 +89,14 @@ These are the user's rules (decided 2026-10-09).
 - Renew starters and good-value rotation players before they expire; let declining or surplus
   players go.
 
+- **Personal terms** (user, 2026-10-14): start from the agent's opening demand and lower only the
+  salary, three "−" steps (then 2, 1, 0); bonuses, clauses and length untouched.
+- *Next (user, 2026-10-14, not automated yet):*
+  - on the **promises** screen, try one step lower on playing time than asked (e.g. "Important
+    Player" → "Regular Starter") before accepting their demand;
+  - a **minimum fee release clause** caps our resale profit: if we must include one, try to raise
+    it; leave it when the agent has locked it (Ortega, £82M, 2030-07).
+
 ## 7. Team selection
 - **Keep the current tactic** (ours: 4-2-3-1 Gegenpress, `config/tactic.json`). Buy and select for it.
 - The XI is the best output per position in that shape, and **new signings start** (they were
