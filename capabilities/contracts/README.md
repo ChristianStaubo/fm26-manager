@@ -8,7 +8,8 @@ Implements playbook §6. Numbers: `playbook/policy.json` → `contracts`.
 **How:**
 - renew starters and good-value rotation players; let declining or surplus players go
 - contract length by age: up to 5 years, 4 at 29, 2 at 30+
-- personal terms: keep the agent's bonuses and clauses, offer `salary_factors` of the demand in turn
+- personal terms: start from the agent's opening demand and lower only the salary, by the form's own
+  "−" steps: `salary_ticks_down` 3, 2, 1, 0 (user, 2026-10-14); bonuses, clauses and length untouched
 - wage cap = `max_salary_vs_first_team_median` × the first-team median (`analysis/wage_bands.py`);
   above it, stop for a decision. The club's wage budget is the real limit.
 **Never:** cancels a deal because talks stall.

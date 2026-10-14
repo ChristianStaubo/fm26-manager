@@ -98,6 +98,8 @@
   },
   "contracts": {
     "_section": "6",
+    "salary_ticks_down": [3, 2, 1, 0],
+    "_salary_ticks_down": "User, 2026-10-14: take the agent's opening demand and press the Salary minus button this many times, nothing else (bonuses, clauses, length untouched); then fewer ticks, ending at the demand itself. Replaces salary_factors (typed shares of the demand).",
     "salary_factors": [0.95, 1.0, 1.1, 1.2],
     "_salary_factors": "Personal terms for signings: keep the agent's bonuses/clauses, offer this share of the demanded salary in turn, never above the wage cap (user rule: agents give a little on salary, are firm on the rest). Up to 1.2x since 2028-06 (Tanaka: 0.85-1.0x all got 'go away and think', and stalling made us cancel a 2.5M deal).",
     "_max_salary": "Personal terms: accept a demand up to this x our FIRST-TEAM median wage (top 25 earners, analysis/wage_bands.py; ~£51K in July 2026), negotiating via salary_factors; above it, stop for a decision. The contract screen's 'Avg.' includes youth/reserves (squad median £7K) and is no longer used (user, 2026-10-08: Camara's £36-44.5K is a normal first-team wage).",
@@ -108,7 +110,8 @@
       "29": 4,
       "30+": 2
     },
-    "negotiator": "Director of Football"
+    "negotiator": "manager",
+    "_negotiator": "User, 2026-10-14: the manager negotiates personal terms itself with salary_ticks_down (was the Director of Football: talks were handed over)."
   },
   "agent_payoff": {
     "counter_at": 0.7,

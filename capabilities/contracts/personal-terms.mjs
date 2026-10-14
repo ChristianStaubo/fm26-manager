@@ -1,8 +1,10 @@
 // Personal terms for a signing when the General Manager hands negotiations back to us
 // ("… I found his contract demands to be unacceptable …": Enter Contract Negotiations / Walk Away).
 // Recorded 2026-10-04 (Fernández-Pardo) and the user's rule: agents give a little on salary but
-// are firm on bonuses and clauses, so keep their demands and only lower the salary (85 → 95 →
-// 100%). If "Suggest Terms" stays disabled the agent fee is above the allowed maximum: lower it.
+// are firm on bonuses and clauses, so keep their demands and only lower the salary. Since
+// 2026-10-14 (user): take their opening demand and press the Salary "−" button 3 times, nothing
+// else; then 2, 1, 0 ticks (the demand itself). If "Suggest Terms" stays disabled the agent fee is
+// above the allowed maximum: lower it.
 //
 // Screens: Enter Contract Negotiations → (Promises) Finalize Promises → Negotiate Contract →
 // contract form (Salary, Loyalty Bonus, Agent Fee, Contract Length, Bonuses & Clauses, payroll
@@ -23,7 +25,21 @@ function firstTeamBands() {
 const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && parseMoney(i.label) !== null);
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
 const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
-export const termsAccepted = s => /pleased with the negotiations|solution everyone agrees|terms are acceptable/i.test(agentLine(s));
+// "…already provisionally agreed terms. I will once again state what is acceptable…" (Lemaitre, after a
+// second suggestion overrode an accepted one, 2030-07-14) is agreement too, with Finalize Deal.
+export const termsAccepted = s => /pleased with the negotiations|solution everyone agrees|terms are acceptable|provisionally agreed/i.test(agentLine(s));
+
+// The Salary row's "−" button (the form's own wage steps).
+const salaryMinus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
+const salaryPlus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '+'); };
+async function salaryTicksUp(n) {
+  for (let k = 0; k < n; k++) { await clickWhere(salaryPlus, 'salary +'); await settle(300); }
+  return parseMoney(amountAfter(await Screen.read(), 'Salary').label);
+}
+async function salaryTicksDown(n) {
+  for (let k = 0; k < n; k++) { await clickWhere(salaryMinus, 'salary −'); await settle(300); }
+  return parseMoney(amountAfter(await Screen.read(), 'Salary').label);
+}
 
 async function lowerAgentFeeUntilAllowed(max = 40) {
   for (let k = 0; k < max; k++) {
@@ -37,29 +53,34 @@ async function lowerAgentFeeUntilAllowed(max = 40) {
   return suggestEnabled(await Screen.read());
 }
 
-export async function negotiatePersonalTerms({player = '?', factors} = {}) {
+// The talks' own "Negotiate Contract" (StandardButton), not the Continue button of the same label.
+const negotiateButton = x => x.buttons('Negotiate Contract').find(b => b.name !== 'continue-button');
+export async function negotiatePersonalTerms({player = '?', ticks, entered = false} = {}) {
   const rules = loadRules().contracts;
-  factors ??= rules.salary_factors;
-  await click('Enter Contract Negotiations');
+  ticks ??= rules.salary_ticks_down;
+  // Wait for the message to give way: it has its own "Hand Over to …" button, which read as the
+  // talks' next step before they had opened (Lemaitre, 2030-07-14).
+  if (!entered) { await click('Enter Contract Negotiations'); await waitFor(x => !x.buttons('Enter Contract Negotiations').length, {what: 'contract talks open'}); }
   // FM26 may land on Recruitment → Transfer Activity with the deal selected instead of the talks
   // (Camara, 2026-07-16): its "Contract £8M" link (transfer-link-button) opens them.
   // Where it lands varies: promises, a "Negotiate Contract" step, the contract form itself
   // (Camara, 2026-07-16), or Transfer Activity with the deal's "Contract £…" link.
   const form = x => !!amountAfter(x, 'Salary') && x.hasText('Payroll Budget Impact');
   const link = x => x.buttons().find(b => b.name === 'transfer-link-button' && /^Contract £/.test(b.label));
-  const steps = x => x.buttons(/^(Finalize Promises|Negotiate Contract|Hand Over to .+)$/).length > 0;
+  const steps = x => x.buttons(/^(Finalize Promises|Hand Over to .+)$/).length > 0 || !!negotiateButton(x);
   let s = await waitFor(x => form(x) || steps(x) || !!link(x), {what: 'contract negotiation', timeout: 15000});
   if (!form(s) && !steps(s)) { await clickWhere(link, 'Contract link'); s = await waitFor(x => form(x) || steps(x), {what: 'contract negotiation (via deal)', timeout: 15000}); }
   // Talks the Director of Football hasn't tried yet: hand them over (playbook: staff negotiate
   // contracts; Grimes, 2028-06-27 waited on "Hand Over to Phil Giles").
-  const handOver = s.buttons(/^Hand Over to /)[0];
+  // Since 2026-10-14 the manager negotiates (contracts.negotiator 'manager', user: the tick rule).
+  const handOver = rules.negotiator === 'Director of Football' && s.buttons(/^Hand Over to /)[0];
   if (handOver) {
     await click(handOver.label);
     await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'handed-over'});
     return {action: 'personal-terms', player, outcome: 'handed-over', to: handOver.label.replace(/^Hand Over to /, '')};
   }
-  if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || x.buttons('Negotiate Contract').length > 0, {what: 'promises accepted'}); }
-  if (!form(s)) { await click('Negotiate Contract'); s = await waitFor(form, {what: 'contract form'}); }
+  if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'}); }
+  if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
   const demand = parseMoney(amountAfter(s, 'Salary').label);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, tries: []};
@@ -73,14 +94,25 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
     await log({...entry, outcome: 'escalated'});
     throw new NeedsAnalyst(`${player} wants £${demand}/week, above our cap £${Math.round(cap)} (${rules.max_salary_vs_first_team_median}× first-team median £${bands.median}); decide`, entry);
   }
-  for (const f of factors) {
-    if (demand * f > cap) break;
-    await click('Reset', {name: 'button-secondary-label'}); await settle(800);
-    const set = await setFee('Salary', Math.round(demand * f));
-    if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({factor: f, salary: set.set, blocked: 'agent fee'}); continue; }
+  // Reset ONCE, to their opening demand. Later Resets restore our last suggestion, not the demand
+  // (Lemaitre 2030-07-14: "2 ticks" after a 3-tick try gave £19K, below the 3-tick £19.5K). So:
+  // ticks[0] presses of −, then step back up with + between tries.
+  await click('Reset', {name: 'button-secondary-label'}); await settle(800);
+  let pressed = 0;
+  for (const t of ticks) {
+    const set = {set: t >= pressed ? await salaryTicksDown(t - pressed) : await salaryTicksUp(pressed - t)};
+    pressed = t;
+    if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({ticks: t, salary: set.set, blocked: 'agent fee'}); continue; }
+    // Wait for the agent's line to CHANGE (or Finalize Deal): Suggest Terms stays enabled right after
+    // the click, and the old line ("…initial contract demands…") was read as his answer (Lemaitre).
+    const before = agentLine(await Screen.read());
     await click('Suggest Terms', {name: 'StandardButton'});
-    const r = await waitFor(x => x.buttons('Finalize Deal').length > 0 || suggestEnabled(x), {what: 'agent reply', timeout: 8000}).catch(() => Screen.read());
-    entry.tries.push({factor: f, salary: set.set, reply: agentLine(r).slice(0, 200)});
+    const r = await waitFor(x => x.buttons('Finalize Deal').length > 0 || (agentLine(x) !== before && suggestEnabled(x)), {what: 'agent reply', timeout: 20000}).catch(() => Screen.read());
+    if (agentLine(r) === before && !r.buttons('Finalize Deal').length) {
+      await log({...entry, outcome: 'no-reply', salary: set.set});
+      throw new NeedsAnalyst(`${player}: no reply from the agent after suggesting £${set.set}/wk; talks left open, read the screen`, entry);
+    }
+    entry.tries.push({ticks: t, salary: set.set, reply: agentLine(r).slice(0, 200)});
     // Accepted, decision pending: no Finalize Deal, the player "would like to go away and think" /
     // "These terms are acceptable but I wish to evaluate all my options" (Tanaka, Grimes 2028-06-27:
     // read as a no, the handler kept raising the salary). Stop here; the player answers in days.
@@ -98,15 +130,18 @@ export async function negotiatePersonalTerms({player = '?', factors} = {}) {
   }
   // No agreement: leave the talks open (cancelling loses the player and the agreed fee) and ask.
   await log({...entry, outcome: 'no-agreement'});
-  throw new NeedsAnalyst(`${player}: no agreement up to ${factors.at(-1)}x the demand (£${demand}/wk); talks left open`, entry);
+  throw new NeedsAnalyst(`${player}: no agreement from ${ticks[0]} ticks below his demand up to the demand itself (£${demand}/wk); talks left open`, entry);
 }
 
 // Autopilot handler.
 export const handBackContract = {
   name: 'personal-terms',
-  match: s => s.buttons('Enter Contract Negotiations').length === 1 && s.buttons('Walk Away').length === 1 && s.hasText(/contract demands to be unacceptable/),
+  // The hand-back ("…contract demands to be unacceptable…") or the "<Player> offer accepted" message
+  // (2030-07-14: "LOSC have accepted our offer of £1M for Leo Lemaitre." + the same three buttons).
+  match: s => s.buttons('Enter Contract Negotiations').length === 1 && s.buttons('Walk Away').length === 1
+    && (s.hasText(/contract demands to be unacceptable/) || s.hasText(/have accepted our offer of/)),
   async run(s, {dryRun = false} = {}) {
-    const player = s.texts().map(t => /^Handle (.+) contract negotiations$/.exec(t)?.[1]).find(Boolean) || '?';
+    const player = s.texts().map(t => /^Handle (.+) contract negotiations$/.exec(t)?.[1] || /have accepted our offer of .+ for (.+)\.$/.exec(t)?.[1]).find(Boolean) || '?';
     if (dryRun) throw new NeedsAnalyst(`Personal terms for ${player} (dry run)`);
     return negotiatePersonalTerms({player});
   },
