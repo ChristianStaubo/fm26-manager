@@ -7,7 +7,7 @@
 //     "… are prepared to accept the latest offer …"  → Make Offer (finalize)
 //     "An offer has been made for …"                → Exit Talks; the club then confirms the
 //        fee and contract talks follow later as a NeedAction.
-import {Screen, waitFor, click, setFee, recover, openPlayer, actionPath, peekActions, profileFacts,
+import {Screen, waitFor, click, clickWhere, setFee, recover, openPlayer, actionPath, peekActions, profileFacts,
   isoDate, parseMoney, parseRange, NeedsAnalyst, overlays} from '../../game/ui/index.mjs';
 import {writeFileSync, mkdirSync} from 'node:fs';
 import {loadRules} from '../sell/decide.mjs';
@@ -51,6 +51,49 @@ export function offerState(s) {
   return {state, gm, upfront: money('Current Transfer Budget Cost:'), total: money('Future & Potential Total Cost with Additional Fees:')};
 }
 // Value of a deal for comparisons: guaranteed cost plus add-ons at rules.valuation.addon_weight.
+// The counter's clause rows (Racing Santander for Gaitán, 2030-07-14): "Additional Clauses" + Add,
+// then per row a label ("Percentage Of Profit From Next Sale"), its value dropdown ("40%") and a
+// remove button (buttons-controls-pc-default) on the same line. Also seen: "Loan Back Length".
+export function sellOnRow(s) {
+  const t = s.items.find(i => i.kind === 'text' && SELL_ON.test(i.label));
+  if (!t) return null;
+  const sameRow = i => Math.abs(i.bounds[1] - t.bounds[1]) < 20 && i.bounds[0] > t.bounds[0];
+  const value = s.items.find(i => i.kind === 'dropdown' && sameRow(i) && /%/.test(i.label));
+  const remove = s.items.find(i => i.kind === 'button' && i.name === 'buttons-controls-pc-default' && sameRow(i));
+  return remove ? {label: t.label, pct: value?.label ?? null, remove} : null;
+}
+// "Gaitán has a minimum fee release clause of £12,750,000." on the offer screen (2030-07-14): the
+// club must accept that fee, so we offer exactly it with no extra clauses (user, 2026-10-14).
+export const releaseClause = s => parseMoney(s.texts().map(t => /minimum fee release clause of (£[\d,.]+[MK]?)/i.exec(t)?.[1]).find(Boolean) ?? null);
+// Every extra's remove button, top to bottom: "Additional Fees" (add-ons: "Per League Appearance
+// 10 games £88K", Gaitán) and "Additional Clauses" (sell-on, loan back). A release-clause payment
+// left the add-on in (£12.75M became £13.75M) when only the clauses were removed.
+export function clauseRows(s) {
+  const head = s.items.find(i => i.kind === 'text' && i.label === 'Additional Fees') || s.items.find(i => i.kind === 'text' && i.label === 'Additional Clauses'),
+    stop = s.items.find(i => i.kind === 'button' && i.label === 'Undo');
+  if (!head) return [];
+  return s.items.filter(i => i.kind === 'button' && i.name === 'buttons-controls-pc-default' && i.bounds[1] > head.bounds[1] && (!stop || i.bounds[1] < stop.bounds[1]));
+}
+async function removeAllClauses() {
+  for (let n = clauseRows(await Screen.read()).length; n > 0; n--) {
+    await clickWhere(s => clauseRows(s)[0], 'clause remove button');
+    await waitFor(x => clauseRows(x).length < n, {what: 'clause removed'});
+  }
+}
+// Pay the release clause: no clauses, fee = the clause, Suggest Terms (or Make Offer), finalize.
+export async function payReleaseClause(fee) {
+  await removeAllClauses();
+  const set = await setFee('Fee', fee);
+  await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+  const reply = await suggest();
+  if (reply.state === 'accepted') await finalize();
+  else if (reply.state !== 'made') throw new NeedsAnalyst(`Release clause fee ${fee} not accepted: ${reply.state}`, reply);
+  return {outcome: 'release-clause', fee: set.set, reply};
+}
+async function removeSellOn() {
+  await clickWhere(s => sellOnRow(s)?.remove, 'sell-on clause remove button');
+  await waitFor(x => !sellOnRow(x), {what: 'sell-on clause removed'});
+}
 export const SELL_ON = /sell[- ]?on|next sale|future sale|percentage of (the )?(profit|fee)/i;
 const dealValue = o => (o.upfront ?? 0) + ((o.total ?? o.upfront ?? 0) - (o.upfront ?? 0)) * loadRules().valuation.addon_weight;
 
@@ -97,8 +140,12 @@ async function finalize() {
  * then withdraws if still refused. Returns {outcome: 'agreed'|'accepted-demands'|'walked-away', history}.
  */
 export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, final = false}) {
+  // A release clause within our max ends the negotiation: pay exactly it (Gaitán, £12.75M; we had
+  // opened above it from his value range).
+  const release = releaseClause(await Screen.read());
+  if (release != null && release <= max) return {...await payReleaseClause(release), history: []};
   const history = [];
-  let fee = firstFee, finalOffer = final;
+  let fee = firstFee, finalOffer = final, sellOnTries = 0;
   for (let round = 1; round <= rounds; round++) {
     let reply = offerState(await Screen.read());
     if (reply.state === 'editing') {
@@ -116,14 +163,16 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     if (reply.state === 'rejected') break;
     if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
     // A sell-on clause in their counter costs us resale profit, the point of buying young (user,
-    // 2026-10-14: remove it, then keep countering; sometimes it can't be removed). Not mapped yet:
-    // stop with the screen saved so the fixer maps the clause row and its removal.
-    const counter = await Screen.read();
-    if (counter.hasText(SELL_ON)) {
-      const dump = {texts: counter.texts().filter(t => SELL_ON.test(t) || /clause|%/i.test(t)).slice(0, 40), buttons: counter.buttons(/./).map(b => b.label).slice(0, 120)};
-      mkdirSync(new URL('../../local/runs/', import.meta.url), {recursive: true});
-      writeFileSync(new URL(`../../local/runs/buy-sell-on-${Date.now()}.json`, import.meta.url), JSON.stringify(dump, null, 1));
-      throw new NeedsAnalyst('Their counter has a sell-on clause: remove it before countering (not mapped yet; screen saved in local/runs/buy-sell-on-*.json). Leave the offer screen open for the fixer.', {...reply, ...dump});
+    // 2026-10-14): remove it and offer their up-front fee without it (within max). If they put it
+    // back, it can't be removed: negotiate on as usual (the history records it).
+    if (sellOnRow(await Screen.read()) && sellOnTries < 2) {
+      sellOnTries++;
+      history.at(-1).sellOnRemoved = sellOnRow(await Screen.read()).pct;
+      await removeSellOn();
+      fee = Math.min(reply.upfront ?? fee, max);
+      await setFee('Fee', fee);
+      await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+      continue;
     }
     if (dealValue(reply) <= max) {
       // Accept Demands submits the offer directly ("An offer has been made" → Exit Talks).

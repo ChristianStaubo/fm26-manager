@@ -72,6 +72,10 @@ These are the user's rules (decided 2026-10-09).
 - **Ask the agent before bidding** (user, 2026-10-14): his fee range replaces the scouted range.
   A player who **just signed a new contract** won't join: skip him for at least a season and find
   another (`fm plan` marks them `just_signed`: a contract running ~5 seasons).
+- **Release clause:** if the offer screen shows one within our max, pay exactly it with no add-ons
+  or clauses; nothing to negotiate (user, 2026-10-14).
+- **No sell-on clauses** on players we buy: we buy young to sell on. Remove them from counters;
+  keep countering if a club insists (user, 2026-10-14).
 - Price: open at FM's value (the middle of his range; bids far below it are flatly rejected) and walk away above 1.1× the top (or a lower max).
   A flat "the offer is unacceptable" means walk away.
 - Wages are **not a filter** for quality signings (user, 2026-10-10): pay what a better player costs, within the club's **wage budget** (`fm offers`: payroll available). Personal terms stop only above 2.5× our first-team median (a runaway demand). A swap that lowers the bill is always fine.
