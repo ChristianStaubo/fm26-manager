@@ -10,7 +10,9 @@ the same pass at the start of every window (run it in the first days of July, af
 4. `buy`: a priced shopping list within the budget. Per slot, starters first (we lack a *proven*
    starter: solid on a real sample), then depth (cheapest solid option, at most £15M). Each pick has
    `open_at` and `walk_away` from `fm price`.
-   `shortlist`: the top options per starter gap, so the user chooses.
+   `shortlist`: the top options per starter gap, so the user chooses. Each buy carries `against`:
+   the red team's case (wage vs our median, price per score point, no full season, age 28+,
+   injury-prone, inconsistent, likely work permit), from the reasons the user dropped Ortega/Gadou.
    **Lenses:** `moneyball` (default): proven output for the money. `attributes` (user, 2026-10-14):
    younger, better players we can sell on later, scored on attributes alone; the whole market up to
    `--max-age`, a pick must beat our weakest starter's attributes there (floor 40); a higher fee is

@@ -66,3 +66,14 @@ picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.st
 print(json.dumps([[x['role'], x['name']] for x in picks]))`);
   assert.deepEqual(out, [['depth', 'Old cheap']]);
 });
+
+test('red team: Ortega-style picks carry their case against (wage, price per point, no sample, permit)', () => {
+  const out = run(`import json, plan as p
+pick = {'wage': 88000, 'value': 52.6e6, 'blended': 50, 'moneyball': None, 'minutes': 180, 'age': 20}
+row = {'Injury Proneness': '6', 'Consistency': '14', 'nation': 'Colombia'}
+print(json.dumps(p.red_team(pick, row, 40000)))`);
+  assert.ok(out.some(x => /wage £88K\/wk is 2.2x/.test(x)));
+  assert.ok(out.some(x => /per point/.test(x)));
+  assert.ok(out.some(x => /no full season/.test(x)));
+  assert.ok(out.some(x => /Colombia: likely a work permit/.test(x)));
+});

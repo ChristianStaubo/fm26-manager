@@ -11,7 +11,7 @@ fm price's numbers (open at, walk away) so the approval is one line.
 
   python3 analysis/plan.py --budget 200e6 [--snapshot path.csv] [--max-value N] [--csv export.csv]
 """
-import argparse, json, re
+import argparse, json, re, statistics as st
 from pathlib import Path
 import manager as m, window as w
 
@@ -42,12 +42,42 @@ def changes(rows, prev):
             'left_fringe': len([x for x in left if x['minutes_for_us'] < LEFT_MIN]), 'arrived': arrived}
 
 
+# Countries whose players need no work permit / non-EU slot in England: home nations + EU/EEA-ish.
+# A proxy: the user dropped Ortega partly as "a non-EU slot" (2026-10-14).
+EU = {'England', 'Scotland', 'Wales', 'Northern Ireland', 'Republic of Ireland', 'Ireland', 'France', 'Germany', 'Spain', 'Italy',
+      'Portugal', 'Netherlands', 'Belgium', 'Austria', 'Denmark', 'Sweden', 'Finland', 'Norway', 'Switzerland', 'Poland', 'Czech Republic',
+      'Czechia', 'Slovakia', 'Slovenia', 'Croatia', 'Hungary', 'Romania', 'Bulgaria', 'Greece', 'Cyprus', 'Malta', 'Luxembourg',
+      'Estonia', 'Latvia', 'Lithuania', 'Iceland'}
+
+
+def red_team(pick, row, median_wage):
+    """The case against a buy (user's reasons for dropping Ortega and Gadou, 2026-10-14): what it
+    costs for what we get, and what blocks a profitable resale. Shown with every proposal."""
+    out = []
+    if pick['wage'] >= 2 * median_wage:
+        out.append(f"wage £{pick['wage'] // 1000}K/wk is {pick['wage'] / median_wage:.1f}x our first-team median: ~£{pick['wage'] * 52 * 2 / 1e6:.1f}M over two seasons")
+    if pick['value'] >= 30e6 and pick['blended'] < 70:
+        out.append(f"£{pick['value'] / 1e6:.0f}M for a {pick['blended']} score: £{pick['value'] / max(pick['blended'], 1) / 1e6:.1f}M per point")
+    if pick['moneyball'] is None:
+        out.append(f"no full season of stats ({pick['minutes']} min): attributes only")
+    if pick['age'] >= 28:
+        out.append(f"age {pick['age']}: little resale growth")
+    if row:
+        if sr.num(row, 'Injury Proneness') >= 12: out.append(f"injury prone ({int(sr.num(row, 'Injury Proneness'))}/20)")
+        if sr.num(row, 'Consistency') <= 10: out.append(f"inconsistent ({int(sr.num(row, 'Consistency'))}/20)")
+        if row.get('nation') and row['nation'] not in EU: out.append(f"{row['nation']}: likely a work permit / non-EU slot")
+    return out
+
+
 def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
     """Per slot: how many starters we lack (solid players vs XI slots), then depth (solid vs need).
     Starters come from best/value with a real sample (moneyball score), cheapest strong first;
     depth from bench/free. Each pick is priced with fm price and must fit the remaining budget."""
     used = {s['slot'] for s in tactic['slots']}
     picks, skipped, left, taken, shortlist = [], [], budget, set(), {}
+    by_name = {p['name']: p for p in rows}
+    ours = sorted(sr.num(p, 'wage') for p in rows if p['contract_club'] == m.CLUB)[-25:]
+    median_wage = st.median(ours) if ours else 50000
     order = sorted(report['slots'], key=lambda s: (s['solid'] - len([x for x in STARTERS.get(s['slot'], (s['slot'],)) if x in used])))
     for s in order:
         xi = len([x for x in STARTERS.get(s['slot'], (s['slot'],)) if x in used]) or 1
@@ -77,6 +107,7 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
                               'attributes': c['attributes'], 'blended': c['blended'], 'moneyball': c['moneyball'], 'chabot': c['chabot'], 'minutes': c['minutes'],
                               'value': p['value'], 'open_at': p['open_at'], 'walk_away': p['walk_away'], 'wage': p['wage'], 'wage_ok': p['wage_ok'],
                               'beats_our_best_by': c['blended'] - (s['ours'][0]['blended'] if s['ours'] else 0)})
+                picks[-1]['against'] = red_team(picks[-1], by_name.get(c['name']), median_wage)
                 return True
             return False
         # Every list counts (Kovář, 75/100 for £3.8M, sat in 'bench'); starters need a real sample.
