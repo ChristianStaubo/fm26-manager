@@ -45,3 +45,21 @@ test('a counter is not an agreement: "latest demands" with Finalize Deal (Casad�
   assert.equal(counterLine(scr("Iarley Silva Agent Suggest Terms What a promising start to these discussions. We are very close to concluding some form of deal here. Here are my client's latest demands:")), true);
   assert.equal(counterLine(scr("Manuel Vogt Agent Suggest Terms Everything here appears to be in order, you'll hear from us after we've taken some time to think things over.")), false);
 });
+
+test('opening (user sessions): ~10% under the demand, at least 8 ticks', async () => {
+  const {openingTicks} = await import('../capabilities/contracts/personal-terms.mjs');
+  const p = loadPolicy().contracts.probe;
+  assert.equal(openingTicks({demand: 87000, tick: 1000}, p), 9, 'Fresneda: £87K → ~£78K (the user opened £79K)');
+  assert.equal(openingTicks({demand: 20500, tick: 250}, p), 8, 'small wage: at least 8 ticks');
+  assert.equal(openingTicks({demand: 125000, tick: 5000}, p), 3, 'Casadó: £5K ticks: ~10% = 3 ticks (£110K), not 8 (-32%)');
+  assert.equal(openingTicks({demand: 73000, tick: 1000}, p), 8, 'Lawrence: 8 ticks (£65K); the user went deeper (£60K) and met the counter');
+});
+
+test('promises (user, Fresneda): take the "(Recommended)" playing time when it is lower than asked', async () => {
+  const {lowerPromise} = await import('../capabilities/contracts/personal-terms.mjs');
+  const opts = ['Star Player', 'Important Player', 'Regular Starter (Recommended)', 'Squad Player', 'Fringe Player'];
+  assert.deepEqual(lowerPromise('Important Player', opts), {from: 'Important Player', to: 'Regular Starter', option: 'Regular Starter (Recommended)', index: 2});
+  assert.equal(lowerPromise('Regular Starter', opts), null, 'already at the recommendation');
+  assert.equal(lowerPromise('Squad Player', opts), null, 'never raise a promise');
+  assert.equal(lowerPromise('Important Player', ['Star Player', 'Important Player']), null, 'no recommendation shown');
+});

@@ -114,6 +114,10 @@
     },
     "probe": {
       "_about": "User, 2026-10-15: open open_ticks under his demand (open_ticks_expensive when the demand is expensive_over+) to see his floor; his counter within firm_within_ticks of the demand = firm → offer below_counter_firm ticks under it; a bigger drop = flexible → below_counter_flexible ticks under; the last round takes his counter. Lawrence (by hand): £73K → £60K → counter £66K → £64K agreed.",
+      "open_pct": 0.10,
+      "open_min_ticks": 8,
+      "open_max_pct": 0.15,
+      "_open": "User sessions (2026-10-15): Fresneda £87K → opened £79K (8 ticks, -9%), accepted at once; Lawrence £73K → £60K (-18%) → counter £66K → £64K. Open open_pct under the demand, at least open_min_ticks; replaces open_ticks 4/5 (too lax).",
       "open_ticks": 4,
       "open_ticks_expensive": 5,
       "expensive_over": 75000,

@@ -52,6 +52,12 @@ export const termsAccepted = s => /pleased with the negotiations|solution everyo
 
 // The Salary row's "−" button (the form's own wage steps).
 const salaryMinus = x => { const f = salaryControl(x); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
+// The opening (user sessions, 2026-10-15): open_pct under his demand, at least open_min_ticks.
+export function openingTicks({demand, tick}, p) {
+  if (p.open_pct == null) return demand >= p.expensive_over ? p.open_ticks_expensive : p.open_ticks;
+  // The minimum only while it stays within open_max_pct (at £5K ticks, 8 ticks would be -32%).
+  return Math.max(Math.round(demand * p.open_pct / tick), Math.min(p.open_min_ticks, Math.floor(demand * (p.open_max_pct ?? 0.15) / tick)));
+}
 // After his counter: how many ticks under it (user, 2026-10-15). Within firm_within_ticks of the
 // demand he's firm (1 tick under); a bigger drop shows room (2 ticks under).
 export function nextOfferTicks({demand, counter, tick}, p) {
@@ -101,6 +107,37 @@ async function lowerAgentFeeUntilAllowed(max = 40) {
   return suggestEnabled(await Screen.read());
 }
 
+// Promises (user, Fresneda 2030-07-19): he asked for more playing time; the user picked the game's
+// "Regular Starter (Recommended)" and clicked Suggest Promises ("happy to move on"), then Finalize
+// Promises. Take the "(Recommended)" option when it is LOWER than what he asked; anything unexpected
+// leaves his promise as it is.
+export const PLAYING_TIME = ['Star Player', 'Important Player', 'Regular Starter', 'Squad Player', 'Impact Sub', 'Fringe Player', 'Emergency Backup', 'Breakthrough Prospect', 'Hot Prospect for the Future', 'Future Prospect'];
+export function lowerPromise(current, options) {
+  const rec = options.find(o => /\(Recommended\)$/.test(o));
+  if (!rec) return null;
+  const name = rec.replace(/ \(Recommended\)$/, ''), a = PLAYING_TIME.indexOf(current), b = PLAYING_TIME.indexOf(name);
+  return a >= 0 && b > a ? {from: current, to: name, option: rec, index: options.indexOf(rec)} : null;
+}
+async function lowerPlayingTime() {
+  const {ui} = await import('../../game/bridge/client.mjs');
+  const pt = x => x.after('Playing Time', i => i.kind === 'dropdown');
+  const s0 = await Screen.read(), current = pt(s0)?.label;
+  if (!current) return null;
+  await ui.dropdown(s0.tree, s0.node(pt(s0).id), 'open').catch(() => null);
+  const s1 = await waitFor(x => (x.floatingItems() || []).some(i => i.kind === 'row'), {what: 'playing time options', timeout: 4000}).catch(() => null);
+  const options = s1 ? s1.floatingItems().filter(i => i.kind === 'row').map(i => i.label) : [];
+  const pick = lowerPromise(current, options);
+  if (!pick) { await ui.closeDropdowns().catch(() => null); return {kept: current, options}; }
+  const s2 = await Screen.read();
+  await ui.dropdown(s2.tree, s2.node(pt(s2).id), 'select', pick.index);
+  const s3 = await waitFor(x => (pt(x)?.label || '').startsWith(pick.to), {what: 'playing time set', timeout: 4000});
+  if (!s3.buttons('Suggest Promises').length) return {...pick, suggested: false};
+  const before = agentLine(s3);
+  await click('Suggest Promises');
+  const r = await waitFor(x => agentLine(x) !== before && x.buttons('Finalize Promises').length > 0, {what: 'agent reply on promises', timeout: 15000});
+  return {...pick, suggested: true, reply: agentLine(r).slice(0, 160)};
+}
+
 // The talks' own "Negotiate Contract" (StandardButton), not the Continue button of the same label.
 const negotiateButton = x => x.buttons('Negotiate Contract').find(b => b.name !== 'continue-button');
 export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null, preview = false} = {}) {
@@ -135,7 +172,10 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'handed-over'});
     return {action: 'personal-terms', player, outcome: 'handed-over', to: handOver.label.replace(/^Hand Over to /, '')};
   }
-  if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'}); }
+  if (s.buttons('Finalize Promises').length) {
+    entry.promise = await lowerPlayingTime().catch(e => ({error: e.message}));
+    await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'});
+  }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
   // Reset first: an earlier preview leaves our edits in the form, and reading before Reset took that
   // edit (£110K) for his demand (£125K) (Casadó, 2030-07-17). Reset restores his demand while nothing
@@ -172,9 +212,11 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // our own presses (£1K around £70K, £5K around £125K).
   const p = rules.probe;
   await click('Reset', {name: 'button-secondary-label'}); await settle(800);
-  const open = demand >= p.expensive_over ? p.open_ticks_expensive : p.open_ticks;
-  let offered = await salaryTicksDown(open);
-  const step = Math.max(1, Math.round((demand - offered) / open));
+  // Measure the tick with one press, then open open_pct under the demand, at least open_min_ticks.
+  const first = await salaryTicksDown(1);
+  const step = Math.max(1, demand - first);
+  const open = openingTicks({demand, tick: step}, p);
+  let offered = open > 1 ? await salaryTicksDown(open - 1) : first;
   Object.assign(entry, {openTicks: open, tick: step});
   for (let round = 1; round <= p.max_rounds; round++) {
     if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({round, salary: offered, blocked: 'agent fee'}); break; }

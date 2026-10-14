@@ -93,8 +93,11 @@ These are the user's rules (decided 2026-10-09).
 - Renew starters and good-value rotation players before they expire; let declining or surplus
   players go.
 
-- **Personal terms** (user, 2026-10-15): only the salary moves. Probe: open 4 ticks under his demand
-  (5 for expensive wages), then read his counter: firm → 1 tick under it, flexible → 2; then take it.
+- **Personal terms** (user's recorded sessions, 2026-10-15): open **~10% under his demand** (at least
+  8 ticks, at most 15%), then read his counter: firm → 1 tick under it, flexible → 2; then take it.
+  Bonuses, clauses and length untouched. **Promises:** take the game's "(Recommended)" playing time
+  when it is lower than he asked (Fresneda: Regular Starter). Fresneda £87K → £79K, accepted at once;
+  Lawrence £73K → £60K → counter £66K → £64K.
 - *Next (user, 2026-10-14, not automated yet):*
   - on the **promises** screen, try one step lower on playing time than asked (e.g. "Important
     Player" → "Regular Starter") before accepting their demand;
