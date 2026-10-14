@@ -17,7 +17,7 @@ export function checkSquad({alerts = [], tactic}) {
   if (slots.length !== 11 || !slots.some(s => s.slot === 'GK')) fail.push(`tactic.json has ${slots.length} slots${slots.some(s => s.slot === 'GK') ? '' : ', no GK'}: the shape must be the 11 we play`);
   for (const a of alerts) {
     if (a.issue === 'no contract') (a.minutes >= 900 ? fail : warn).push(`${a.name} (${a.positions}, ${a.minutes} min) has no contract: renew, release or replace`);
-    else fail.push(`${a.name} (${a.positions}, ${a.minutes} league min) is a ${a.issue}: move him back before the XI is picked`);
+    else fail.push(`${a.name} (${a.positions}, ${a.minutes} league min) is a ${a.issue}: fm move him to the senior squad before the XI is picked`);
   }
   return {fail, warn};
 }

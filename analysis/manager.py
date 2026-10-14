@@ -115,7 +115,7 @@ def alerts(rows):
                         'minutes': mins, 'wage': sr.num(p, 'wage'), 'do': 'renew (fm renew), release, or replace'})
         elif p['contract_club'] == CLUB and p['club'] != CLUB and p['club'].startswith(CLUB) and p['competition'] == LEAGUE and mins >= 1500:
             out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': f"regular in {p['club']}",
-                        'minutes': mins, 'do': 'move him back to the first team before picking the XI'})
+                        'minutes': mins, 'do': 'fm move "<name>" --club <club> (to the senior squad) before picking the XI'})
     return sorted(out, key=lambda a: -a['minutes'])
 
 

@@ -12,6 +12,7 @@ import {listPlayer} from '../capabilities/sell/list.mjs';
 import {buyPlayer} from '../capabilities/buy/buy.mjs';
 import {askAgent} from '../capabilities/buy/ask.mjs';
 import {delegateRenewal} from '../capabilities/contracts/renew.mjs';
+import {movePlayer} from '../capabilities/squad/move.mjs';
 import {allow as allowWage} from '../capabilities/contracts/wage-exceptions.mjs';
 import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
 import {pressConference} from '../game/screens/admin/press.mjs';
@@ -83,6 +84,7 @@ Transfers
   buy "<name>" --club <club> [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]
                                  --wage-max: a swap may pay up to the outgoing player's wage above the cap
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
+  move "<name>" --club <club> [--to senior|u18] [--dry-run]   move one of ours between squads (U21 → senior)
   renew "<name>" --club <club> [--dry-run]              DoF negotiates a new contract
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
@@ -237,6 +239,7 @@ try {
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;
+    case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
     case 'input-reset': out(await ui.removeVirtual()); break;
     case 'record':
