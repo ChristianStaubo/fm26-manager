@@ -64,3 +64,13 @@ test('promises (user, Fresneda): take the "(Recommended)" playing time when it i
   assert.equal(lowerPromise('Fringe Player', opts), null, 'nothing lower: keep it');
   assert.equal(lowerPromise('Important Player', ['Star Player', 'Important Player']), null, 'no lower option shown');
 });
+
+test('the split (user sessions): open at half the raise, then halfway to the counter', async () => {
+  const {splitOpening, splitCounter, splitTicks} = await import('../capabilities/contracts/personal-terms.mjs');
+  const p = loadPolicy().contracts.probe;
+  assert.equal(splitOpening({demand: 88000, current: 49000}, p), 68500, 'Fer López: the user agreed £69K');
+  assert.equal(splitTicks({demand: 88000, current: 49000, target: 68500, tick: 1000}), 20, '£88K − 20 ticks = £68K-£69K');
+  assert.equal(splitOpening({demand: 73000, current: 49500}, p), 61250, 'Lawrence: the user opened £60K');
+  assert.equal(splitCounter({offered: 61000, counter: 66000}), 63500, 'Lawrence: countered £66K, the user settled £64K');
+  assert.equal(splitTicks({demand: 50000, current: 49000, target: 30000, tick: 1000}), 1, 'never below the current wage');
+});

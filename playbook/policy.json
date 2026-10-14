@@ -114,6 +114,9 @@
     },
     "probe": {
       "_about": "User, 2026-10-15: open open_ticks under his demand (open_ticks_expensive when the demand is expensive_over+) to see his floor; his counter within firm_within_ticks of the demand = firm → offer below_counter_firm ticks under it; a bigger drop = flexible → below_counter_flexible ticks under; the last round takes his counter. Lawrence (by hand): £73K → £60K → counter £66K → £64K agreed.",
+      "split": true,
+      "_split": "User sessions (2026-10-15): the RAISE is what is negotiated. Open at current wage + raise_share x (demand - current), then halfway between our last offer and his counter; the last round takes it. Fer López £49K→£88K demand: user £69K (= midpoint £68.5K); Lawrence £49.5K→£73K: opened £60K (midpoint £61K), counter £66K → £64K (midpoint £63.5K). Without a current wage: open_pct under the demand.",
+      "raise_share": 0.5,
       "open_pct": 0.10,
       "open_min_ticks": 8,
       "open_max_pct": 0.15,

@@ -93,11 +93,12 @@ These are the user's rules (decided 2026-10-09).
 - Renew starters and good-value rotation players before they expire; let declining or surplus
   players go.
 
-- **Personal terms** (user's recorded sessions, 2026-10-15): open **~10% under his demand** (at least
-  8 ticks, at most 15%), then read his counter: firm → 1 tick under it, flexible → 2; then take it.
-  Bonuses, clauses and length untouched. **Promises: always try one lower** than he asked (user): the
-  "(Recommended)" option when lower, else the next one down (Fresneda: Regular Starter). Fresneda £87K → £79K, accepted at once;
-  Lawrence £73K → £60K → counter £66K → £64K.
+- **Personal terms: the split** (user's sessions, 2026-10-15). The *raise* is what is negotiated, not
+  the demand: open at **current wage + half the raise he asks**, then **halfway between our offer and
+  his counter**, then take his counter. Never below his current wage, never above his demand. Fer
+  López (£49K, asked £88K) → £69K; Lawrence (£49.5K, asked £73K) → £60K, counter £66K → £64K.
+  Without a current wage (unknown): 10% under the demand. Bonuses, clauses and length untouched.
+  **Promises: always try one lower** than he asked (the "(Recommended)" option, else the next down).
 - *Next (user, 2026-10-14, not automated yet):*
   - on the **promises** screen, try one step lower on playing time than asked (e.g. "Important
     Player" → "Regular Starter") before accepting their demand;

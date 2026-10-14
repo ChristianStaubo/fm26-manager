@@ -52,6 +52,15 @@ export const termsAccepted = s => /pleased with the negotiations|solution everyo
 
 // The Salary row's "−" button (the form's own wage steps).
 const salaryMinus = x => { const f = salaryControl(x); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
+// The split (user sessions, 2026-10-15): the raise is what is negotiated. Opening = current wage +
+// raise_share x (demand - current); after a counter, halfway between our last offer and it. In ticks
+// below the demand (the form moves in ticks). Never below the current wage.
+export function splitTicks({demand, current, target, tick}) {
+  const want = Math.max(target, current ?? 0);
+  return Math.max(0, Math.round((demand - want) / tick));
+}
+export const splitOpening = ({demand, current}, p) => current + (p.raise_share ?? 0.5) * (demand - current);
+export const splitCounter = ({offered, counter}) => (offered + counter) / 2;
 // The opening (user sessions, 2026-10-15): open_pct under his demand, at least open_min_ticks.
 export function openingTicks({demand, tick}, p) {
   if (p.open_pct == null) return demand >= p.expensive_over ? p.open_ticks_expensive : p.open_ticks;
@@ -145,7 +154,7 @@ async function lowerPlayingTime() {
 
 // The talks' own "Negotiate Contract" (StandardButton), not the Continue button of the same label.
 const negotiateButton = x => x.buttons('Negotiate Contract').find(b => b.name !== 'continue-button');
-export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null, preview = false} = {}) {
+export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null, preview = false, currentWage = null} = {}) {
   const rules = loadRules().contracts;
   ticks ??= rules.salary_ticks_down;
   // Wait for the message to give way: it has its own "Hand Over to …" button, which read as the
@@ -177,8 +186,9 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'handed-over'});
     return {action: 'personal-terms', player, outcome: 'handed-over', to: handOver.label.replace(/^Hand Over to /, '')};
   }
+  let promise = null;   // logged once the entry exists
   if (s.buttons('Finalize Promises').length) {
-    entry.promise = await lowerPlayingTime().catch(e => ({error: e.message}));
+    promise = await lowerPlayingTime().catch(e => ({error: e.message}));
     await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'});
   }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
@@ -188,7 +198,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   if (s.buttons('Reset').some(b => b.name === 'button-secondary-label')) { await click('Reset', {name: 'button-secondary-label'}); await settle(800); s = await Screen.read(); }
   const demand = salaryOf(s);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
-  const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), tries: []};
+  const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), ...(promise ? {promise} : {}), tries: []};
   // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
   // with the form open for a decision (Cancel Negotiations asks to confirm; its Cancel keeps talks).
   const bands = firstTeamBands();
@@ -220,7 +230,11 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // Measure the tick with one press, then open open_pct under the demand, at least open_min_ticks.
   const first = await salaryTicksDown(1);
   const step = Math.max(1, demand - first);
-  const open = openingTicks({demand, tick: step}, p);
+  // A current wage (renewals: ours; signings: at his club) → the split; else open_pct under.
+  const current = renewal?.currentWage ?? currentWage ?? null;
+  const useSplit = p.split && Number.isFinite(current) && current > 0 && current < demand;
+  const open = useSplit ? Math.max(1, splitTicks({demand, current, target: splitOpening({demand, current}, p), tick: step})) : openingTicks({demand, tick: step}, p);
+  entry.method = useSplit ? `split from £${current}` : 'percent';
   let offered = open > 1 ? await salaryTicksDown(open - 1) : first;
   Object.assign(entry, {openTicks: open, tick: step});
   for (let round = 1; round <= p.max_rounds; round++) {
@@ -261,7 +275,10 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     const counter = salaryOf(r);
     entry.tries.at(-1).counter = counter;
     if (counter == null || (cap && counter > cap && !entry.renewal)) break;
-    const k = round >= p.max_rounds - 1 ? 0 : nextOfferTicks({demand, counter, tick: step}, p);
+    // Split: halfway between our offer and his counter (ticks below his counter, now in the form).
+    const k = round >= p.max_rounds - 1 ? 0
+      : useSplit ? Math.max(1, Math.round((counter - Math.max(splitCounter({offered, counter}), current)) / step))
+      : nextOfferTicks({demand, counter, tick: step}, p);
     offered = k ? await salaryTicksDown(k) : counter;
   }
   // No agreement: leave the talks open (cancelling loses the player and the agreed fee) and ask.
