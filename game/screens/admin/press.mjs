@@ -19,7 +19,8 @@ export function answers(s) {
 const delegateButton = s => s.buttons(/^Delegate 'Attends .*Press Conferences' to /)[0];
 const attendInMessage = s => s.buttons('Attend Press Conference').find(b => b.name !== 'continue-button');
 // The message that announced the conference, in the Portal inbox.
-const messageItem = s => s.buttons().find(b => b.name === 'NewsItemButton' && /to be unveiled|[Pp]ress [Cc]onference/.test(b.label));
+const messageItems = s => s.buttons().filter(b => b.name === 'NewsItemButton' && /to be unveiled|[Pp]ress [Cc]onference/.test(b.label)).sort((a, b) => a.bounds[1] - b.bounds[1]);
+const messageItem = s => messageItems(s)[0];
 
 // The Portal's Messages sub-tab (SIButton), next to Overview.
 export const messagesTab = s => s.buttons('Messages').find(b => b.name === 'SIButton');
@@ -40,7 +41,14 @@ export async function pressConference({dryRun = false} = {}) {
       if (!messageItem(s)) { await click('Portal'); s = await waitFor(x => !!messageItem(x) || !!messagesTab(x), {what: 'Portal', timeout: 5000}).catch(() => Screen.read()); }
       if ((!messageItem(s) || forYou(s)) && messagesTab(s)) { await clickWhere(messagesTab, 'Messages tab'); s = await waitFor(x => !!messageItem(x), {what: 'press conference message', timeout: 5000}).catch(() => Screen.read()); }
       if (!messageItem(s)) throw new NeedsAnalyst('Press conference pending but no message announcing it was found', {texts: s.texts().slice(0, 40)});
-      await clickWhere(messageItem, 'press conference message');
+      // An open message is listed twice, overlapping (y 217 and 229, 2030-07-19): the lower copy is
+      // covered. Try each copy, topmost first.
+      let opened = false;
+      for (const copy of messageItems(s)) {
+        try { await clickWhere(x => messageItems(x).find(b => b.bounds[1] === copy.bounds[1]), 'press conference message'); opened = true; break; }
+        catch (e) { if (!/occluded/.test(e.message)) throw e; }
+      }
+      if (!opened) throw new NeedsAnalyst('Press conference message covered on every copy', {copies: messageItems(s).map(b => b.bounds)});
       s = await waitFor(x => !!attendInMessage(x), {what: 'Attend Press Conference (message)'});
     }
     // Hand future unveilings to staff when the message offers it (once per save).
