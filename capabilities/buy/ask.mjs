@@ -22,6 +22,17 @@ const options = (s, name) => {
 // What the agent said: the chat texts after "Quick Chat" that are not our options.
 const chat = s => { const t = s.texts(), i = t.lastIndexOf('Quick Chat'); return i < 0 ? [] : t.slice(i + 1, i + 40); };
 
+// The Contest answer: FM folds Agree / Contest / Stall into the agent's bubble ("<Agent> Agent Agree
+// Contest Stall"), so it is not a separate screen item. Find the node labelled exactly "Contest" in
+// the tree, or its nearest clickable ancestor that is not the whole bubble. Never Agree.
+export function contestTarget(s) {
+  const n = s.tree.nodes.find(x => x.visible && ((x.label || x.text || '').trim() === 'Contest'));
+  for (let a = n; a; a = s.byId.get(a.parent)) {
+    if (a.button && a.enabled !== false && !/Agree|Stall/.test(a.label || '')) return a;
+    if (a.button) return null;   // the bubble itself (it would hold Agree too): don't guess
+  }
+  return null;
+}
 export function readReply(lines) {
   const text = lines.join(' ');
   // "somewhere between £26M and £31M" (Banks) or "somewhere around £17M" (Güreler, 2030-07-14).
@@ -60,9 +71,11 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
   // Stall. The user's step is Contest: he either lowers his wage demand or stays firm. Never Agree.
   let contested = null;
   const s1 = await Screen.read();
-  if (s1.buttons('Contest').length) {
+  const contestNode = contestTarget(s1);
+  if (contestNode) {
     const before = readReply(chat(s1)), lines = chat(s1).join(' ');
-    await click('Contest');
+    const {ui} = await import('../../game/bridge/client.mjs');
+    await ui.click(s1.tree, contestNode);
     const r = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
     const after = readReply(chat(r));
     contested = {wageBefore: before.wage, wageAfter: after.wage, firm: after.wage == null || after.wage >= (before.wage ?? Infinity)};
