@@ -21,9 +21,11 @@ const attendInMessage = s => s.buttons('Attend Press Conference').find(b => b.na
 // The message that announced the conference, in the Portal inbox.
 const messageItem = s => s.buttons().find(b => b.name === 'NewsItemButton' && /to be unveiled|[Pp]ress [Cc]onference/.test(b.label));
 
+// The Portal's Messages sub-tab (SIButton), next to Overview.
+export const messagesTab = s => s.buttons('Messages').find(b => b.name === 'SIButton');
 // What the handler would use on this screen (for tests and dry runs).
 export const locate = s => ({inRoom: inRoom(s), question: question(s), answers: answers(s).length,
-  attend: !!attendInMessage(s), delegate: !!delegateButton(s), message: messageItem(s)?.label || null});
+  attend: !!attendInMessage(s), delegate: !!delegateButton(s), message: messageItem(s)?.label || null, messagesTab: !!messagesTab(s)});
 
 export async function pressConference({dryRun = false} = {}) {
   let s = await Screen.read();
@@ -31,7 +33,10 @@ export async function pressConference({dryRun = false} = {}) {
   if (dryRun) return {...entry, dryRun: true, ...locate(s)};
   if (!inRoom(s)) {
     if (!attendInMessage(s)) {
-      if (!messageItem(s)) { await click('Portal'); s = await waitFor(x => !!messageItem(x), {what: 'press conference message', timeout: 5000}).catch(() => Screen.read()); }
+      // Portal can open FM's "For You" news page, whose ForYouHeader covers the inbox (friction
+      // 2026-10-14T22-43-51): open the Messages tab, where the announcing message is listed.
+      if (!messageItem(s)) { await click('Portal'); s = await waitFor(x => !!messageItem(x) || !!messagesTab(x), {what: 'Portal', timeout: 5000}).catch(() => Screen.read()); }
+      if (!messageItem(s) && messagesTab(s)) { await clickWhere(messagesTab, 'Messages tab'); s = await waitFor(x => !!messageItem(x), {what: 'press conference message', timeout: 5000}).catch(() => Screen.read()); }
       if (!messageItem(s)) throw new NeedsAnalyst('Press conference pending but no message announcing it was found', {texts: s.texts().slice(0, 40)});
       await clickWhere(messageItem, 'press conference message');
       s = await waitFor(x => !!attendInMessage(x), {what: 'Attend Press Conference (message)'});
