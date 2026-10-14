@@ -20,6 +20,10 @@ the same pass at the start of every window (run it in the first days of July, af
    `growth` (user, 2026-10-15, the business model: young, good stats, cheap → develop → sell):
    output vs peers **in his own league** (young players are rarely PL-level yet), x league strength,
    then cheap for it. Finds development bets in second tiers and smaller leagues (Stange, Kovács).
+   `wonderkid` (user, 2026-10-15: "attributes are more important… find wonderkids"): role attributes
+   vs his **age group** at the position (z-score ≥ 2), not vs PL regulars at their peak; best for his
+   age, cheaper first. Validated: Lemaitre (CB, 21, £1M) comes out z 3.2; Arena (ST, 21) z 3.6.
+   Young ones not ready to start: buy, then loan out to play (the youth loan rule).
 5. `sell` (with real minutes) and `fringe` (no evidence either way).
 
 **Never:** buys, sells or lists. Buying and selling need the user's approval (§10): the plan is the

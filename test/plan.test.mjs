@@ -88,3 +88,14 @@ picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.st
 print(json.dumps([x['name'] for x in picks if x['role'] == 'starter']))`);
   assert.deepEqual(out, ['Cheap'], 'same growth band → cheaper for his profile first');
 });
+
+test('wonderkid lens (user, 2026-10-15): best for his age (z vs age group), cheaper first within a band', () => {
+  const k = (name, age_z, value) => ({name, age_z, value, attributes: 10, blended: 10, moneyball: null, age: 17, wage: 1, league: 'X', chabot: false, minutes: 0, x_market: null});
+  const report = {slots: [{slot: 'ST', need: 2, solid: 0, attr_bar: 50, ours: [], best: [], value: [], bench: [], free: [], by_attributes: [], growth: [],
+    wonderkids: [k('Dear', 2.6, 22e6), k('Cheap', 2.5, 0.9e6), k('Lower', 2.0, 0.1e6)]}]};
+  const out = run(`import json, plan as p
+p.m.price = lambda rows, n: {'club': 'C', 'value': 1e6, 'open_at': 1e6, 'walk_away': 1.2e6, 'wage': 1, 'wage_ok': True}
+picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.stringify(report))}), [], {'slots': [{'slot': 'ST'}]}, 1e8, 'wonderkid', 21)
+print(json.dumps([x['name'] for x in picks if x['role'] == 'starter']))`);
+  assert.deepEqual(out, ['Cheap'], 'z 2.6 and 2.5 share a half-SD band: the £0.9M one first');
+});

@@ -112,9 +112,12 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
             return False
         # Every list counts (Kovář, 75/100 for £3.8M, sat in 'bench'); starters need a real sample.
         # Just-signed players are left out of the picks (they won't join for a season), shown on the shortlist.
-        everyone = [c for c in {c['name']: c for c in s['best'] + s['value'] + s['bench'] + s['free'] + s.get('by_attributes', []) + s.get('growth', [])}.values() if c['age'] <= max_age]
+        everyone = [c for c in {c['name']: c for c in s['best'] + s['value'] + s['bench'] + s['free'] + s.get('by_attributes', []) + s.get('growth', []) + s.get('wonderkids', [])}.values() if c['age'] <= max_age]
         every = [c for c in everyone if not c.get('just_signed')]
-        if lens == 'growth':
+        if lens == 'wonderkid':
+            # The best for his age (z vs his age group), cheaper first within half-SD bands.
+            strong = sorted((c for c in every if c.get('age_z') is not None), key=lambda c: (-round(c['age_z'] * 2), c['value']))
+        elif lens == 'growth':
             # Young players who stand out in their own league, weighted by its strength, cheap for it.
             strong = sorted((c for c in every if c.get('growth') is not None), key=lambda c: (-(c['growth'] // 5), c.get('x_market') or 9, c['age']))
         elif lens == 'attributes':
@@ -131,7 +134,7 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
         if starter_gap:   # the options behind the pick: the user chooses (Lemaitre 89 attrs, 0 minutes, £0.8M?)
             pool = sorted(everyone, key=lambda c: (-c['attributes'], c['age'], c['value'])) if lens == 'attributes' else strong
             bar = s.get('attr_bar', w.SOLID)
-            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'x_market', 'moneyball', 'own_league_pct', 'growth', 'minutes', 'value', 'wage', 'just_signed')},
+            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'x_market', 'moneyball', 'age_z', 'own_league_pct', 'growth', 'minutes', 'value', 'wage', 'just_signed')},
                                      'beats_our_weakest_starter': c['attributes'] > bar} for c in pool[:8]]
         for _ in range(starter_gap):
             if not choose(strong, 'starter'):
@@ -159,7 +162,7 @@ def incoming_signings(since):
 
 
 def plan(rows, tactic, budget, prev=None, max_value=60e6, lens='moneyball', max_age=29, incoming=()):
-    report = w.report(rows, None, max_value, max_age, 8e6, tactic, young_age=max_age if lens in ('attributes', 'growth') else None, incoming=incoming)
+    report = w.report(rows, None, max_value, max_age, 8e6, tactic, young_age=max_age if lens in ('attributes', 'growth', 'wonderkid') else None, incoming=incoming)
     picks, skipped, left, shortlist = shopping(report, rows, tactic, budget, lens, max_age)
     xi = {s['slot']: (s['ours'][0]['name'] if s['ours'] else None) for s in report['slots']}
     return {'date': report['date'], 'data': report['data'], 'alerts': report['alerts'],
@@ -183,7 +186,7 @@ if __name__ == '__main__':
     ap.add_argument('--snapshot')
     ap.add_argument('--max-value', type=float, default=60e6)
     ap.add_argument('--csv')
-    ap.add_argument('--lens', choices=['moneyball', 'attributes', 'growth'], default='moneyball')
+    ap.add_argument('--lens', choices=['moneyball', 'attributes', 'growth', 'wonderkid'], default='moneyball')
     ap.add_argument('--max-age', type=int, default=29)
     a = ap.parse_args()
     current = a.csv or sr.export_save('latest')   # export once (--fresh runs without --csv)

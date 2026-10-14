@@ -54,6 +54,7 @@ def shape(tactic):
 CUP = re.compile(r'UEFA|Cup|Copa|Coupe|Pokal|Coppa|Taça|Trophy|Shield|Libertadores|Sudamericana|Champions|Conference|Europa', re.I)
 MIN_SAMPLE = 1200          # league minutes for a stats score
 STRONG = 0.85              # league strength (vs ours) for a stats score
+WONDER_Z = 2.0             # SDs above his age group's role attributes: a wonderkid
 GROWTH_FLOOR = 55          # own-league output percentile for the growth lens
 YOUNG_FLOOR = 40           # least attributes percentile for the young lens
 SOLID = 50                 # blended score that counts as a solid player
@@ -117,7 +118,16 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             f, a = fits[p['name']], int(p['age'] or 0)
             sim = [int(q['value']) for q in market if abs(fits[q['name']] - f) <= 0.4 and abs(int(q['age'] or 0) - a) <= 2]
             return round(int(p['value']) / st.median(sim), 2) if len(sim) >= 6 else None
-        targets, bench, free, young, growth = [], [], [], [], []
+        targets, bench, free, young, growth, wonder = [], [], [], [], [], []
+        # Wonderkid lens (user, 2026-10-15: "attributes are more important… surely we can find some
+        # wonderkids"): role attributes vs his AGE GROUP at the position (z-score), not vs PL regulars
+        # at their peak. Arena (21, Roma) 3.6 SD above his age; Goikoetxea (16) 2.5 SD at £0.9M.
+        if young_age:
+            by_age = {}
+            for q in rows:
+                if q['pos'] & natural and 16 <= int(q['age'] or 0) <= young_age:
+                    by_age.setdefault(int(q['age']), []).append(sc.attr_fit(q, role))
+            age_stats = {a: (st.median(v), st.pstdev(v) or 1) for a, v in by_age.items() if len(v) >= 20}
         # Growth lens (user, 2026-10-15: "find good, younger players with good stats, sign them cheap,
         # develop them, sell them"): output vs peers IN HIS OWN LEAGUE (young players are rarely
         # PL-level yet: the best young ST was 47th pct vs PL strikers), weighted by league strength.
@@ -138,6 +148,13 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
                 continue
             if slot == 'DM' and p['pos'] & (FULLBACK | WIDE):
                 continue
+            if young_age and int(p['age'] or 99) in age_stats and int(p['value']) <= max_value and p['pos'] & natural and sr.num(p, 'Injury Proneness') <= 13:
+                med, sd = age_stats[int(p['age'])]
+                z = round((sc.attr_fit(p, role) - med) / sd, 1)
+                if z >= WONDER_Z:
+                    c = card(p)
+                    c.update({'age_z': z, 'x_market': x_market(p)})
+                    wonder.append(c)
             if young_age and int(p['age'] or 99) <= young_age and int(p['value']) <= max_value and p['mins'] >= MIN_SAMPLE \
                     and strength.get(p['competition'], 0) >= 0.75 and not CUP.search(p['competition'] or 'x') and sr.num(p, 'Injury Proneness') <= 13:
                 lp = own_league(p)
@@ -175,6 +192,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             'value': sorted(targets, key=lambda c: -c['per10m'])[:3],
             # Attributes alone (plan --lens attributes): younger, better players we can sell on later.
             'attr_bar': top_attr,
+            'wonderkids': sorted(wonder, key=lambda c: (-c['age_z'], c['value']))[:12],
             'growth': sorted(growth, key=lambda c: (-(c['growth'] // 5), c.get('x_market') or 9, c['age']))[:10],
             'by_attributes': sorted(young, key=lambda c: (-c['attributes'], c['age'], c['value']))[:10],
             'bench': sorted((c for c in bench if c['blended'] >= 35), key=lambda c: (-c['blended'], c['value']))[:3],
