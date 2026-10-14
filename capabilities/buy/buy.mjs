@@ -13,6 +13,7 @@ import {writeFileSync, mkdirSync} from 'node:fs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {gate} from '../approvals.mjs';
+import {askAgent} from './ask.mjs';
 
 // Opening bid: rules.buying.open_at × FM's value, the middle of the range (lower if the club wants
 // to sell). Bids well below value get a flat "unacceptable", which ends the deal.
@@ -143,14 +144,24 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
  * Opens Make An Offer and negotiates in one sitting (Suggest Terms). open: first fee (default
  * openingBid); max: walk-away deal value (default 1.1 × top of value).
  */
-export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = false} = {}) {
+export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = false, ask = true} = {}) {
   // Buying needs the user's approval while policy.json autonomy.buy is 'approve': the approved
   // limit caps --max. A dry run is how the manager prices a proposal, so it passes.
   const approved = dryRun ? null : gate('buy', 'buy', name, {price: max, what: `buy ${name} (${club})`});
+  // Ask his agent first (one-time per player): a player who won't join (often: just signed a new
+  // contract) is not bid for; otherwise his profile's value range updates to the fee range the
+  // agent gives, and the opening bid and walk-away below come from it (user, 2026-10-14).
+  const agent = dryRun || !ask ? null : await askAgent(name, club);
+  if (agent?.asked && !agent.willing) return {action: 'buy', name, club, outcome: 'unwilling', agent};
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   const {top, sub} = await peekActions('Transfer');
   if (sub.includes('Withdraw Transfer Offer')) return {action: 'buy', name, club, alreadyPending: true};
+  // His price starts above what the user approved (Gadou listed at £63M vs £58M approved, 2030-07):
+  // a bid at our cap would be flatly rejected, which ends the deal. Ask for a new approval instead.
+  if (approved && facts.valueRange && facts.valueRange[0] > approved.limit)
+    throw new NeedsAnalyst(`${name}: his range starts at £${(facts.valueRange[0] / 1e6).toFixed(2)}M, above the approved £${(approved.limit / 1e6).toFixed(2)}M. Ask the user for a higher limit (formula walk-away £${(defaultMax(facts) / 1e6).toFixed(2)}M) or drop him.`,
+      {approval: 'below-range', valueRange: facts.valueRange, approved: approved.limit, formulaMax: defaultMax(facts), agent});
   if (top.includes('Make An Offer')) await actionPath(['Make An Offer']);
   else if (sub.includes('Make An Offer')) await actionPath(['Transfer', 'Make An Offer']);
   else throw new NeedsAnalyst(`No "Make An Offer" for ${name}`, {top, transfer: sub});

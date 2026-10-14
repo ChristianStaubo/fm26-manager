@@ -69,6 +69,9 @@ These are the user's rules (decided 2026-10-09).
   - **personality**: skip inconsistent players and big-match flops (scout report traits)
   - starters must be proven at a comparable level; a lower-league star is a risk worth taking only as a backup
   - **any age**: value per pound is what counts (younger = resale)
+- **Ask the agent before bidding** (user, 2026-10-14): his fee range replaces the scouted range.
+  A player who **just signed a new contract** won't join: skip him for at least a season and find
+  another (`fm plan` marks them `just_signed`: a contract running ~5 seasons).
 - Price: open at FM's value (the middle of his range; bids far below it are flatly rejected) and walk away above 1.1× the top (or a lower max).
   A flat "the offer is unacceptable" means walk away.
 - Wages are **not a filter** for quality signings (user, 2026-10-10): pay what a better player costs, within the club's **wage budget** (`fm offers`: payroll available). Personal terms stop only above 2.5× our first-team median (a runaway demand). A swap that lowers the bill is always fine.

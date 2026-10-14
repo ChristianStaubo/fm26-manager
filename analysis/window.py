@@ -66,6 +66,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
     # Free agents and contracts ending by the coming 30 June (free in the summer window).
     t = m.today_of(rows)
     free_by = f"{t.year + (1 if t.month >= 7 else 0)}-06-30"
+    fresh_from = f"{t.year + (5 if t.month >= 7 else 4)}-06-30"
     adj = lambda p, k: sr.num(p, k) if k in sc.RATE else sr.num(p, k) * strength.get(p['competition'], 0)
     real = lambda p: p['mins'] >= MIN_SAMPLE and strength.get(p['competition'], 0) >= STRONG and not CUP.search(p['competition'] or 'x')
     by_wage = sorted((p for p in rows if p['contract_club'] == m.CLUB and not p['on_loan_at']), key=lambda p: -sr.num(p, 'wage'))
@@ -95,7 +96,11 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
                     'chabot': s is not None and a >= 75 and s >= 70 and p.get('stats_source') == 'history' and strength.get(p['competition'], 0) >= 0.9,
                     'rating': p['avg_rating'] or None, 'minutes': int(p['mins']), 'value': int(p['value'] or 0),
                     'wage': int(p['wage'] or 0), 'contract_until': (p['contract_expires'] or '')[:10] or None,
-                    'loan': p['contract_club'] not in ('', m.CLUB) and p['club'] == m.CLUB}
+                    'loan': p['contract_club'] not in ('', m.CLUB) and p['club'] == m.CLUB,
+                    # Just signed: a contract that runs ~5 seasons (FM's longest) was signed this summer;
+                    # the player won't talk to us for a season (Banks, to 2035 in July 2030: "doesn't want
+                    # to join Brentford under any circumstances").
+                    'just_signed': (p['contract_expires'] or '')[:10] >= fresh_from}
 
         ours = sorted((card(p) for p in squad if p['pos'] & natural), key=lambda c: -c['blended'])
         solid = [c for c in ours if c['blended'] >= SOLID]

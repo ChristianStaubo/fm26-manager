@@ -10,6 +10,7 @@ import {run} from '../capabilities/season/autopilot.mjs';
 import {holiday, holidaySeason} from '../capabilities/season/holiday.mjs';
 import {listPlayer} from '../capabilities/sell/list.mjs';
 import {buyPlayer} from '../capabilities/buy/buy.mjs';
+import {askAgent} from '../capabilities/buy/ask.mjs';
 import {delegateRenewal} from '../capabilities/contracts/renew.mjs';
 import {allow as allowWage} from '../capabilities/contracts/wage-exceptions.mjs';
 import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
@@ -76,6 +77,7 @@ Transfers
                                  (price book) for the bid handler. --min overrides the minimum.
        [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
   prices                         the price book: listed players with our minimum and target
+  ask "<name>" --club <club>     ask his agent about availability (one-time per player): will he join, fee range, demands
   buy "<name>" --club <club> [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]
                                  --wage-max: a swap may pay up to the outgoing player's wage above the cap
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
@@ -195,13 +197,14 @@ try {
     case 'buy': {
       // A swap may pay up to the outgoing player's wage above the cap (playbook §5).
       if (flags['wage-max'] && !dryRun) allowWage(a1, num(flags['wage-max']), `swap${flags.replaces ? ': replaces ' + flags.replaces : ''}`);
-      out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun})); break;
+      out(await buyPlayer(a1, flags.club, {open: num(flags.open), max: num(flags.max), dryRun, ask: !flags['no-ask']})); break;
     }
     case 'approvals': out({autonomy: Object.fromEntries(Object.entries(approvals.loadPolicy().autonomy || {}).filter(([k]) => !k.startsWith('_'))), ...approvals.load()}); break;
     case 'approve':
       if (a1 === 'revoke') out(approvals.revoke(a2, pos[3]));
       else out(approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note}));
       break;
+    case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await delegateRenewal(a1, flags.club, {dryRun})); break;

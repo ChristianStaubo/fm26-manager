@@ -79,7 +79,9 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
                 return True
             return False
         # Every list counts (Kovář, 75/100 for £3.8M, sat in 'bench'); starters need a real sample.
-        every = [c for c in {c['name']: c for c in s['best'] + s['value'] + s['bench'] + s['free'] + s.get('by_attributes', [])}.values() if c['age'] <= max_age]
+        # Just-signed players are left out of the picks (they won't join for a season), shown on the shortlist.
+        everyone = [c for c in {c['name']: c for c in s['best'] + s['value'] + s['bench'] + s['free'] + s.get('by_attributes', [])}.values() if c['age'] <= max_age]
+        every = [c for c in everyone if not c.get('just_signed')]
         if lens == 'attributes':
             # Attributes alone (user, 2026-10-14): better and younger, a higher price is fine; resale later.
             # The bar is our best player's attributes there, so a pick is an upgrade on paper.
@@ -90,9 +92,9 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
         # Depth is cheap: the cheapest solid option up to DEPTH_MAX (not Zaragoza at £52M as a backup).
         solid = [c for c in every if c['blended'] >= w.SOLID and c['value'] <= DEPTH_MAX]
         if starter_gap:   # the options behind the pick: the user chooses (Lemaitre 89 attrs, 0 minutes, £0.8M?)
-            pool = sorted(every, key=lambda c: (-c['attributes'], c['age'], c['value'])) if lens == 'attributes' else strong
+            pool = sorted(everyone, key=lambda c: (-c['attributes'], c['age'], c['value'])) if lens == 'attributes' else strong
             bar = s.get('attr_bar', w.SOLID)
-            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'moneyball', 'minutes', 'value', 'wage')},
+            shortlist[s['slot']] = [{**{k: c.get(k) for k in ('name', 'club', 'league', 'age', 'attributes', 'moneyball', 'minutes', 'value', 'wage', 'just_signed')},
                                      'beats_our_weakest_starter': c['attributes'] > bar} for c in pool[:8]]
         for _ in range(starter_gap):
             if not choose(strong, 'starter'):

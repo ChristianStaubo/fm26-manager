@@ -3,8 +3,12 @@ Implements playbook §5. Numbers: `playbook/policy.json` → `buying`, `contract
 
 **Interface:**
 - `fm price "<name>"` → open at, walk away above, his wage vs our cap
-- `fm buy "<name>" --club "<club>" [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]`
+- `fm ask "<name>" --club "<club>"` → his agent: will he join, the fee range the club wants, demands
+- `fm buy "<name>" --club "<club>" [--open N] [--max N] [--wage-max N --replaces "<name>"] [--no-ask] [--dry-run]`
 **How:**
+- ask the agent first (one-time per player, user 2026-10-14): unwilling → no bid (usually a player
+  who just signed a new contract: wait a season); else the value range becomes the agent's fee range
+- a range starting above the user's approved limit stops for a new approval (no doomed bid)
 - open at FM's value (`open_at`; lower if the club is keen to sell), raise by `raise_step` of the
   bottom of his range, walk away above `default_max` × the top (or the analyst's maximum)
 - the maximum is compared on the total, add-ons and pre-filled extras included
