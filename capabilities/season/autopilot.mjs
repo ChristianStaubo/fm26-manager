@@ -24,11 +24,14 @@ export function summarize(s) {
 
 /** run({until?: 'YYYY-MM-DD', maxDecisions?, dryRun?}) — without `until`, stops when the current
  *  (or, before it opens, the coming) transfer window closes. */
+// The fresh-load hand-off: the game can continue, the bridge hasn't seen Continue pressed yet.
+export const firstContinue = (st, label) => st.stateName === 'CanContinue' && !st.actionReady && /^Continue$/.test(label || '');
+
 export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null;
+    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     for (;;) {
       const r = await control({maxSteps: stopAt ? 3 : 10});
@@ -53,7 +56,16 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           await settle(1500); continue;
         }
         if (st.automationState === 'ready' && ++handoffs <= 3) continue;
-        return stop('unfamiliar-state', {state: st.stateName, screen: summarize(s)});
+        // Fresh load: until Continue is pressed once by hand the bridge can't drive it (CanContinue,
+        // actionReady=false). Press it, as a person would (friction 2026-10-14T08-09-28: two runs
+        // stopped on 'unfamiliar-state' with no reason).
+        if (firstContinue(st, label) && !pressedOnce) {
+          pressedOnce = true;
+          try { await click(label, {name: 'continue-button'}); } catch (e) { /* re-read below */ }
+          await settle(2500); continue;
+        }
+        return stop('unfamiliar-state', {state: st.stateName, automation: st.automationState, actionReady: st.actionReady, continueLabel: label,
+          why: `hand-off the autopilot can't resolve: state ${st.stateName}, automation ${st.automationState}, actionReady ${st.actionReady}, Continue slot "${label || '-'}"`, screen: summarize(s)});
       }
       handoffs = 0;
       if (r.reason !== 'required-action') continue;

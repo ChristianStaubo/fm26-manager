@@ -232,7 +232,7 @@ try {
     }
     case 'intervene': out(interventions.record({capability: a1, kind: a2, proposed: flags.proposed, decided: flags.decided, rule: flags.rule, guard: flags.guard, date: await gameDate()})); break;
     case 'autonomy': out(interventions.summary()); break;
-    case 'hold': out(approvals.hold(a1, {off: !!flags.off})); break;
+    case 'hold': out(a1 ? approvals.hold(a1, {off: !!flags.off}) : {holds: approvals.load().holds || []}); break;   // no name: list
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;

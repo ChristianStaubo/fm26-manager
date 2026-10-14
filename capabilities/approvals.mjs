@@ -39,8 +39,9 @@ export function revoke(kind, player, {file = FILE} = {}) {
 // Holds: deals the user is deciding (Ortega, 2030-07-14: he suggested the terms himself). The
 // autopilot stops on them instead of negotiating. local/runs/approvals.json → holds.
 export function hold(player, {off = false, file = FILE} = {}) {
+  if (!player) throw new Error('fm hold "<name>" [--off]');
   const data = load(file);
-  data.holds = (data.holds || []).filter(h => norm(h) !== norm(player));
+  data.holds = (data.holds || []).filter(h => h && norm(h) !== norm(player));
   if (!off) data.holds.push(player);
   save(data, file);
   return {holds: data.holds};
