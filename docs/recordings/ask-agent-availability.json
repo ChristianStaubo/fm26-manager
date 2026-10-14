@@ -1,0 +1,2874 @@
+[
+ {
+  "t": 4084,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#NavTabDropdown",
+  "arg0": 0
+ },
+ {
+  "t": 4084,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#NavTabDropdown",
+  "arg0": 0
+ },
+ {
+  "t": 4084,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 4084,
+  "cls": "NavigatableVisualElement",
+  "method": "OnFocusEvent",
+  "params": [
+   "UnityEngine.UIElements.FocusEvent"
+  ],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 4257,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "NavigatableVisualElement"
+ },
+ {
+  "t": 4257,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "NavigatableVisualElement"
+ },
+ {
+  "t": 4357,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "NavigatableVisualElement"
+ },
+ {
+  "t": 4357,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "NavigatableVisualElement"
+ },
+ {
+  "t": 4457,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "NavigatableVisualElement"
+ },
+ {
+  "t": 5224,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#NavTabDropdown",
+  "arg0": 0
+ },
+ {
+  "t": 5224,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#NavTabDropdown",
+  "arg0": 0
+ },
+ {
+  "t": 5224,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 5224,
+  "cls": "NavigatableVisualElement",
+  "method": "OnBlurEvent",
+  "params": [
+   "UnityEngine.UIElements.BlurEvent"
+  ],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 5294,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "NavigatableVisualElement"
+ },
+ {
+  "t": 5325,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 5325,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 5392,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5392,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5393,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5394,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5394,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5395,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5490,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5490,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5525,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5526,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 5528,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5528,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5528,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5529,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5529,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5529,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5530,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5530,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5533,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5533,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5533,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5558,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5558,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5558,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5558,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5591,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 5591,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 5591,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 5827,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5827,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5827,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 5833,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5833,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5833,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5833,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5834,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5857,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5890,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 5892,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 5892,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 5892,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 5893,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5894,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5894,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5894,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5895,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5895,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5895,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5895,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5895,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5895,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5896,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5896,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5897,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5897,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5897,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 5897,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 5897,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 5923,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5924,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 5925,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 5926,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 7876,
+  "cls": "SIClickable",
+  "method": "ProcessDownEvent",
+  "params": [
+   "UnityEngine.UIElements.EventBase",
+   "UnityEngine.Vector2",
+   "System.Int32"
+  ],
+  "self": "SIClickable"
+ },
+ {
+  "t": 7945,
+  "cls": "SIClickable",
+  "method": "ProcessUpEvent",
+  "params": [
+   "UnityEngine.UIElements.EventBase",
+   "UnityEngine.Vector2",
+   "System.Int32"
+  ],
+  "self": "SIClickable"
+ },
+ {
+  "t": 7985,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 7985,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 8024,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8025,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8025,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8025,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8025,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8026,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8030,
+  "cls": "SIDropdown",
+  "method": "SetChoices",
+  "params": [
+   "System.Collections.Generic.List<SI.Core.TypedValue>",
+   "System.Boolean&"
+  ],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 8030,
+  "cls": "SIDropdown",
+  "method": "SetChoices",
+  "params": [
+   "System.Collections.Generic.List<SI.Core.TypedValue>",
+   "System.Boolean",
+   "System.Boolean&"
+  ],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 8030,
+  "cls": "SIDropdown",
+  "method": "GroupChoicesWithPreviouslySelected",
+  "params": [
+   "System.Collections.Generic.List<SI.Core.TypedValue>"
+  ],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 8030,
+  "cls": "SIDropdown",
+  "method": "TryApplyPersistedSelection",
+  "params": [],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 8030,
+  "cls": "SIDropdown",
+  "method": "RefreshSelectedValueAndIndex",
+  "params": [],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 8038,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "MessagesStreamedObjectList"
+ },
+ {
+  "t": 8038,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "MessagesStreamedObjectList#MessagesStreamedObjectList"
+ },
+ {
+  "t": 8042,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8042,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8044,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 8044,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8044,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8044,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8045,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8046,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 8046,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8046,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8046,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8047,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8047,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8047,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8048,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8049,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8050,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8051,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8059,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8059,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8059,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8059,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8060,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8060,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8061,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8061,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8061,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8061,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8090,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8090,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8095,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8095,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8097,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8097,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8098,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8098,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8098,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8099,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8099,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8099,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 8099,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8102,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8102,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8103,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8103,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 8107,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8107,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8107,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8108,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8109,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8109,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8109,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8109,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 8109,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8109,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 8113,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8113,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8113,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8113,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8150,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8151,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8190,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8190,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 8192,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8192,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 8224,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 8224,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 10963,
+  "cls": "SIClickable",
+  "method": "ProcessDownEvent",
+  "params": [
+   "UnityEngine.UIElements.EventBase",
+   "UnityEngine.Vector2",
+   "System.Int32"
+  ],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11099,
+  "cls": "SIClickable",
+  "method": "ProcessUpEvent",
+  "params": [
+   "UnityEngine.UIElements.EventBase",
+   "UnityEngine.Vector2",
+   "System.Int32"
+  ],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11134,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 11134,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 11196,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11196,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11196,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11196,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11197,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11197,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11200,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11200,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11202,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 11202,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 11202,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 11204,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11205,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11205,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11205,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11205,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11205,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11206,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 11206,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11207,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11207,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11207,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11208,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11209,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11252,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11252,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11253,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11253,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11255,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11255,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 11255,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11256,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11256,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11257,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11257,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 11257,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 11260,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11262,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 11266,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11266,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11266,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11266,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11266,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 11266,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 11266,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 11297,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11298,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 11328,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11328,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 11361,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 11362,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15343,
+  "cls": "SIClickable",
+  "method": "ProcessDownEvent",
+  "params": [
+   "UnityEngine.UIElements.EventBase",
+   "UnityEngine.Vector2",
+   "System.Int32"
+  ],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15446,
+  "cls": "SIClickable",
+  "method": "ProcessUpEvent",
+  "params": [
+   "UnityEngine.UIElements.EventBase",
+   "UnityEngine.Vector2",
+   "System.Int32"
+  ],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15485,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 15486,
+  "cls": "SIDropdown",
+  "method": "set_IsScopeValid",
+  "params": [
+   "System.Boolean"
+  ],
+  "self": "SIDropdown#dropdown-icon-base",
+  "arg0": 0
+ },
+ {
+  "t": 15507,
+  "cls": "SIDropdown",
+  "method": "SetChoices",
+  "params": [
+   "System.Collections.Generic.List<SI.Core.TypedValue>",
+   "System.Boolean&"
+  ],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 15507,
+  "cls": "SIDropdown",
+  "method": "SetChoices",
+  "params": [
+   "System.Collections.Generic.List<SI.Core.TypedValue>",
+   "System.Boolean",
+   "System.Boolean&"
+  ],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 15507,
+  "cls": "SIDropdown",
+  "method": "GroupChoicesWithPreviouslySelected",
+  "params": [
+   "System.Collections.Generic.List<SI.Core.TypedValue>"
+  ],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 15507,
+  "cls": "SIDropdown",
+  "method": "TryApplyPersistedSelection",
+  "params": [],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 15507,
+  "cls": "SIDropdown",
+  "method": "RefreshSelectedValueAndIndex",
+  "params": [],
+  "self": "SIDropdown#dropdown-icon-base"
+ },
+ {
+  "t": 15529,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15529,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15529,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15530,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15530,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15530,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15533,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15533,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15535,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 15535,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 15535,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 15537,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 15537,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#SubActions"
+ },
+ {
+  "t": 15537,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15538,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 15538,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15538,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15538,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15538,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 15538,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15539,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15595,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15596,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15598,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15598,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15601,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15601,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 15601,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15603,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15603,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 15603,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 15603,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 15612,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "PluginContextMenuBindings"
+ },
+ {
+  "t": 15612,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 15612,
+  "cls": "NavigatableVisualElement",
+  "method": "SetElementDefaultStyle",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 15629,
+  "cls": "NavigatableVisualElement",
+  "method": "RegisterEvents",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15629,
+  "cls": "NavigatableVisualElement",
+  "method": "SetupElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 15661,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15661,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 15695,
+  "cls": "SIClickable",
+  "method": "RegisterCallbacksOnTarget",
+  "params": [],
+  "self": "SIClickable"
+ },
+ {
+  "t": 15695,
+  "cls": "SIClickable",
+  "method": "OnAttachToPanel",
+  "params": [
+   "UnityEngine.UIElements.AttachToPanelEvent",
+   "SI.UI.SIClickable"
+  ],
+  "self": "AttachToPanelEvent"
+ },
+ {
+  "t": 17490,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 17490,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ },
+ {
+  "t": 17490,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 17495,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList"
+ },
+ {
+  "t": 17495,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "StreamedObjectList#NewsResponseOptionalButtons"
+ },
+ {
+  "t": 17495,
+  "cls": "NavigatableVisualElement",
+  "method": "TearDownElement",
+  "params": [],
+  "self": "PluginContextMenuBindings#RightClickMenuBinding"
+ }
+]

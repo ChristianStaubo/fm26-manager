@@ -22,6 +22,7 @@ When a fix teaches us a screen, add or update its row here in the same commit.
 | Player Actions menu | profile → `Actions` menu → hover submenus | `actionPath([...])`, `fm player` peeks `Transfer` | verified 2026-10 |
 | Set transfer status / asking price | profile → Actions → Transfer → Set Transfer Status | `fm sell` | verified 2026-10 |
 | Make offer / negotiation | profile → Actions → Make An Offer (top level, or under Transfer) | `fm buy` | verified 2026-10 |
+| Ask agent for availability | profile → Actions → (route not yet mapped) → **Ask agent for availability** → agent conversation: pick the **2nd option**, then the **2nd option again** (the agent sometimes lowers his demands) → his answer gives the fee range the club will probably accept and the wage he wants. **One-time per player**: once asked, the option is gone from his Actions menu (Ortega, 2030-07-14). Do it before `fm buy`, and set `--open/--max` from the answer | none yet (user, 2026-10-14): `docs/recordings/ask-agent-availability.json` caught only 3 unlabelled clicks; map it by reading the screen at each step on the next target | seen 2026-10-14 |
 | Contract renewal (DoF) | profile → Actions → Contract → DoF To Negotiate Contract → dialog "DOF to negotiate contract?" Yes | `fm renew` | verified 2026-10 |
 | Transfer activity (our bids) | Recruitment → Transfer Activity | `fm offers` | verified 2026-10 |
 | Calendar → Go On Vacation | date button → Portal → Calendar → Go On Vacation | `fm holiday` | verified 2026-10 |
