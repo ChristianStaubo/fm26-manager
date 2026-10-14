@@ -40,6 +40,10 @@ before anything else (details: `config/README.md`):
   screen map, UI notes.
 - `local/`: exports, reports, runs, notebook (gitignored). `notes/`: private notes (gitignored).
 
+## How we build agents
+`docs/agent-workflow.md`: the general workflow (scoreboard, player → judge → fixer, autonomy earned
+by rule, discovering rules with backtests, previews and mapping sessions). Read it before changing the loop.
+
 ## Self-improving loop (player → fixer)
 A cheap **player** (`.claude/agents/fm-player.md`, Sonnet) plays one segment and stops with
 `fm stuck "<…>"` when the tools fall short. The **fixer** (main session) then:
