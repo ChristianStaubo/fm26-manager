@@ -11,3 +11,12 @@ test('youth loan offer: read, and rejected under 75% of his wage (Adelaide 70%)'
   const r = await youthLoanOffer.run(s, {dryRun: true});
   assert.equal(r.decision, 'reject');
 });
+
+test('youth loan approach (Wellington, 80%) → accept by the same rule (friction 2026-10-14T23-26-27)', async () => {
+  const {loanOffer, readLoan} = await import('../game/screens/transfer-offers.mjs');
+  const s = loadScreen('youth-loan-approach-wellington');
+  assert.equal(readLoan(s).age, 19);
+  assert.equal(loanOffer.match(s), true);
+  const r = await loanOffer.run(s, {dryRun: true});
+  assert.equal(r.decision, 'accept');
+});

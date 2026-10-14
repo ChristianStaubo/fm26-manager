@@ -152,6 +152,7 @@ export function readLoan(s) {
     unusedMonthlyFee: money('Unused Monthly Fee'), months, duration,
     salaryPct: s.after('Playing Salary Percentage', i => i.kind === 'text')?.label,
     playingTime: s.after('Agreed Playing Time', i => i.kind === 'text')?.label,
+    age: Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN),
     // A "mandatory future fee" is an obligation to buy (Al-Ahli for Schade, £43.5M, 2026-07): the
     // future fee only counts as an option when nothing calls it mandatory/obligatory.
     obligationFee: clause(/[Oo]bligat|[Mm]andatory/), optionFee: clause(/[Oo]ption(al)? to buy|[Oo]ptional .*fee|^(?!.*[Mm]andatory).*[Ff]uture [Ff]ee/)};
@@ -162,6 +163,13 @@ export const loanOffer = {
   match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readLoan(s),
   async run(s, {dryRun = false} = {}) {
     const loan = readLoan(s), book = pricebook.lookup(loan.player);
+    // A youth player's loan approach (Wellington for Sullivan, 2030-07-21): the youth rule, not the
+    // first-team plain-loan escalation.
+    const sell = loadRules().selling;
+    if (loan.age <= sell.youth_max_age) {
+      const share = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
+      return youthDecision({kind: 'loan-offer', date: isoDate(s.date()), club: loan.club, player: loan.player, wageShare: share, loan}, {dryRun});
+    }
     const o = {...loan, ...(book ? {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1]} : {}), negotiable: false, countersSoFar: 0};
     const decision = decideLoan(o);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
@@ -239,15 +247,23 @@ export const youthLoanOffer = {
     const l = readYouthLoan(s), sell = loadRules().selling;
     const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l};
     if (!(l.age <= sell.youth_max_age)) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry); }
-    entry.decision = l.wageShare >= sell.youth_loan_min_wage_share ? 'accept' : 'reject';
-    entry.why = `${Math.round(l.wageShare * 100)}% of his wage vs ${Math.round(sell.youth_loan_min_wage_share * 100)}% (supervisor rule)`;
-    if (dryRun) return {...entry, dryRun: true};
-    await click(entry.decision === 'accept' ? 'Accept' : 'Reject');
-    await log({...entry, executed: true});
-    const {record} = await import('../../capabilities/interventions.mjs');
-    record({capability: 'sell', kind: 'supervisor-decision', date: entry.date, decided: `${entry.decision} ${l.club} loan for ${l.player}: ${entry.why}`});
-    return entry;
+    return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
   },
 };
+// The youth loan rule, shared by both message layouts ("<Club> loan offer for X", "<Club> make loan
+// approach for X"): accept at youth_loan_min_wage_share of his wage or more, else reject.
+async function youthDecision({kind, date, club, player, wageShare, loan}, {dryRun}) {
+  const sell = loadRules().selling;
+  const entry = {action: kind, date, loan, youth: true};
+  if (!Number.isFinite(wageShare)) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Youth loan for ${player}: wage share unreadable`, entry); }
+  entry.decision = wageShare >= sell.youth_loan_min_wage_share ? 'accept' : 'reject';
+  entry.why = `${Math.round(wageShare * 100)}% of his wage vs ${Math.round(sell.youth_loan_min_wage_share * 100)}% (supervisor rule)`;
+  if (dryRun) return {...entry, dryRun: true};
+  await click(entry.decision === 'accept' ? 'Accept' : 'Reject');
+  await log({...entry, executed: true});
+  const {record} = await import('../../capabilities/interventions.mjs');
+  record({capability: 'sell', kind: 'supervisor-decision', date, decided: `${entry.decision} ${club} loan for ${player}: ${entry.why}`});
+  return entry;
+}
 
 export const HANDLERS = [loanOfferPage, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
