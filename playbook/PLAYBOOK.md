@@ -55,6 +55,10 @@ These are the user's rules (decided 2026-10-09).
   accept it when he's surplus and the wage relief is real.
 - Never sell without knowing who replaces him (already in the squad, or a target we can afford).
 
+- **Youth-squad deals are delegated** (user, 2026-10-15): offers and loans for players registered in
+  our U21/U18 squads are handled by the staff member the user set in the game; we don't propose or act
+  on them (Chase Sullivan's two loan offers, 2030-07).
+
 ## 5. Buying
 - **First season of a new save: no signings** (user, 2026-10-10), except to keep a position at two
   or free/expiring players who clearly beat our starter. Collect a season of data on our own squad
