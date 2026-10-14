@@ -1,6 +1,7 @@
 // Press conferences (game state `PressConference`). New-signing unveilings are optional but
-// block Continue until held. The Continue-slot "Attend Press Conference" does nothing when
-// clicked; the button inside the message does. Leaving without starting does not clear it.
+// block Continue until held. The user's way (2026-10-15): press Continue (space bar), which opens
+// the press room. Older note: the Continue slot once did nothing and the message's button did, so
+// the message route stays as the fallback. Leaving without starting does not clear it.
 // Route: message → (delegate future ones to staff) → Attend Press Conference → Start Press
 // Conference → answer every question with the first (most positive) answer → Leave.
 import {Screen, waitFor, settle, click, clickWhere, isoDate, NeedsAnalyst} from '../../ui/index.mjs';
@@ -34,6 +35,10 @@ export async function pressConference({dryRun = false} = {}) {
   let s = await Screen.read();
   const entry = {action: 'press-conference', date: isoDate(s.date())};
   if (dryRun) return {...entry, dryRun: true, ...locate(s)};
+  if (!inRoom(s) && s.buttons('Attend Press Conference').some(b => b.name === 'continue-button')) {
+    await click('Attend Press Conference', {name: 'continue-button'});
+    s = await waitFor(inRoom, {what: 'press room (via Continue)', timeout: 8000}).catch(() => Screen.read());
+  }
   if (!inRoom(s)) {
     if (!attendInMessage(s)) {
       // Portal can open FM's "For You" news page, whose ForYouHeader covers the inbox (friction
