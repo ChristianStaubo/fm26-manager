@@ -51,6 +51,7 @@ export function offerState(s) {
   return {state, gm, upfront: money('Current Transfer Budget Cost:'), total: money('Future & Potential Total Cost with Additional Fees:')};
 }
 // Value of a deal for comparisons: guaranteed cost plus add-ons at rules.valuation.addon_weight.
+export const SELL_ON = /sell[- ]?on|next sale|future sale|percentage of (the )?(profit|fee)/i;
 const dealValue = o => (o.upfront ?? 0) + ((o.total ?? o.upfront ?? 0) - (o.upfront ?? 0)) * loadRules().valuation.addon_weight;
 
 // The club's reply read from the General Manager line alone (offerState says 'editing' while
@@ -114,6 +115,16 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     // LOSC rejected Ribeiro every time; a club that says no to the offer is left alone).
     if (reply.state === 'rejected') break;
     if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
+    // A sell-on clause in their counter costs us resale profit, the point of buying young (user,
+    // 2026-10-14: remove it, then keep countering; sometimes it can't be removed). Not mapped yet:
+    // stop with the screen saved so the fixer maps the clause row and its removal.
+    const counter = await Screen.read();
+    if (counter.hasText(SELL_ON)) {
+      const dump = {texts: counter.texts().filter(t => SELL_ON.test(t) || /clause|%/i.test(t)).slice(0, 40), buttons: counter.buttons(/./).map(b => b.label).slice(0, 120)};
+      mkdirSync(new URL('../../local/runs/', import.meta.url), {recursive: true});
+      writeFileSync(new URL(`../../local/runs/buy-sell-on-${Date.now()}.json`, import.meta.url), JSON.stringify(dump, null, 1));
+      throw new NeedsAnalyst('Their counter has a sell-on clause: remove it before countering (not mapped yet; screen saved in local/runs/buy-sell-on-*.json). Leave the offer screen open for the fixer.', {...reply, ...dump});
+    }
     if (dealValue(reply) <= max) {
       // Accept Demands submits the offer directly ("An offer has been made" → Exit Talks).
       await click('Accept Demands');
