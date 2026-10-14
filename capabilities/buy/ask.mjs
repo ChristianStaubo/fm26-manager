@@ -23,11 +23,12 @@ const chat = s => { const t = s.texts(), i = t.lastIndexOf('Quick Chat'); return
 
 export function readReply(lines) {
   const text = lines.join(' ');
-  const fee = /between (£[\d.,]+[MK]?) and (£[\d.,]+[MK]?)/i.exec(text);
+  // "somewhere between £26M and £31M" (Banks) or "somewhere around £17M" (Güreler, 2030-07-14).
+  const fee = /between (£[\d.,]+[MK]?) and (£[\d.,]+[MK]?)/i.exec(text) || /around (£[\d.,]+[MK]?)/i.exec(text);
   const wage = /(£[\d.,]+K?)\s*(p\/w|per week|a week)/i.exec(text);
   return {
     willing: !UNWILLING.test(text),
-    feeRange: fee ? [parseMoney(fee[1]), parseMoney(fee[2])] : null,
+    feeRange: fee ? [parseMoney(fee[1]), parseMoney(fee[2] || fee[1])] : null,
     wage: wage ? parseMoney(wage[1]) : null,
     justSigned: /only just signed a new contract/i.test(text),
   };

@@ -17,3 +17,11 @@ test('agent reply: a willing player with a fee range and a wage', () => {
   assert.deepEqual(r.feeRange, [8.5e6, 10e6]);
   assert.equal(r.wage, 45000);
 });
+
+test('agent reply: "somewhere around £17M" and a wage demand (Güreler, 2030-07-14)', () => {
+  const r = readReply(["I'm ecstatic to hear you're a fan of Hamza's. For his part, he is also extremely curious about making a move to Brentford.",
+    'Player Demands (8)', 'I believe Beşiktaş will want somewhere around £17M to make a deal possible.', '£70K p/w']);
+  assert.equal(r.willing, true);
+  assert.deepEqual(r.feeRange, [17e6, 17e6]);
+  assert.equal(r.wage, 70000);
+});
