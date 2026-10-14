@@ -114,6 +114,14 @@ def alerts(rows, today=None):
     out = []
     for p in rows:
         mins = int(float(p.get('minutes') or 0))
+        # Two seasons ahead (policy contracts.renewal.lookahead_seasons): regulars and valuable players
+        # with ≤ 2 years left get a decision a year early, while there is leverage.
+        two_june = f"{int(last_june[:4]) + 1}-06-30"
+        ends = (p.get('contract_expires') or '9999')[:10]
+        if p['contract_club'] == CLUB and not p['on_loan_at'] and p['club'] == CLUB and last_june < ends <= two_june \
+                and (mins >= 1500 or int(p.get('value') or 0) >= 5e6):
+            out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': 'two seasons left', 'minutes': mins,
+                        'expires': ends, 'value': int(p.get('value') or 0), 'wage': sr.num(p, 'wage'), 'do': 'renew this window if the renewal test passes (fm renew)'})
         if p['contract_club'] == CLUB and not p['on_loan_at'] and p['club'] == CLUB and mins >= 1500 and (p.get('contract_expires') or '9999')[:10] <= last_june:
             out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': 'final year', 'minutes': mins,
                         'expires': p['contract_expires'][:10], 'value': int(p['value'] or 0), 'wage': sr.num(p, 'wage'), 'do': 'renew (fm renew) or sell this window'})

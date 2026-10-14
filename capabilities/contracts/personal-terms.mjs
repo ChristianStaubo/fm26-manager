@@ -10,7 +10,7 @@
 // contract form (Salary, Loyalty Bonus, Agent Fee, Contract Length, Bonuses & Clauses, payroll
 // "Avg." per week) → Suggest Terms → agent: "…appreciates these terms…" + Finalize Deal →
 // Finalize Deal → "…I'll be in touch regarding my client's final decision…" → Exit Talks.
-import {Screen, waitFor, click, clickWhere, setFee, settle, parseMoney, NeedsAnalyst, isoDate} from '../../game/ui/index.mjs';
+import {Screen, waitFor, click, clickWhere, setFee, setNumber, settle, parseMoney, NeedsAnalyst, isoDate} from '../../game/ui/index.mjs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {wageException} from './wage-exceptions.mjs';
@@ -29,11 +29,16 @@ export function contractTerms(s) {
   const money = label => parseMoney(amountAfter(s, label)?.label ?? '') ?? null;
   const pct = label => { const i = s.after(label, x => /\d+%/.test(x.label || '')); return i ? Number(/(\d+)%/.exec(i.label)[1]) : null; };
   const len = s.after('Contract Length', i => i.kind === 'dropdown')?.label || '';
-  return {salary: money('Salary'), loyaltyBonus: money('Loyalty Bonus'), agentFee: money('Agent Fee'),
+  return {salary: salaryOf(s), loyaltyBonus: money('Loyalty Bonus'), agentFee: money('Agent Fee'),
     years: Number(/(\d+) years?/.exec(len)?.[1] ?? NaN) || null,
     releaseClause: s.hasText('Minimum Fee Release Clause') ? money('Minimum Fee Release Clause') : null,
     playerSellOnPct: s.hasText('Sell On Fee Percentage') ? pct('Sell On Fee Percentage') : null};
 }
+// The Salary row's own control: a money button with −/+ (signings) or a number field (Lawrence's
+// renewal, 2030-07-17: "73000"). Never the next amount in the form (that read £2M loyalty as salary).
+const salaryControl = x => { const i = x.items.findIndex(t => t.kind === 'text' && t.label === 'Salary'); const c = x.items[i + 1];
+  return c && (c.kind === 'number-field' || (c.kind === 'button' && parseMoney(c.label) !== null)) ? c : null; };
+export const salaryOf = x => { const c = salaryControl(x); return c ? (c.kind === 'number-field' ? Number(c.label) : parseMoney(c.label)) : null; };
 const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && parseMoney(i.label) !== null);
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
 const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
@@ -42,30 +47,29 @@ const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
 export const termsAccepted = s => /pleased with the negotiations|solution everyone agrees|terms are acceptable|provisionally agreed/i.test(agentLine(s));
 
 // The Salary row's "−" button (the form's own wage steps).
-const salaryMinus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
+const salaryMinus = x => { const f = salaryControl(x); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
 // Presses per try from one Reset: [3,2,1,0] → [-3, +1, +1, +1] (− lowers the salary). Reset restores
 // our last suggestion, not the demand, so we never Reset between tries (Lemaitre, 2030-07-14).
 export const tickMoves = ticks => ticks.map((t, k) => (k ? ticks[k - 1] : 0) - t);
-const salaryPlus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '+'); };
+const salaryPlus = x => { const f = salaryControl(x); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '+'); };
 async function salaryTicksUp(n) {
-  if (!salaryPlus(await Screen.read())) {
-    const now = parseMoney(amountAfter(await Screen.read(), 'Salary').label);
-    return (await setFee('Salary', now + n * wageStep(now))).set;
-  }
+  if (!salaryPlus(await Screen.read())) { const now = salaryOf(await Screen.read()); return setSalaryField(now + n * wageStep(now)); }
   for (let k = 0; k < n; k++) { await clickWhere(salaryPlus, 'salary +'); await settle(300); }
-  return parseMoney(amountAfter(await Screen.read(), 'Salary').label);
+  return salaryOf(await Screen.read());
 }
 // Some forms have no Salary steppers, one wide field (Lawrence's renewal, 2030-07-17): type the
 // demand minus the same number of the game's steps (£1K a step from £50K/wk, £250 below; Güreler
 // 95K → 92K in 3 ticks).
 export const wageStep = w => (w >= 50000 ? 1000 : 250);
+async function setSalaryField(v) {
+  await setNumber(x => salaryControl(x)?.kind === 'number-field' ? salaryControl(x) : null, Math.round(v), 'salary field');
+  await settle(500);
+  return salaryOf(await Screen.read());
+}
 async function salaryTicksDown(n) {
-  if (!salaryMinus(await Screen.read())) {
-    const now = parseMoney(amountAfter(await Screen.read(), 'Salary').label);
-    return (await setFee('Salary', now - n * wageStep(now))).set;
-  }
+  if (!salaryMinus(await Screen.read())) { const now = salaryOf(await Screen.read()); return setSalaryField(now - n * wageStep(now)); }
   for (let k = 0; k < n; k++) { await clickWhere(salaryMinus, 'salary −'); await settle(300); }
-  return parseMoney(amountAfter(await Screen.read(), 'Salary').label);
+  return salaryOf(await Screen.read());
 }
 
 // "Exceeds board's max allowance" under Loyalty Bonus / Agent Fee (Lawrence, 2030-07-17): lower that
@@ -90,7 +94,7 @@ async function lowerAgentFeeUntilAllowed(max = 40) {
 
 // The talks' own "Negotiate Contract" (StandardButton), not the Continue button of the same label.
 const negotiateButton = x => x.buttons('Negotiate Contract').find(b => b.name !== 'continue-button');
-export async function negotiatePersonalTerms({player = '?', ticks, entered = false} = {}) {
+export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null} = {}) {
   const rules = loadRules().contracts;
   ticks ??= rules.salary_ticks_down;
   // Wait for the message to give way: it has its own "Hand Over to …" button, which read as the
@@ -100,7 +104,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // (Camara, 2026-07-16): its "Contract £8M" link (transfer-link-button) opens them.
   // Where it lands varies: promises, a "Negotiate Contract" step, the contract form itself
   // (Camara, 2026-07-16), or Transfer Activity with the deal's "Contract £…" link.
-  const form = x => !!amountAfter(x, 'Salary') && x.hasText('Payroll Budget Impact');
+  const form = x => !!salaryControl(x) && x.hasText('Payroll Budget Impact');
   const link = x => x.buttons().find(b => b.name === 'transfer-link-button' && /^Contract £/.test(b.label));
   const steps = x => x.buttons(/^(Finalize Promises|Hand Over to .+)$/).length > 0 || !!negotiateButton(x);
   // A refusal ends the talks at once: "My client isn't currently interested in entering into contract
@@ -124,7 +128,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   }
   if (s.buttons('Finalize Promises').length) { await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'}); }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
-  const demand = parseMoney(amountAfter(s, 'Salary').label);
+  const demand = salaryOf(s);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), tries: []};
   // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
@@ -133,7 +137,17 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   const swap = wageException(player);
   const cap = Math.max(bands ? bands.median * rules.max_salary_vs_first_team_median : Infinity, swap?.max ?? 0);
   Object.assign(entry, {firstTeamMedian: bands?.median ?? null, cap: Number.isFinite(cap) ? Math.round(cap) : null, ...(swap ? {swap} : {})});
-  if (demand > cap) {
+  // A renewal is judged by the renewal test, not the wage cap: value protected vs what it costs
+  // (user, 2026-10-15). Failing it stops for the user: sell or let him run down, talks left open.
+  if (renewal && Number.isFinite(renewal.value) && Number.isFinite(renewal.currentWage)) {
+    const {renewalVerdict} = await import('./renew.mjs');
+    entry.renewal = renewalVerdict({...renewal, demand, years: entry.demanded.years, loyaltyBonus: entry.demanded.loyaltyBonus, agentFee: entry.demanded.agentFee}, rules.renewal);
+    if (entry.renewal.verdict !== 'renew') {
+      await log({...entry, outcome: 'renewal-test-failed'});
+      throw new NeedsAnalyst(`${player}: renewing costs £${entry.renewal.cost} for £${Math.round(renewal.value)} of value (${entry.renewal.ratio}x < ${rules.renewal.min_value_x_cost}x): ${entry.renewal.verdict}; talks left open`, entry);
+    }
+  }
+  if (demand > cap && !entry.renewal) {
     await log({...entry, outcome: 'escalated'});
     throw new NeedsAnalyst(`${player} wants £${demand}/week, above our cap £${Math.round(cap)} (${rules.max_salary_vs_first_team_median}× first-team median £${bands.median}); decide`, entry);
   }

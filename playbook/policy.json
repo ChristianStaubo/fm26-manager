@@ -98,6 +98,16 @@
   },
   "contracts": {
     "_section": "6",
+    "renewal": {
+      "_about": "User, 2026-10-15: a contracted player is a sellable asset; a final-year player is an asset losing value. Renew when the value it protects is at least min_value_x_cost x what renewing costs, even above the wage cap; else sell this window (worth sell_over+) or let him run down. Look lookahead_seasons ahead so no regular or valuable player reaches his final year undecided.",
+      "lookahead_seasons": 2,
+      "min_value_x_cost": 1.5,
+      "cost": "(new wage - current wage) x 52 x years + loyalty bonus + agent fee",
+      "regular_minutes": 1500,
+      "valuable_over": 5000000,
+      "sell_over": 2000000,
+      "run_down_age": 30
+    },
     "salary_ticks_down": [3, 2, 1, 0],
     "_salary_ticks_down": "User, 2026-10-14: take the agent's opening demand and press the Salary minus button this many times, nothing else (bonuses, clauses, length untouched); then fewer ticks, ending at the demand itself. Replaces salary_factors (typed shares of the demand).",
     "salary_factors": [0.95, 1.0, 1.1, 1.2],

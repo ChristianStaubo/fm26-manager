@@ -19,6 +19,7 @@ export function checkSquad({alerts = [], tactic, released = []}) {
   if (slots.length !== 11 || !slots.some(s => s.slot === 'GK')) fail.push(`tactic.json has ${slots.length} slots${slots.some(s => s.slot === 'GK') ? '' : ', no GK'}: the shape must be the 11 we play`);
   for (const a of alerts) {
     if (a.issue === 'no contract') { if (!released.some(r => norm(r) === norm(a.name))) decide.push(`${a.name} (${a.positions}, ${a.minutes} min) has no contract: renew, release or replace`); }
+    else if (a.issue === 'two seasons left') warn.push(`${a.name} (${a.age}, ${m(a.value)}) has two seasons left (to ${a.expires}): renew this window if the renewal test passes`);
     else if (a.issue === 'final year') decide.push(`${a.name} (${a.positions}, ${a.age}, ${a.minutes} min, ${m(a.value)}) is in his final year (to ${a.expires}): renew or sell this window`);
     else fail.push(`${a.name} (${a.positions}, ${a.minutes} league min) is a ${a.issue}: fm move him to the senior squad before the XI is picked`);
   }

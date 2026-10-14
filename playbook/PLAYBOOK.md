@@ -97,6 +97,15 @@ These are the user's rules (decided 2026-10-09).
   - a **minimum fee release clause** caps our resale profit: if we must include one, try to raise
     it; leave it when the agent has locked it (Ortega, £82M, 2030-07).
 
+- **Renewals** (user, 2026-10-15): a contracted player is a sellable asset; a final-year player is
+  an asset losing value. Look **two seasons ahead** every window: regulars and players worth £5M+
+  with ≤ 2 years left get a decision while there is leverage. **The renewal test:** renew when his
+  transfer value ≥ **1.5×** what renewing costs (wage rise × 52 × years + loyalty bonus + agent
+  fee), even above the wage cap; slightly higher wages are fine because he stays sellable. Else
+  **sell this window** (worth £2M+), or **let him run down** (cheap, or 30+ and fringe). A player
+  who refuses to talk is sold. We negotiate renewals ourselves (`fm renew`), never below 3 ticks
+  under his demand, lowering bonuses only to the board's allowance.
+
 ## 7. Team selection
 - **Keep the current tactic** (ours: 4-2-3-1 Gegenpress, `config/tactic.json`). Buy and select for it.
 - The XI is the best output per position in that shape, and **new signings start** (they were
