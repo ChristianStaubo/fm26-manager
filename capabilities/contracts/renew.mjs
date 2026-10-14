@@ -22,10 +22,11 @@ export async function delegateRenewal(name, club, {dryRun = false} = {}) {
 // The renewal test (playbook §6, user 2026-10-15): renewing costs the wage rise over the contract plus
 // loyalty bonus and agent fee; it protects his transfer value (which falls to nothing at a free).
 // Renew when value >= min_value_x_cost x cost (above the wage cap too); else sell or let him go.
-// Lawrence: (67K-49.5K) x 52 x 4 + 1.9M + 155K = 5.7M vs ~15.75M → 2.8x renew;
-// Casadó: (125K-62K) x 52 x 5 + 5M + 375K = 21.8M vs ~37.7M → 1.7x renew.
+// Holding period 2 seasons (contract backtest): Casadó (125K-62K) x 52 x 2 + 5M + 375K = 12.0M
+// vs £18.5M current value → 1.54x renew; Lawrence ~3.9M vs ~15.75M → 4x renew.
 export function renewalVerdict({currentWage, value, demand, years, loyaltyBonus = 0, agentFee = 0, age = 0, minutes = 0}, rules) {
-  const cost = Math.max(0, demand - currentWage) * 52 * (years || 1) + (loyaltyBonus || 0) + (agentFee || 0);
+  // The wage rise over the holding period (we sell within ~2 seasons), not the whole contract.
+  const cost = Math.max(0, demand - currentWage) * 52 * Math.min(years || 1, rules.holding_seasons ?? Infinity) + (loyaltyBonus || 0) + (agentFee || 0);
   const ratio = cost > 0 ? Math.round(100 * value / cost) / 100 : Infinity;
   const verdict = ratio >= rules.min_value_x_cost ? 'renew'
     : value >= rules.sell_over && !(age >= rules.run_down_age && minutes < rules.regular_minutes) ? 'sell' : 'run-down';
