@@ -101,7 +101,7 @@ The judge and the autonomy metric (notes/loop-engineering.md)
   audit [--position N] [--since YYYY-MM-DD] [--friction]
                                  the outside judge: squad, deals vs approvals, contract strings, wages,
                                  net transfer profit, relegation floor. Exit 2 on a failure; --friction files it
-  intervene <capability> approved-unchanged|approved-changed|rejected|correction
+  intervene <capability> approved-unchanged|approved-changed|rejected|correction|supervisor-decision|review-agreed|review-overturned
             [--proposed "…"] [--decided "…"] [--rule "…"] [--guard <test>]   log a user decision (main session)
   release "<name>"               the user lets an out-of-contract player go on a free (main session)
   hold "<name>" [--off]          the user is deciding this deal: the autopilot stops on it (main session)

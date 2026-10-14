@@ -8,7 +8,10 @@ import {appendFileSync, readFileSync, mkdirSync} from 'node:fs';
 import {loadPolicy} from './sell/decide.mjs';
 
 const FILE = new URL('../local/runs/interventions.jsonl', import.meta.url);
-export const KINDS = ['approved-unchanged', 'approved-changed', 'rejected', 'correction'];
+// supervisor-decision: the supervisor agent decided a novel situation instead of the user (2026-10-15:
+// "a supervisor agent in the loop for tasks we don't know about yet"); the user reviews these later:
+// review-agreed / review-overturned grade the supervisor like proposals grade the player.
+export const KINDS = ['approved-unchanged', 'approved-changed', 'rejected', 'correction', 'supervisor-decision', 'review-agreed', 'review-overturned'];
 
 export function record({capability, kind, proposed = null, decided = null, rule = null, guard = null, date = null}, file = FILE) {
   if (!capability) throw new Error('capability required');
@@ -28,12 +31,14 @@ export function summary(entries = all(), policy = loadPolicy()) {
   const out = {};
   for (const e of entries) {
     const c = out[e.capability] ??= {mode: policy.autonomy?.[e.capability] ?? 'approve', counts: Object.fromEntries(KINDS.map(k => [k, 0])), streak: 0, unguarded: 0};
-    c.counts[e.kind]++;
-    c.streak = e.kind === 'approved-unchanged' ? c.streak + 1 : 0;
+    c.counts[e.kind] = (c.counts[e.kind] || 0) + 1;
+    if (e.kind === 'supervisor-decision') continue;   // pending review: neither grows nor breaks a streak
+    c.streak = ['approved-unchanged', 'review-agreed'].includes(e.kind) ? c.streak + 1 : 0;
     if (e.kind === 'correction' && !e.guard) c.unguarded++;
   }
   for (const c of Object.values(out)) {
-    const interventions = c.counts['approved-changed'] + c.counts.rejected + c.counts.correction;
+    const interventions = c.counts['approved-changed'] + c.counts.rejected + c.counts.correction + (c.counts['review-overturned'] || 0);
+    c.pendingReview = c.counts['supervisor-decision'] - (c.counts['review-agreed'] || 0) - (c.counts['review-overturned'] || 0);
     c.interventionRate = Math.round(100 * interventions / Math.max(1, Object.values(c.counts).reduce((a, b) => a + b, 0))) / 100;
     c.eligibleForAuto = c.mode === 'approve' && c.streak >= need && c.unguarded === 0;
     // Demotion by rule too: an auto capability the user had to correct, with no guard test yet.

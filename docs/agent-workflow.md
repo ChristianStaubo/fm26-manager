@@ -23,6 +23,15 @@ Goal: the agent does the job **by itself**, and earns that autonomy one capabili
   (screen handler, decision rule, route map, known dialog), leaves a **test that replays the
   failure**, commits, resumes the player. The human is only paged when the fixer can't proceed.
 
+## 2b. The loop over the loop: a supervisor instead of the human
+Novel situations (a work permit rejected, a press conference, a promise screen) used to go to the
+human. The **supervisor** (the stronger model, also the fixer) now decides them: within the
+playbook and scoreboard, preferring reversible choices, writing its reasoning, logging each call as
+a `supervisor-decision`. The human is paged only for money beyond their approvals and big
+irreversible moves with no precedent. The human reviews supervisor decisions later
+(`review-agreed` / `review-overturned`): agreement promotes that kind of call; an overturn becomes
+a rule + test, exactly like a correction. The human moves from *in* the loop to *grading* it.
+
 ## 3. Autonomy is earned, by rule
 - Every capability is `approve` or `auto` (FM: `policy.json` → `autonomy`). Start new or risky
   capabilities (money, irreversible actions) on `approve`.
