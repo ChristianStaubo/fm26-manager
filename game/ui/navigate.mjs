@@ -29,7 +29,10 @@ export async function openPlayer(name, club) {
       const clubMatch = !club || row.some(l => l.length >= 3 && (fold(l) === fold(club) || fold(club).includes(fold(l)) || fold(l).includes(fold(club))));
       if (row.some(l => sameName(l, name)) && clubMatch) return items[i];
     }
-    return null;
+    // The export's club can be stale (Zukic had moved to Cremonese, 2030-07-21): exactly one result
+    // with his name is him.
+    const named = items.filter((b, i) => b.kind === 'button' && b.name === 'PlayerSearchButton' && items.slice(i + 1, i + 6).some(x => sameName(x.label, name)));
+    return club && named.length === 1 ? named[0] : null;
   };
   // Quirk: the first search sometimes lists only Messages; clearing and retyping fixes it.
   for (let attempt = 0; ; attempt++) {
