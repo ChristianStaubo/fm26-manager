@@ -42,11 +42,12 @@ function readOffer(d, {headClub, shortName, coach}) {
 export const incomingOffer = {
   name: 'incoming-offer',
   // Either the offer message (Accept / Reject / View Offer) or the offer detail page.
-  match: s => (s.buttons('View Offer').length === 1 && s.buttons('Accept').length === 1 && s.hasText(/ make .+ offer$/))
+  // Headlines: "<Club> make <Player> offer", or "<Club> in offer for <Player>" (LOSC for Franculino, 2030-07-21).
+  match: s => (s.buttons('View Offer').length === 1 && s.buttons('Accept').length === 1 && (s.hasText(/ make .+ offer$/) || s.hasText(/^.+ in offer for .+$/)) && !readLoan(s))
     || (s.buttons('Reject Offer').length === 1 && s.hasText('Transfer Value') && s.hasText('Fee:')),
   async run(s, {dryRun = false} = {}) {
-    const headline = s.texts().find(t => / make .+ offer$/.test(t));
-    const [, headClub, shortName] = headline ? / ?(.+?) make (.+) offer$/.exec(headline) : [];
+    const headline = s.texts().find(t => / make .+ offer$/.test(t) || /^.+ in offer for .+$/.test(t));
+    const [, headClub, shortName] = !headline ? [] : / make .+ offer$/.test(headline) ? / ?(.+?) make (.+) offer$/.exec(headline) : /^(.+) in offer for (.+)$/.exec(headline);
     const coach = s.items.find(i => i.kind === 'button' && i.label.startsWith('Coach Report'))?.label || '';
     // The details page can take a few seconds; a View Offer press is sometimes ignored (Collins,
     // 2026-07-07: timed out). Wait longer, then press once more if it is still on the message.

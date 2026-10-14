@@ -20,3 +20,8 @@ test('youth loan approach (Wellington, 80%) → accept by the same rule (frictio
   const r = await loanOffer.run(s, {dryRun: true});
   assert.equal(r.decision, 'accept');
 });
+
+test('"<Club> in offer for <Player>" is a bid for our player (LOSC for Franculino, 2030-07-21)', async () => {
+  const {incomingOffer} = await import('../game/screens/transfer-offers.mjs');
+  assert.equal(incomingOffer.match(loadScreen('bid-franculino-losc')), true);
+});
