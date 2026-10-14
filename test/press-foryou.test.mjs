@@ -5,8 +5,9 @@ import assert from 'node:assert/strict';
 import {loadScreen} from './screens.mjs';
 import {locate} from '../game/screens/admin/press.mjs';
 
-test('For You page: no message listed, the Messages tab is there to open', () => {
+test('For You page: the message is in the tree but covered; open the Messages tab first', () => {
   const l = locate(loadScreen('press-foryou-header'));
-  assert.equal(l.message, null);
+  assert.equal(l.forYou, true);
   assert.equal(l.messagesTab, true);
+  assert.match(l.message, /to be unveiled/);
 });
