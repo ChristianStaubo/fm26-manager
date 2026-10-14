@@ -45,8 +45,8 @@ export async function renewalContext(name) {
 // Renew one of ours ourselves (user, 2026-10-14: "you can handle this instead of the DoF"):
 // profile → Actions → Contract → Enter Contract Negotiations, then the same talks as for a signing
 // (promises → contract form → salary ticks from his demand; personal-terms.mjs).
-export async function renewSelf(name, club, {dryRun = false} = {}) {
-  const {openPlayer, peekActions, actionPath, profileFacts} = await import('../../game/ui/index.mjs');
+export async function renewSelf(name, club, {dryRun = false, preview = false} = {}) {
+  const {openPlayer, peekActions, actionPath, profileFacts, parseMoney} = await import('../../game/ui/index.mjs');
   const {negotiatePersonalTerms} = await import('./personal-terms.mjs');
   const profile = await openPlayer(name, club);
   const {sub} = await peekActions('Contract');
@@ -55,8 +55,12 @@ export async function renewSelf(name, club, {dryRun = false} = {}) {
   const facts = profileFacts(profile);
   await actionPath(['Contract', 'Enter Contract Negotiations']);
   await answerEnterDialog();
-  const value = facts.valueRange ? (facts.valueRange[0] + facts.valueRange[1]) / 2 : null;
-  return negotiatePersonalTerms({player: name, entered: true, renewal: {currentWage: facts.wage, value}});
+  // The profile's wage/value can come back empty for our own players (Casadó, 2030-07-17): use the export's.
+  const live = {currentWage: facts.wage ?? parseMoney(/£[\d.,]+K?/.exec(facts.contract || '')?.[0] ?? '') ?? null,
+    value: facts.valueRange ? (facts.valueRange[0] + facts.valueRange[1]) / 2 : null};
+  const ctx = await renewalContext(name);
+  const renewal = {currentWage: live.currentWage ?? ctx?.currentWage, value: live.value ?? ctx?.value};
+  return negotiatePersonalTerms({player: name, entered: true, renewal, preview});
 }
 // "Enter contract negotiations?" (talking to the player without the agent chat first): Yes.
 export async function answerEnterDialog() {
