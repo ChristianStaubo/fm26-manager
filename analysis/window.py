@@ -54,6 +54,7 @@ def shape(tactic):
 CUP = re.compile(r'UEFA|Cup|Copa|Coupe|Pokal|Coppa|Taça|Trophy|Shield|Libertadores|Sudamericana|Champions|Conference|Europa', re.I)
 MIN_SAMPLE = 1200          # league minutes for a stats score
 STRONG = 0.85              # league strength (vs ours) for a stats score
+GROWTH_FLOOR = 55          # own-league output percentile for the growth lens
 YOUNG_FLOOR = 40           # least attributes percentile for the young lens
 SOLID = 50                 # blended score that counts as a solid player
 
@@ -116,7 +117,18 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             f, a = fits[p['name']], int(p['age'] or 0)
             sim = [int(q['value']) for q in market if abs(fits[q['name']] - f) <= 0.4 and abs(int(q['age'] or 0) - a) <= 2]
             return round(int(p['value']) / st.median(sim), 2) if len(sim) >= 6 else None
-        targets, bench, free, young = [], [], [], []
+        targets, bench, free, young, growth = [], [], [], [], []
+        # Growth lens (user, 2026-10-15: "find good, younger players with good stats, sign them cheap,
+        # develop them, sell them"): output vs peers IN HIS OWN LEAGUE (young players are rarely
+        # PL-level yet: the best young ST was 47th pct vs PL strikers), weighted by league strength.
+        own = {}
+        def own_league(p):
+            comp = p['competition']
+            if comp not in own:
+                ps = [q for q in market + squad if q['competition'] == comp and q['pos'] & natural and q['mins'] >= MIN_SAMPLE]
+                own[comp] = {k: sorted(sr.num(q, k) for q in ps) for k in core} if len(ps) >= 8 else None
+            d = own[comp]
+            return round(st.mean(pct(d[k], sr.num(p, k)) for k in core)) if d else None
         # Bar for the young lens: our weakest starter's attributes there (need - 1 starters: the 3rd CB,
         # the 1st GK), floor 40. Our best (Torrente 83 at CB) or the PL median (GK) let almost no one in.
         ranked = sorted((pct(adist, sc.attr_fit(p, role)) for p in squad if p['pos'] & natural), reverse=True)
@@ -126,6 +138,13 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
                 continue
             if slot == 'DM' and p['pos'] & (FULLBACK | WIDE):
                 continue
+            if young_age and int(p['age'] or 99) <= young_age and int(p['value']) <= max_value and p['mins'] >= MIN_SAMPLE \
+                    and strength.get(p['competition'], 0) >= 0.75 and not CUP.search(p['competition'] or 'x') and sr.num(p, 'Injury Proneness') <= 13:
+                lp = own_league(p)
+                if lp is not None and lp >= GROWTH_FLOOR:
+                    c = card(p)
+                    c.update({'own_league_pct': lp, 'growth': round(lp * strength.get(p['competition'], 0)), 'x_market': x_market(p)})
+                    growth.append(c)
             # Young on attributes (plan --lens attributes): the whole market up to young_age, before the
             # consistency / big-match filters that young players rarely pass; injury-prone still out.
             if young_age and int(p['age'] or 99) <= young_age and int(p['value']) <= max_value and sr.num(p, 'Injury Proneness') <= 13:
@@ -156,6 +175,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
             'value': sorted(targets, key=lambda c: -c['per10m'])[:3],
             # Attributes alone (plan --lens attributes): younger, better players we can sell on later.
             'attr_bar': top_attr,
+            'growth': sorted(growth, key=lambda c: (-(c['growth'] // 5), c.get('x_market') or 9, c['age']))[:10],
             'by_attributes': sorted(young, key=lambda c: (-c['attributes'], c['age'], c['value']))[:10],
             'bench': sorted((c for c in bench if c['blended'] >= 35), key=lambda c: (-c['blended'], c['value']))[:3],
             'free': sorted((c for c in free if c['blended'] >= 40), key=lambda c: -c['blended'])[:4],

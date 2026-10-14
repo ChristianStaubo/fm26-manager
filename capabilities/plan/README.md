@@ -17,6 +17,9 @@ the same pass at the start of every window (run it in the first days of July, af
    younger, better players we can sell on later, scored on attributes alone; the whole market up to
    `--max-age`, a pick must beat our weakest starter's attributes there (floor 40); a higher fee is
    fine, the wage cap still holds. Example: `fm plan --budget 200m --lens attributes --max-age 24 --max-value 80m`.
+   `growth` (user, 2026-10-15, the business model: young, good stats, cheap → develop → sell):
+   output vs peers **in his own league** (young players are rarely PL-level yet), x league strength,
+   then cheap for it. Finds development bets in second tiers and smaller leagues (Stange, Kovács).
 5. `sell` (with real minutes) and `fringe` (no evidence either way).
 
 **Never:** buys, sells or lists. Buying and selling need the user's approval (§10): the plan is the

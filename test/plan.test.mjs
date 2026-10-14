@@ -77,3 +77,14 @@ print(json.dumps(p.red_team(pick, row, 40000)))`);
   assert.ok(out.some(x => /no full season/.test(x)));
   assert.ok(out.some(x => /Colombia: likely a work permit/.test(x)));
 });
+
+test('growth lens (user, 2026-10-15): young players ranked by own-league output x league strength, then price', () => {
+  const g = (name, growth, x_market) => ({name, growth, x_market, attributes: 20, blended: 20, moneyball: 40, value: 5e6, age: 22, wage: 1, league: 'X', chabot: false, minutes: 2000});
+  const report = {slots: [{slot: 'ST', need: 2, solid: 0, attr_bar: 50, ours: [], best: [], value: [], bench: [], free: [], by_attributes: [],
+    growth: [g('Pricey', 63, 7.6), g('Cheap', 61, 1.2), g('Weak', 40, 0.1)]}]};
+  const out = run(`import json, plan as p
+p.m.price = lambda rows, n: {'club': 'C', 'value': 5e6, 'open_at': 5e6, 'walk_away': 6e6, 'wage': 1, 'wage_ok': True}
+picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.stringify(report))}), [], {'slots': [{'slot': 'ST'}]}, 1e8, 'growth', 23)
+print(json.dumps([x['name'] for x in picks if x['role'] == 'starter']))`);
+  assert.deepEqual(out, ['Cheap'], 'same growth band → cheaper for his profile first');
+});
