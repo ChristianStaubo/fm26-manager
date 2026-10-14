@@ -47,7 +47,7 @@ Act
   press [--dry-run]              hold the pending press conference (positive answers), then leave
 
 Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after saving the game
-  squad [--fresh]                depth per position, needs, sell candidates, youth (playbook §2)
+  squad [--fresh]                alerts (no contract, regulars in U21), depth, needs, sell candidates, youth (§2)
   scout [--raw | --ability | --free | --best] [--positions RW,AM] [--budget N] [--per N] [--fresh]
        --best [--max-value N] [--max-wage N] [--max-age N]: simply the best players (CA + stats)
                                  market shortlist: output lens (default), plain stats x league

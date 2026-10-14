@@ -101,6 +101,24 @@ def today_of(rows):
     return dt.date.fromisoformat(max(dates)) if dates else dt.date.today()
 
 
+def alerts(rows):
+    """Players the squad tables leave out, which a manager must see (user, 2026-10-14):
+    - at our club with no contract: expired on 30 June, still training with us (Ajer, Katić in July
+      2030; the profile says 'N/A'). Renew, release or replace before they walk.
+    - first-team regulars (league minutes) registered in our U21/U18 (Eyestone, 4,230 PL min, in 'Brentford U21'):
+      they can't be picked for the XI until moved back."""
+    out = []
+    for p in rows:
+        mins = int(float(p.get('minutes') or 0))
+        if p['club'] == CLUB and not p['contract_club'] and not p['on_loan_at']:
+            out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': 'no contract',
+                        'minutes': mins, 'wage': sr.num(p, 'wage'), 'do': 'renew (fm renew), release, or replace'})
+        elif p['contract_club'] == CLUB and p['club'] != CLUB and p['club'].startswith(CLUB) and p['competition'] == LEAGUE and mins >= 1500:
+            out.append({'name': p['name'], 'age': int(p['age'] or 0), 'positions': p['positions'], 'issue': f"regular in {p['club']}",
+                        'minutes': mins, 'do': 'move him back to the first team before picking the XI'})
+    return sorted(out, key=lambda a: -a['minutes'])
+
+
 def squad(rows, tactic, date=None):
     today = date or today_of(rows)
     standing = Standing(rows)
@@ -113,7 +131,7 @@ def squad(rows, tactic, date=None):
     groups = {}
     for slot in slot_role:
         groups.setdefault(GROUP.get(slot, slot), []).append(slot)
-    out = {'club': CLUB, 'date': today.isoformat(), 'first_team_wage_median': bands['median'], 'positions': [], 'needs': [],
+    out = {'club': CLUB, 'date': today.isoformat(), 'alerts': alerts(rows), 'first_team_wage_median': bands['median'], 'positions': [], 'needs': [],
            'sell_candidates': [], 'youth': []}
     used_as_specialist = set()
     for grp, slots in groups.items():

@@ -75,7 +75,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
     history = sum(p.get('stats_source') == 'history' for p in pl)
     out = {'date': today, 'data': {'pl_players': len(pl), 'full_season': history,
            'warning': None if history >= len(pl) / 2 else 'Few players have full-season stats: run this in the first days of July (save after the rollover, before the first league match), else most stats are partial and scores lean on attributes.'},
-           'slots': [], 'sell': []}
+           'alerts': m.alerts(rows), 'slots': [], 'sell': []}
 
     for slot, (natural, pool, role, core, need) in shaped.items():
         if slots and slot not in slots:
