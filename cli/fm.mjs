@@ -25,6 +25,8 @@ import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
 import * as friction from './friction.mjs';
 import * as approvals from '../capabilities/approvals.mjs';
+import * as interventions from '../capabilities/interventions.mjs';
+import {audit} from '../capabilities/audit/audit.mjs';
 
 const HELP = `fm <command> [args] [--flags]
 
@@ -90,6 +92,15 @@ Approvals (policy.json autonomy: buying and selling need the user's sign-off)
   approve buy "<name>" --max N | approve sell "<name>" --min N [--note "…"]
                                  record the USER's approval (main session only; never the player agent)
   approve revoke buy|sell "<name>"
+     [--proposed N]             with approve: the agent's proposed price, so the ledger knows if the user changed it
+
+The judge and the autonomy metric (notes/loop-engineering.md)
+  audit [--position N] [--since YYYY-MM-DD] [--friction]
+                                 the outside judge: squad, deals vs approvals, contract strings, wages,
+                                 net transfer profit, relegation floor. Exit 2 on a failure; --friction files it
+  intervene <capability> approved-unchanged|approved-changed|rejected|correction
+            [--proposed "…"] [--decided "…"] [--rule "…"] [--guard <test>]   log a user decision (main session)
+  autonomy                       interventions per capability, streaks, who is eligible for 'auto'
 
 When stuck / setup
   doctor [--fix]                 check game, bridge, save, overlays; --fix starts the bridge
@@ -202,8 +213,24 @@ try {
     case 'approvals': out({autonomy: Object.fromEntries(Object.entries(approvals.loadPolicy().autonomy || {}).filter(([k]) => !k.startsWith('_'))), ...approvals.load()}); break;
     case 'approve':
       if (a1 === 'revoke') out(approvals.revoke(a2, pos[3]));
-      else out(approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note}));
+      else {
+        const e = approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note});
+        // The ledger: approved as the agent proposed it, or changed by the user.
+        if (flags.proposed) interventions.record({capability: a1, kind: Math.abs(num(flags.proposed) - e.limit) < 1 ? 'approved-unchanged' : 'approved-changed',
+          proposed: `${a2} at ${num(flags.proposed)}`, decided: `${a2} at ${e.limit}`, date: await gameDate()});
+        out(e);
+      }
       break;
+    case 'audit': {
+      const date = await gameDate(), season = date ? `${date.slice(0, 4) - (date.slice(5, 7) < '07' ? 1 : 0)}-07-01` : null;
+      let alerts = [];
+      try { alerts = analysis('manager.py', ['squad'], {date}).alerts || []; } catch (e) { alerts = []; }
+      const r = await audit({alerts, position: flags.position ? Number(flags.position) : undefined, since: flags.since || season});
+      if (!r.ok && flags.friction) r.friction = await friction.stuck(`audit failed: ${r.fail.join(' | ')}`);
+      out(r); process.exitCode = r.ok ? 0 : 2; break;
+    }
+    case 'intervene': out(interventions.record({capability: a1, kind: a2, proposed: flags.proposed, decided: flags.decided, rule: flags.rule, guard: flags.guard, date: await gameDate()})); break;
+    case 'autonomy': out(interventions.summary()); break;
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;

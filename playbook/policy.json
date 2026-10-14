@@ -119,6 +119,20 @@
     "_payoff": "Fractions of the agent's first ask. Always settle: counter at counter_at, then accept any reply at or below accept_at_or_below (user rule, 2026-10-04).",
     "escalate_above_pct_of_fee": 0.1
   },
+  "scoreboard": {
+    "_about": "User, 2026-10-14: the objective is net transfer profit, cumulative (not per window, so big spending that pays back is fine), within reason: wages inside a range of the budget, squad quality must not collapse, never relegated. fm audit checks these; local/runs/ledger.json holds the transfer totals.",
+    "objective": "net_transfer_profit_cumulative",
+    "wage_budget_warn": 0.95,
+    "wage_budget_fail": 1.0,
+    "relegation_position": 18,
+    "league_warn_position": 15,
+    "release_clause_min_x_fee": 1.5,
+    "_release_clause": "A player's minimum release clause below this x the fee we paid caps our resale profit: warn (Ortega asked £82M on a £61M fee)."
+  },
+  "autonomy_promotion": {
+    "consecutive_unchanged": 5,
+    "_about": "A capability on 'approve' is eligible for 'auto' after this many proposals in a row the user approved unchanged (fm autonomy). The user flips it in policy.autonomy."
+  },
   "autonomy": {
     "_section": "10",
     "_about": "Which capabilities act on their own ('auto') and which need the user's sign-off per action and price ('approve'). Promote one to 'auto' once its tests pass consistently (user, 2026-10-14: start with buying and selling on approval).",
@@ -129,6 +143,8 @@
     "agent_payoffs": "auto",
     "season": "auto",
     "scouting": "auto",
+    "plan": "auto",
+    "squad": "auto",
     "xi": "auto"
   },
   "escalate": {

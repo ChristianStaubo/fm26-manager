@@ -22,6 +22,17 @@ function firstTeamBands() {
   catch { return null; }
 }
 
+// The contract's strings, for fm audit (Ortega 2030-07: £88K x 5y, £3.9M loyalty, £82M release
+// clause, 10% player sell-on): what the deal really costs and what it does to resale.
+export function contractTerms(s) {
+  const money = label => parseMoney(amountAfter(s, label)?.label ?? '') ?? null;
+  const pct = label => { const i = s.after(label, x => /\d+%/.test(x.label || '')); return i ? Number(/(\d+)%/.exec(i.label)[1]) : null; };
+  const len = s.after('Contract Length', i => i.kind === 'dropdown')?.label || '';
+  return {salary: money('Salary'), loyaltyBonus: money('Loyalty Bonus'), agentFee: money('Agent Fee'),
+    years: Number(/(\d+) years?/.exec(len)?.[1] ?? NaN) || null,
+    releaseClause: s.hasText('Minimum Fee Release Clause') ? money('Minimum Fee Release Clause') : null,
+    playerSellOnPct: s.hasText('Sell On Fee Percentage') ? pct('Sell On Fee Percentage') : null};
+}
 const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && parseMoney(i.label) !== null);
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
 const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
@@ -31,6 +42,9 @@ export const termsAccepted = s => /pleased with the negotiations|solution everyo
 
 // The Salary row's "−" button (the form's own wage steps).
 const salaryMinus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '-'); };
+// Presses per try from one Reset: [3,2,1,0] → [-3, +1, +1, +1] (− lowers the salary). Reset restores
+// our last suggestion, not the demand, so we never Reset between tries (Lemaitre, 2030-07-14).
+export const tickMoves = ticks => ticks.map((t, k) => (k ? ticks[k - 1] : 0) - t);
 const salaryPlus = x => { const f = amountAfter(x, 'Salary'); const j = x.items.indexOf(f); return x.items.slice(j + 1, j + 4).find(i => i.kind === 'button' && i.label === '+'); };
 async function salaryTicksUp(n) {
   for (let k = 0; k < n; k++) { await clickWhere(salaryPlus, 'salary +'); await settle(300); }
@@ -83,7 +97,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
   const demand = parseMoney(amountAfter(s, 'Salary').label);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
-  const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, tries: []};
+  const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), tries: []};
   // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
   // with the form open for a decision (Cancel Negotiations asks to confirm; its Cancel keeps talks).
   const bands = firstTeamBands();
@@ -98,10 +112,9 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // (Lemaitre 2030-07-14: "2 ticks" after a 3-tick try gave £19K, below the 3-tick £19.5K). So:
   // ticks[0] presses of −, then step back up with + between tries.
   await click('Reset', {name: 'button-secondary-label'}); await settle(800);
-  let pressed = 0;
-  for (const t of ticks) {
-    const set = {set: t >= pressed ? await salaryTicksDown(t - pressed) : await salaryTicksUp(pressed - t)};
-    pressed = t;
+  const moves = tickMoves(ticks);
+  for (const [k, t] of ticks.entries()) {
+    const set = {set: moves[k] < 0 ? await salaryTicksDown(-moves[k]) : await salaryTicksUp(moves[k])};
     if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({ticks: t, salary: set.set, blocked: 'agent fee'}); continue; }
     // Wait for the agent's line to CHANGE (or Finalize Deal): Suggest Terms stays enabled right after
     // the click, and the old line ("…initial contract demands…") was read as his answer (Lemaitre).
