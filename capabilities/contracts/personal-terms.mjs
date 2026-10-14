@@ -44,6 +44,10 @@ const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label ===
 const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
 // "…already provisionally agreed terms. I will once again state what is acceptable…" (Lemaitre, after a
 // second suggestion overrode an accepted one, 2030-07-14) is agreement too, with Finalize Deal.
+// A counter: the agent writes his latest demands into the form and FM shows Finalize Deal (= accept
+// HIS counter). "What a promising start… very close… Here are my client's latest demands" (Casadó,
+// 2030-07-17) was finalized as if our £100K were agreed. Counter lines go through the probe instead.
+export const counterLine = s => /latest demands|willing to accept|very close|promising (start|offer)|make progress/i.test(agentLine(s));
 export const termsAccepted = s => /pleased with the negotiations|solution everyone agrees|terms are acceptable|provisionally agreed/i.test(agentLine(s));
 
 // The Salary row's "−" button (the form's own wage steps).
@@ -197,12 +201,14 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
       await log({...entry, outcome: 'accepted-pending', salary: offered});
       return {...entry, outcome: 'accepted-pending', salary: offered};
     }
-    if (r.buttons('Finalize Deal').length) {
+    const lastRound = round >= p.max_rounds;
+    if (r.buttons('Finalize Deal').length && (!counterLine(r) || lastRound)) {
+      const agreed = salaryOf(r);   // what is in the form now, not what we offered
       await click('Finalize Deal');
       await waitFor(x => x.buttons('Exit Talks').length > 0, {what: 'deal finalized'});
       await click('Exit Talks');
-      await log({...entry, outcome: 'agreed', salary: offered});
-      return {...entry, outcome: 'agreed', salary: offered};
+      await log({...entry, outcome: 'agreed', salary: agreed});
+      return {...entry, outcome: 'agreed', salary: agreed};
     }
     // His counter is in the form now.
     const counter = salaryOf(r);
