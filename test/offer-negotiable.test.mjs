@@ -51,3 +51,11 @@ test("Man Utd's counter (2031-06-17): the GM line and their terms in the form", 
   assert.deepEqual([r.upfront, r.guaranteed, r.total], [30.5e6, 40.25e6, 44.85e6]);
   assert.ok(incomingOffer.match(c), 'the next round runs on the same page');
 });
+
+test('loan back: only buys made to develop away (portfolio/wonderkid), never a starter', async () => {
+  const {loanBackWanted} = await import('../game/screens/transfer-offers.mjs');
+  const b = {accept_loan_back: true};
+  assert.equal(loanBackWanted({note: 'wonderkid portfolio (user 2026-10-15): PA 168+'}, b), true);
+  assert.equal(loanBackWanted({note: 'user delegated the summer 2031 window; RW starter by attributes'}, b), false);
+  assert.equal(loanBackWanted(null, b), false);
+});

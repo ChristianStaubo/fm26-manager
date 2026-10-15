@@ -306,6 +306,11 @@ async function youthDecision({kind, date, club, player, wageShare, loan}, {dryRu
   return entry;
 }
 
+/** Loan a signing back to his old club? Only when the buy was meant to develop away (approval note:
+ *  portfolio / wonderkid / loan back), never a signing bought to play now. */
+export const loanBackWanted = (approval, buying = {}) =>
+  buying.accept_loan_back !== false && new RegExp(buying.loan_back_notes || 'portfolio|wonderkid|loan.?back', 'i').test(approval?.note || '');
+
 // The selling club asks to loan our signing back ("1. FC Nürnberg ask for Miceli loan back", 2030-07-21):
 // Accept / Reject Loan Back. The user (2026-10-15): "ideally their club asks for the loan back, and we
 // accept that": the kid plays and develops. policy.buying.accept_loan_back.
@@ -316,7 +321,12 @@ export const loanBackRequest = {
     const head = s.texts().map(t => /^(.+) ask for (.+) loan back$/.exec(t)).find(Boolean);
     const entry = {action: 'loan-back', date: isoDate(s.date()), club: head?.[1], player: head?.[2],
       playingTime: s.after('Agreed Playing Time', i => i.kind === 'text')?.label, salaryPct: s.after('Salary Percentage', i => i.kind === 'text')?.label};
-    const accept = loadRules().buying.accept_loan_back !== false;
+    // Only a portfolio/youth buy goes back on loan. A first-team signing stays: Gallardo (our RW
+    // starter), Sayman and Carroll were loaned back to their clubs on 2031-07-02 under the old
+    // accept-all rule. The buy's approval note says which it is.
+    const approval = loadApprovals().approvals.find(a => a.kind === 'buy' && entry.player && a.player.toLowerCase().endsWith(entry.player.toLowerCase()));
+    entry.approvalNote = approval?.note ?? null;
+    const accept = loanBackWanted(approval, loadRules().buying);
     entry.decision = accept ? 'accept' : 'reject';
     if (dryRun) return {...entry, dryRun: true};
     await click(accept ? 'Accept Loan Back' : 'Reject Loan Back');

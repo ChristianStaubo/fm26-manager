@@ -98,7 +98,8 @@
     "_why_a_sample_floor": "Superseded by min_minutes_share. Why a floor at all: the 2027 signings were bought on ~11 apps and regressed (Kofane +3.2 G-xG, Risser +3.7 goals prevented, both flipped). Goals-minus-xG and goals prevented are mostly luck within one season.",
     "work_permit_appeal": "appeal",
     "accept_loan_back": true,
-    "_accept_loan_back": "User, 2026-10-15: when the selling club asks to loan a signing back (Nürnberg for Miceli), accept: the kid plays and develops.",
+    "_accept_loan_back": "User, 2026-10-15: when the selling club asks to loan a signing back (Nürnberg for Miceli), accept: the kid plays and develops. Only for buys made to develop away: the buy approval's note matches loan_back_notes (portfolio / wonderkid / loan back). A signing bought to play now is kept (2031-07-02: Gallardo, our RW starter, was loaned back to Bayern).",
+    "loan_back_notes": "portfolio|wonderkid|loan.?back",
     "_work_permit_appeal": "A signing's work permit rejected (Lemaitre, 2030-07-18): appeal | decline | ask. User, 2026-10-15: appeal (\"he's a good player\"; £5K is trivial next to a signing we chose).",
     "any_age": true,
     "replacement_at_least_as_good": true
