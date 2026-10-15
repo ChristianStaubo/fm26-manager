@@ -27,7 +27,11 @@ These are the user's rules (decided 2026-10-09).
 3. **January checkpoint:** contracts ending in June: (a) ours: renew or sell (renewal test), never
    let value walk out free; (b) other clubs' players with ≤ 6 months left: pre-contract / cheap deals
    (`fm plan` free lists); (c) new wonderkids (newgens): `fm plan --lens wonderkid`.
-4. **Sim to the end of the season** (05-28), `fm results`, then the summer window again.
+4. **Newgen checkpoint, 1 May** (measured in our save, 2026-10-15: 95% of 15-16-year-olds join in
+   March-April; France/Spain/Italy/NL mostly April, England/Germany March). `fm save`, fresh export,
+   `fm plan --lens wonderkid`: shortlist the new class. Foreign under-18s can't sign for an English
+   club: English newgens now, others at 18. Buy in the summer.
+5. **Sim to the end of the season** (05-28), `fm results`, then the summer window again.
 
 ## 2. Squad shape
 - **Lean squad:** about **two players per position**, plus a few versatile players, so each
