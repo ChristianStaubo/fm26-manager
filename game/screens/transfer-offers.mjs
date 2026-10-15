@@ -24,7 +24,9 @@ export const negotiable = d => {
 
 // The GM's answer after Suggest Terms: "Phil Giles General Manager Aston Villa feel the negotiation
 // for Ben Gannon Doak is acceptable." (a button).
-export const verdict = s => s.items.find(i => i.kind === 'button' && / feel the negotiation for /.test(i.label))?.label.replace(/^.*?General Manager /, '') ?? null;
+// Their counter: "… Man Utd have negotiated the offer for Ben Gannon Doak." (the new terms are in the form).
+// Final answer: "… Man Utd have submitted a non-negotiable offer for Ben Gannon Doak." (take it or leave it).
+export const verdict = s => s.items.find(i => i.kind === 'button' && / (feel the negotiation|have negotiated the offer|have submitted a non-negotiable offer) for /.test(i.label))?.label.replace(/^.*?General Manager /, '') ?? null;
 
 // Read an offer's detail page ("View Offer").
 export function readOffer(d, {headClub, shortName, coach}) {
@@ -97,9 +99,19 @@ export const incomingOffer = {
       // Accept Offer / Reject Offer); Negotiate Offer sends a counter they answer days later. Accept an
       // acceptable answer (the ask was approved above). Any other answer: log it and stop, to learn it.
       // While waiting we only read the screen.
+      // A later round still shows the previous answer: wait for a NEW line (round 2 with Man Utd read
+      // round 1's "have negotiated" at once and logged our own terms as their reply).
+      const before = verdict(await Screen.read());
       await click('Suggest Terms', {name: 'StandardButton'});
-      const v = await waitFor(x => verdict(x), {what: 'the buyer\'s answer', timeout: 30000});
+      // From here the counter has been put to them: log the round whatever happens next.
+      const v = await waitFor(x => verdict(x) && verdict(x) !== before, {what: 'the buyer\'s answer', timeout: 30000}).catch(async e => { await log({...entry, executed: true, verdict: null}); throw e; });
       entry.verdict = verdict(v);
+      // "<club> have negotiated the offer for <player>." (Man Utd, 2031-06-17): their counter is written
+      // into the form. Record it as their reply and stop; the next call decides round 2 on it.
+      if (/have negotiated the offer for |non-negotiable offer for /.test(entry.verdict)) {
+        const r = readOffer(v, {headClub: offer.club, shortName: offer.player, coach: ''});
+        entry.reply = {upfront: r.upfront, guaranteed: r.guaranteed, total: r.total};
+      }
       if (!/is acceptable\.?$/.test(entry.verdict)) { await log({...entry, executed: true}); throw new NeedsAnalyst(`Counter for ${offer.player}: ${entry.verdict}`, entry); }
       await click('Accept Offer');
       entry.accepted = true;

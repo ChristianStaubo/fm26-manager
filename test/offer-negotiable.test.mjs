@@ -42,3 +42,12 @@ test('counters use Suggest Terms (answered on the spot), never Negotiate Offer (
   const src = readFileSync(new URL('../game/screens/transfer-offers.mjs', import.meta.url), 'utf8');
   assert.ok(!/click\('Negotiate Offer'/.test(src));
 });
+
+test("Man Utd's counter (2031-06-17): the GM line and their terms in the form", async () => {
+  const {verdict} = await import('../game/screens/transfer-offers.mjs');
+  const c = loadScreen('offer-countered-doak-manutd');
+  assert.equal(verdict(c), 'Man Utd have negotiated the offer for Ben Gannon Doak.');
+  const r = readOffer(c, {headClub: 'Man Utd', shortName: 'Ben Gannon Doak', coach: ''});
+  assert.deepEqual([r.upfront, r.guaranteed, r.total], [30.5e6, 40.25e6, 44.85e6]);
+  assert.ok(incomingOffer.match(c), 'the next round runs on the same page');
+});
