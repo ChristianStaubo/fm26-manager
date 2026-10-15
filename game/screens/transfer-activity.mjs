@@ -45,8 +45,10 @@ export async function answer(name, {club, upfront, dryRun = false} = {}) {
     && (!club || x.items.slice(Math.max(0, k - 4), k).some(b => b.kind === 'button' && b.label.toLowerCase() === club.toLowerCase())));
   if (!row(await Screen.read())) throw new Error(`No open offer for ${name}${club ? ' from ' + club : ''}: ${d.deal} (${d.stage || '-'})`);
   const {clickWhere} = await import('../ui/controls.mjs');
-  const {incomingOffer} = await import('./transfer-offers.mjs');
+  // A loan offer opens its own page (Alavés for Ørjasæter, 2031-07-08): any offer handler that matches.
+  const {incomingOffer, loanOfferPage} = await import('./transfer-offers.mjs');
+  const handler = x => [loanOfferPage, incomingOffer].find(h => h.match(x));
   await clickWhere(row, 'offer row');
-  const s = await waitFor(x => incomingOffer.match(x), {what: 'offer details', timeout: 15000});
-  return incomingOffer.run(s, {dryRun, upfront});
+  const s = await waitFor(x => handler(x), {what: 'offer details', timeout: 15000});
+  return handler(s).run(s, {dryRun, upfront});
 }
