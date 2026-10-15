@@ -99,7 +99,7 @@ Transfers
   renew "<name>" --club <club> [--preview] [--dof] [--dry-run]   we negotiate (--preview: stop before Suggest Terms); a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
-  answer "<player>" [--club C] [--dry-run]   answer his (or club C's) open bid now (incoming-offer handler; no Continue)
+  answer "<player>" [--club C] [--upfront N] [--dry-run]   answer his (or club C's) open bid now (incoming-offer handler; no Continue)
   negotiations                   every sale negotiation: their offer, our ask (%), their reply, gap closed (data for the counter rule)
 
 Approvals (policy.json autonomy: buying and selling need the user's sign-off)
@@ -280,7 +280,7 @@ try {
     case 'precontract': out(await preContract(a1, flags.club, {preview: !!flags.preview, dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
-    case 'answer': out(await answer(a1, {club: flags.club, dryRun})); break;
+    case 'answer': out(await answer(a1, {club: flags.club, upfront: num(flags.upfront), dryRun})); break;
     case 'negotiations': { const {report} = await import('../capabilities/sell/negotiations.mjs'); out(await report()); break; }
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun, preview: !!flags.preview})); break;   // we negotiate (tick rule); --dof hands over
     case 'save': { const r = await saveGame(); out(r); process.exitCode = r.saved ? 0 : 1; break; }

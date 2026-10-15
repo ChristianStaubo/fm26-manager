@@ -37,7 +37,7 @@ export async function deal(name) {
 // Answer a bid for one of our players from Transfer Activity, without advancing time: open his
 // first offer row (the detail page loads slowly) and run the incoming-offer handler on it. `fm run`
 // presses Continue first, and the inbox can't scroll to older offer messages (2031-06-19).
-export async function answer(name, {club, dryRun = false} = {}) {
+export async function answer(name, {club, upfront, dryRun = false} = {}) {
   // A deal can hold several clubs' rows ("Negotiated …" after our counter, "Offer Made …" still open);
   // each row is the club's button, then its stage link. --club picks one.
   const d = await deal(name);
@@ -48,5 +48,5 @@ export async function answer(name, {club, dryRun = false} = {}) {
   const {incomingOffer} = await import('./transfer-offers.mjs');
   await clickWhere(row, 'offer row');
   const s = await waitFor(x => incomingOffer.match(x), {what: 'offer details', timeout: 15000});
-  return incomingOffer.run(s, {dryRun});
+  return incomingOffer.run(s, {dryRun, upfront});
 }

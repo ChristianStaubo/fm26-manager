@@ -56,7 +56,7 @@ export const incomingOffer = {
   // Headlines: "<Club> make <Player> offer", or "<Club> in offer for <Player>" (LOSC for Franculino, 2030-07-21).
   match: s => (s.buttons('View Offer').length === 1 && s.buttons('Accept').length === 1 && (s.hasText(/ make .+ offer$/) || s.hasText(/^.+ in offer for .+$/)) && !readLoan(s))
     || (s.buttons('Reject Offer').length === 1 && s.hasText('Transfer Value') && s.hasText('Fee:')),
-  async run(s, {dryRun = false} = {}) {
+  async run(s, {dryRun = false, upfront} = {}) {
     const headline = s.texts().find(t => / make .+ offer$/.test(t) || /^.+ in offer for .+$/.test(t));
     const [, headClub, shortName] = !headline ? [] : / make .+ offer$/.test(headline) ? / ?(.+?) make (.+) offer$/.exec(headline) : /^(.+) in offer for (.+)$/.exec(headline);
     const coach = s.items.find(i => i.kind === 'button' && i.label.startsWith('Coach Report'))?.label || '';
@@ -80,6 +80,11 @@ export const incomingOffer = {
       Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep});
     }
     const decision = decideSale(offer);
+    // A chosen up-front ask (fm answer --upfront, to probe how far a buyer goes): a counter at that fee.
+    if (Number.isFinite(upfront) && decision.action === 'counter') {
+      const instalments = Math.max(0, offer.guaranteed - offer.upfront);
+      Object.assign(decision, {upfront, guaranteedAsk: upfront + instalments, rule: {upfront: decision.upfront, guaranteedAsk: decision.guaranteedAsk}, reason: `${decision.reason} (ask set by hand)`});
+    }
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }
     try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.guaranteedAsk : offer.total ?? offer.guaranteed); }
