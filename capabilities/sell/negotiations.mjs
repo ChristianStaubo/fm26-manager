@@ -5,7 +5,8 @@
 import {history} from '../log.mjs';
 
 const money = v => Number.isFinite(v) ? v : null;
-const value = o => o.guaranteed + Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed); // add-ons count (addon_weight 1)
+// Asks are on guaranteed money (fee + instalments, decideSale); add-ons are listed apart.
+const addOns = o => Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed);
 
 /** [{player, club, rounds: [{date, offer, ask, askPct, reply, closed}], outcome}] */
 export function negotiations(entries) {
@@ -17,16 +18,17 @@ export function negotiations(entries) {
   }
   return [...deals.values()].map(d => {
     const rounds = d.entries.map((e, k) => {
-      const offer = value(e.offer), ask = money(e.decision.guaranteedAsk), next = d.entries[k + 1];
-      const reply = next ? value(next.offer) : null;
-      return {date: e.date, offer, upfront: e.offer.upfront, action: e.decision.action, ask,
+      const offer = e.offer.guaranteed, ask = money(e.decision.guaranteedAsk), next = d.entries[k + 1];
+      // Their answer on the spot (verdict) or their next offer.
+      const reply = e.accepted ? ask : next ? next.offer.guaranteed : null;
+      return {date: e.date, offer, upfront: e.offer.upfront, addOns: addOns(e.offer), action: e.decision.action, ask, verdict: e.verdict ?? null, accepted: !!e.accepted,
         askPct: ask ? +(ask / offer - 1).toFixed(3) : null,
         reply, replyPct: reply ? +(reply / offer - 1).toFixed(3) : null,
         // Share of the gap between their offer and our ask that their reply closed (1 = met our ask).
         closed: ask && reply ? +((reply - offer) / (ask - offer)).toFixed(2) : null};
     });
     const last = rounds.at(-1);
-    const outcome = last.action === 'accept' ? `sold ${last.offer}` : last.action === 'reject' ? 'rejected' : last.action === 'counter' ? 'no reply yet (or they walked away)' : last.action;
+    const outcome = last.accepted ? `sold ${last.ask} (our counter, accepted on the spot)` : last.action === 'accept' ? `sold ${last.offer}` : last.action === 'reject' ? 'rejected' : last.action === 'counter' ? 'no reply yet (or they walked away)' : last.action;
     const {entries: _, ...rest} = d;
     return {...rest, rounds, outcome};
   });

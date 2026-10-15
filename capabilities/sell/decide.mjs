@@ -26,9 +26,13 @@ export function decideSale(offer, policy = loadRules()) {
   o = {...o, guaranteed: o.guaranteed + w * Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed)};
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;
   const floor = expiring ? o.vLow * p.floor.contract_under_12_months : o.keyPlayer ? o.vHigh * p.floor.key_player : o.vLow * p.floor.default;
-  const instalments = Math.max(0, o.guaranteed - (o.upfront ?? o.guaranteed));
+  // Counters ask on the GUARANTEED money (fee + instalments); their add-ons stay on top as a bonus.
+  // Doak (2031-06-17): Villa offered £27.5M + £7.75M instalments + £4.4M add-ons; the user asked
+  // £40M up front (£47.75M guaranteed) and Villa accepted at once. Counting the add-ons as fee here
+  // would have asked only £36M up front.
+  const raw = offer.guaranteed, instalments = Math.max(0, raw - (o.upfront ?? raw));
   const counter = (target, minRaise = 1) => {
-    const ask = tidy(Math.max(target, o.guaranteed * minRaise));
+    const ask = tidy(Math.max(target, raw * minRaise));
     return {action: 'counter', upfront: ask - instalments, guaranteedAsk: ask};
   };
 

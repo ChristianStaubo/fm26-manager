@@ -22,6 +22,10 @@ export const negotiable = d => {
   return box ? !/^Non/i.test(box.label) : !d.hasText('Non-Negotiable') && d.hasText('Negotiable');
 };
 
+// The GM's answer after Negotiate Offer: "Phil Giles General Manager Aston Villa feel the negotiation
+// for Ben Gannon Doak is acceptable." (a button).
+export const verdict = s => s.items.find(i => i.kind === 'button' && / feel the negotiation for /.test(i.label))?.label.replace(/^.*?General Manager /, '') ?? null;
+
 // Read an offer's detail page ("View Offer").
 export function readOffer(d, {headClub, shortName, coach}) {
   const player = d.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean) || shortName;
@@ -78,12 +82,20 @@ export const incomingOffer = {
     const decision = decideSale(offer);
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }
-    try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.upfront : offer.total ?? offer.guaranteed); }
+    try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.guaranteedAsk : offer.total ?? offer.guaranteed); }
     catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     if (decision.action === 'counter') {
       const fee = await setFee('Fee', decision.upfront, {mode: 'nearest'});
       entry.counterSet = fee.set;
       await click('Negotiate Offer');
+      // The buyer answers on the spot (the user, Villa for Doak, 2031-06-17): the GM's line "<club> feel
+      // the negotiation for <player> is acceptable." with Accept Offer / Reject Offer. Accept it: the
+      // ask was approved above. Any other answer: log it and stop, so we learn what it looks like.
+      const v = await waitFor(x => verdict(x), {what: 'the buyer\'s answer', timeout: 12000});
+      entry.verdict = verdict(v);
+      if (!/is acceptable\.?$/.test(entry.verdict)) { await log({...entry, executed: true}); throw new NeedsAnalyst(`Counter for ${offer.player}: ${entry.verdict}`, entry); }
+      await click('Accept Offer');
+      entry.accepted = true;
     } else await click(decision.action === 'accept' ? 'Accept Offer' : 'Reject Offer');
     await log({...entry, executed: true});
     return entry;

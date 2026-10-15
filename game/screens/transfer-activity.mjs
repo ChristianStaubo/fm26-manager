@@ -37,12 +37,16 @@ export async function deal(name) {
 // Answer a bid for one of our players from Transfer Activity, without advancing time: open his
 // first offer row (the detail page loads slowly) and run the incoming-offer handler on it. `fm run`
 // presses Continue first, and the inbox can't scroll to older offer messages (2031-06-19).
-export async function answer(name, {dryRun = false} = {}) {
+export async function answer(name, {club, dryRun = false} = {}) {
+  // A deal can hold several clubs' rows ("Negotiated …" after our counter, "Offer Made …" still open);
+  // each row is the club's button, then its stage link. --club picks one.
   const d = await deal(name);
-  if (!d.stage || !/^Offer Made/.test(d.stage)) throw new Error(`No open offer for ${name}: ${d.deal} (${d.stage || '-'})`);
+  const row = x => x.items.find((i, k) => i.kind === 'button' && i.name === 'transfer-link-button' && /^Offer Made/.test(i.label)
+    && (!club || x.items.slice(Math.max(0, k - 4), k).some(b => b.kind === 'button' && b.label.toLowerCase() === club.toLowerCase())));
+  if (!row(await Screen.read())) throw new Error(`No open offer for ${name}${club ? ' from ' + club : ''}: ${d.deal} (${d.stage || '-'})`);
   const {clickWhere} = await import('../ui/controls.mjs');
   const {incomingOffer} = await import('./transfer-offers.mjs');
-  await clickWhere(s => s.items.find(i => i.kind === 'button' && i.name === 'transfer-link-button' && /^Offer Made/.test(i.label)), 'offer row');
+  await clickWhere(row, 'offer row');
   const s = await waitFor(x => incomingOffer.match(x), {what: 'offer details', timeout: 15000});
   return incomingOffer.run(s, {dryRun});
 }

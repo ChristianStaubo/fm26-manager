@@ -18,8 +18,14 @@ test('a countered deal: ask %, their reply, and the share of the gap they closed
   assert.equal(d.outcome, 'sold 46000000');
 });
 
-test('add-ons count in the offer; a counter with no reply stays open', () => {
+test('add-ons are listed apart; a counter with no reply stays open', () => {
   const [d] = negotiations([e('2031-06-17', offer(35e6, {total: 39.6e6}), {action: 'counter', guaranteedAsk: 48e6})]);
-  assert.equal(d.rounds[0].offer, 39.6e6);
+  assert.deepEqual([d.rounds[0].offer, d.rounds[0].addOns], [35e6, 4.6e6]);
   assert.match(d.outcome, /no reply/);
+});
+
+test('accepted on the spot (Villa for Doak): their reply is our ask, the whole gap closed', () => {
+  const [d] = negotiations([{...e('2031-06-17', offer(35.25e6, {club: 'Aston Villa'}), {action: 'counter', guaranteedAsk: 47.75e6}), verdict: 'Aston Villa feel the negotiation for Ben Gannon Doak is acceptable.', accepted: true}]);
+  assert.deepEqual([d.rounds[0].askPct, d.rounds[0].closed], [0.355, 1]);
+  assert.match(d.outcome, /accepted on the spot/);
 });
