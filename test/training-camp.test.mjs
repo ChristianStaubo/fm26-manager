@@ -16,3 +16,12 @@ test('training camp squad: the staff pick it (Auto Select)', async () => {
   assert.deepEqual(h.map(x => x.name), ['training-camp-squad']);
   assert.equal((await h[0].run(screen, {dryRun: true})).detail, 'staff pick the training camp squad');
 });
+
+test('collective bonuses: keep the preselection and Confirm', async () => {
+  const texts = ['Kornelius Saltrø', 'Collective bonuses to be decided', "Set the squad's collective win bonuses"];
+  const buttons = ['Low (£7.25M)', 'Normal (£12.25M)', 'High (£17.25M)', 'Confirm'].map(label => ({label}));
+  const s = {texts: () => texts, date: () => new Date(Date.UTC(2031, 6, 30)),
+    hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)),
+    buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
+  assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['collective-bonuses']);
+});

@@ -173,6 +173,12 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   delegate('delegate-finalizing', /^Delegate 'Finalizing player signings/, 'GM finalizes signings'),
   // Squad code of conduct (fines): let the assistant choose.
   delegate('code-of-conduct', /^Ask .+ to Pick$/, 'assistant sets code of conduct'),
+  // "Collective bonuses to be decided" (2031-07-30, Response Required): Low / Normal / High per
+  // competition; a change moves money to or from the transfer budget. Keep the game's preselection
+  // and Confirm, as with the board's expectations (supervisor rule, for the user's review: Low would
+  // add ~£9.8M to the budget).
+  {...delegate('collective-bonuses', /^Confirm$/, 'kept the preselected collective bonuses'),
+    match: s => s.hasText('Collective bonuses to be decided') && s.buttons('Confirm').length === 1},
   // "<Club> training camp squad" (2031-06-30, Response Required: name a preliminary squad for the
   // pre-season camp; buttons Respond / Auto Select / Auto Select - include youth prospects): the
   // staff pick it (Auto Select), as a person would. Not the match XI.
