@@ -98,3 +98,20 @@ export async function listPlayer(name, club, {price, deter = false, min, force =
   await log(result);
   return {...result, listed: true};
 }
+
+// Take a player off the transfer list (user, 2031-01-01: Brown refused to talk while listed, "He isn't
+// interested due to being transfer listed", and we renew him instead). Set Transfer Status → No status set.
+export async function unlistPlayer(name, club, {dryRun = false} = {}) {
+  const profile = await openPlayer(name, club);
+  await actionPath(['Transfer', 'Set Transfer Status']);
+  const status = x => x.items.find(i => i.kind === 'dropdown' && ['No status set', 'Transfer listed', 'Listed for loan', 'Unavailable'].includes(i.label));
+  const dialog = await waitFor(x => status(x) && x.buttons().some(b => b.name === 'ConfirmButton'), {what: 'Set Transfer Status dialog'});
+  const was = status(dialog).label;
+  if (was === 'No status set' || dryRun) { await cancel(); return {action: 'unlist', name, was, changed: false, dryRun}; }
+  await choose(status, 'No status set', {what: 'transfer status'});
+  await click('Confirm', {name: 'ConfirmButton'});
+  await waitFor(x => !x.buttons().some(b => b.name === 'ConfirmButton'), {what: 'dialog closed'});
+  const entry = {action: 'unlist', name, club, date: isoDate(profile.date()), was, changed: true};
+  await log(entry);
+  return entry;
+}
