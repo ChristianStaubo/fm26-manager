@@ -107,7 +107,41 @@ export const workPermitRejected = {
   },
 };
 
-export const HANDLERS = [workPermitRejected, 
+// A signing refuses to complete without a work permit ("Ablaß unwilling to join without work permit",
+// 2030-07-28): Persuade <X> to Complete Transfer (a chat) / Cancel Transfer; it blocks Continue.
+// Supervisor rule (logged for the user's review): one honest persuasion ("…a good chance of getting a
+// work permit if we keep at it"); if he still refuses, cancel: a permit appeal is uncertain.
+export const unwillingWithoutPermit = {
+  name: 'unwilling-without-permit',
+  match: s => s.buttons('Cancel Transfer').length === 1 && s.buttons(/^Persuade .+ to Complete Transfer$/).length === 1,
+  async run(s, {dryRun = false} = {}) {
+    const player = /^Persuade (.+) to Complete Transfer$/.exec(s.buttons(/^Persuade .+ to Complete Transfer$/)[0].label)[1];
+    const entry = {action: 'unwilling-without-permit', date: isoDate(s.date()), player};
+    if (dryRun) return {...entry, dryRun: true};
+    const {Screen, waitFor} = await import('../../ui/index.mjs');
+    // The Portal overview shows this message as a tile over its buttons: the Continue slot ("Discuss
+    // Transfer") opens the message itself (Ablaß, 2030-07-28: "occluded by layout-tile").
+    if (s.buttons('Discuss Transfer').some(b => b.name === 'continue-button')) { await click('Discuss Transfer', {name: 'continue-button'}); await settle(2000); }
+    const tried = (await history()).some(e => e.action === 'unwilling-without-permit' && e.player === player && e.persuaded === 'tried');
+    if (!tried) {
+      await click(`Persuade ${player} to Complete Transfer`);
+      const x = await waitFor(y => y.buttons(/^I suggest you think again and join the club/).length > 0, {what: 'persuasion options', timeout: 8000}).catch(() => null);
+      if (x) { await click(x.buttons(/^I suggest you think again and join the club/)[0].label); await settle(2500); }
+      await log({...entry, persuaded: 'tried'});
+      const after = await Screen.read();
+      if (!after.buttons('Cancel Transfer').length) return {...entry, persuaded: 'tried', outcome: 'persuaded'};
+    }
+    await recover().catch(() => {});
+    if ((await Screen.read()).buttons('Discuss Transfer').some(b => b.name === 'continue-button')) { await click('Discuss Transfer', {name: 'continue-button'}); await settle(2000); }
+    await click('Cancel Transfer');
+    await log({...entry, outcome: 'cancelled'});
+    const {record} = await import('../../../capabilities/interventions.mjs');
+    record({capability: 'buy', kind: 'supervisor-decision', date: entry.date, decided: `cancel ${player}: refuses without a work permit after one persuasion`});
+    return {...entry, outcome: 'cancelled'};
+  },
+};
+
+export const HANDLERS = [unwillingWithoutPermit, workPermitRejected, 
   squadNumbers,
   // "<Club> squad to be decided": register every eligible 21+ player, then submit (registration.mjs).
   registrationHandler,

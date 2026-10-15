@@ -9,3 +9,10 @@ test('work permit rejected: matched, player and £5K cost read; the policy decid
   assert.equal(workPermitRejected.match(s), true);
   await assert.rejects(workPermitRejected.run(s, {dryRun: true}), e => e.details?.player === 'Lemaitre' && e.details?.cost === 5000);
 });
+
+test('a signing unwilling without a permit (Ablaß): matched; persuade once, then cancel', async () => {
+  const {unwillingWithoutPermit} = await import('../game/screens/admin/handlers.mjs');
+  const s = loadScreen('persuade-complete-transfer-ablass');
+  assert.equal(unwillingWithoutPermit.match(s), true);
+  assert.equal((await unwillingWithoutPermit.run(s, {dryRun: true})).player, 'Ablaß');
+});
