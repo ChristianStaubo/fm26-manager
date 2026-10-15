@@ -294,7 +294,7 @@ export const handBackContract = {
   match: s => s.buttons('Enter Contract Negotiations').length === 1 && s.buttons('Walk Away').length === 1
     && (s.hasText(/contract demands to be unacceptable/) || s.hasText(/have accepted our offer of/)),
   async run(s, {dryRun = false} = {}) {
-    const player = s.texts().map(t => /^Handle (.+) contract (?:negotiations|renewal)$/.exec(t)?.[1] || /have accepted our offer of .+ for (.+)\.$/.exec(t)?.[1]).find(Boolean) || '?';
+    const player = s.texts().map(t => /^Handle (.+) contract (?:negotiations|renewal)$/.exec(t)?.[1] || /have accepted our offer of .+ for (.+?)(?: as it meets his release clause)?\.$/.exec(t)?.[1]).find(Boolean) || '?';
     if (dryRun) throw new NeedsAnalyst(`Personal terms for ${player} (dry run)`);
     if (held(player)) throw new NeedsAnalyst(`${player}: the user holds this deal (fm hold); stop for their decision`, {held: player});
     // The DoF handing a renewal back ("Handle Casadó contract renewal"): judge it by the renewal test.
