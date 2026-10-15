@@ -298,7 +298,10 @@ export const handBackContract = {
     if (dryRun) throw new NeedsAnalyst(`Personal terms for ${player} (dry run)`);
     if (held(player)) throw new NeedsAnalyst(`${player}: the user holds this deal (fm hold); stop for their decision`, {held: player});
     // The DoF handing a renewal back ("Handle Casadó contract renewal"): judge it by the renewal test.
-    const renewal = s.hasText(new RegExp(`^Handle .+ contract renewal$`)) ? await (await import('./renew.mjs')).renewalContext(player) : null;
-    return negotiatePersonalTerms({player, renewal});
+    const {renewalContext} = await import('./renew.mjs');
+    const ctx = await renewalContext(player);   // his current wage (ours, or at his club) from the export
+    const renewal = s.hasText(new RegExp(`^Handle .+ contract renewal$`)) ? ctx : null;
+    // Signings: the split from his wage at his current club (user's rule: negotiate the raise).
+    return negotiatePersonalTerms({player, renewal, currentWage: renewal ? null : ctx?.currentWage ?? null});
   },
 };
