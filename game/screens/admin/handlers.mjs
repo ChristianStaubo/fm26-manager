@@ -173,6 +173,11 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   delegate('delegate-finalizing', /^Delegate 'Finalizing player signings/, 'GM finalizes signings'),
   // Squad code of conduct (fines): let the assistant choose.
   delegate('code-of-conduct', /^Ask .+ to Pick$/, 'assistant sets code of conduct'),
+  // "<Club> training camp squad" (2031-06-30, Response Required: name a preliminary squad for the
+  // pre-season camp; buttons Respond / Auto Select / Auto Select - include youth prospects): the
+  // staff pick it (Auto Select), as a person would. Not the match XI.
+  {...delegate('training-camp-squad', /^Auto Select$/, 'staff pick the training camp squad'),
+    match: s => s.hasText(/training camp squad$/) && s.buttons('Auto Select').length === 1},
   // "<Player> wants to discuss personal matters": go on holiday for a day and let the assistant
   // handle the conversation, as it does all season (user, 2026-10-09). This replaces auto-Decline
   // (2026-10-04; 34 declines in 2026 while morale and results fell).
