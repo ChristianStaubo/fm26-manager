@@ -101,6 +101,17 @@ def today_of(rows):
     return dt.date.fromisoformat(max(dates)) if dates else dt.date.today()
 
 
+def is_free_agent(p):
+    """No club AND no contract. A player AT a club with empty contract fields is 'contract unknown'
+    (the export misses it: Gray at Leeds, Collecchi at Monza, 2031-01), never a free agent
+    (user, 2026-10-15; same lesson as 8912ce5)."""
+    return not p.get('club') and not p.get('contract_club')
+
+
+def contract_unknown(p):
+    return bool(p.get('club')) and not p.get('contract_club')
+
+
 def alerts(rows, today=None):
     """Players the squad tables leave out, which a manager must see (user, 2026-10-14):
     - at our club with no contract: expired on 30 June, still training with us (Ajer, Katić in July

@@ -24,3 +24,10 @@ m.CLUB, m.LEAGUE = 'Brentford', 'Premier League'
 print(json.dumps(m.alerts(json.load(open(${JSON.stringify(file)})), dt.date(2030, 7, 14))))`));
   assert.deepEqual(out.map(a => [a.name, a.issue]), [['Julian Eyestone', 'regular in Brentford U21'], ['Franculino', 'final year'], ['Kristoffer Ajer', 'no contract']]);
 });
+
+test('free agent = no club AND no contract; a club with empty contract fields is "contract unknown" (Gray at Leeds, 2031-01)', () => {
+  const out = JSON.parse(py(`import json, manager as m
+rows = [{'club': 'Leeds United', 'contract_club': ''}, {'club': '', 'contract_club': ''}, {'club': 'Lyon', 'contract_club': 'Lyon'}]
+print(json.dumps([[m.is_free_agent(p), m.contract_unknown(p)] for p in rows]))`));
+  assert.deepEqual(out, [[false, true], [true, false], [false, false]]);
+});

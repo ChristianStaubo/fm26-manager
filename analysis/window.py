@@ -173,7 +173,8 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
                     or sr.num(p, 'Important Matches') < buy['min_important_matches'] - 1:
                 continue
             age, value = int(p['age'] or 99), int(p['value'])
-            is_free = not p['club'] or (p['contract_expires'] or '9999')[:10] <= free_by
+            # Free = no club and no contract, or a KNOWN contract ending by free_by; an unknown contract is neither.
+            is_free = m.is_free_agent(p) or (bool(p['contract_expires']) and p['contract_expires'][:10] <= free_by)
             if is_free and age <= 31:
                 free.append({**card(p), 'free_from': (p['contract_expires'] or '')[:10] or 'now'})
             if value <= bench_max and age <= 31 and p['mins'] >= 900:
