@@ -34,3 +34,12 @@ test('captains: keep them (Confirm Captains)', async () => {
     buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
   assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['confirm-captains']);
 });
+
+test('injury: send him to a specialist (quickest return)', async () => {
+  const texts = ['James Haycock', 'Jamie Lawrence injured'];
+  const buttons = ['Send To Specialist (£3.1K) Out for 6 to 7 weeks - May prevent recurrence', 'Use Club Doctor (Free) Out for between 7 weeks and 8 weeks', 'Leave To Physio (Free)', 'Talk to Lawrence About Injury'].map(label => ({label}));
+  const s = {texts: () => texts, date: () => new Date(Date.UTC(2031, 7, 7)),
+    hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)),
+    buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
+  assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['injury-specialist']);
+});

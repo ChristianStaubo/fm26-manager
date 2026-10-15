@@ -179,6 +179,10 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   // add ~£9.8M to the budget).
   {...delegate('collective-bonuses', /^Confirm$/, 'kept the preselected collective bonuses'),
     match: s => s.hasText('Collective bonuses to be decided') && s.buttons('Confirm').length === 1},
+  // "<Player> injured" (2031-08-07, Lawrence, dislocated shoulder): Send To Specialist (£3.1K, out
+  // 6-7 weeks) beats the club doctor (7-8) and the physio (7-9): a few thousand for weeks back.
+  {...delegate('injury-specialist', /^Send To Specialist/, 'sent the injured player to a specialist'),
+    match: s => s.hasText(/ injured$/) && s.buttons(/^Send To Specialist/).length === 1},
   // "Choose <Club> captain for the season" (2031-08-04): keep the current captain and vice-captain
   // (Confirm Captains). Changing them upsets the dressing room; not our decision to make.
   {...delegate('confirm-captains', /^Confirm Captains$/, 'kept the captain and vice-captain'),
