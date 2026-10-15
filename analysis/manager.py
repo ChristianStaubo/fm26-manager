@@ -108,6 +108,18 @@ def is_free_agent(p):
     return not p.get('club') and not p.get('contract_club')
 
 
+def free_by(today):
+    """The coming 30 June: a contract ending by then is free in the summer window (pre-contract from January)."""
+    return f"{today.year + (1 if today.month >= 7 else 0)}-06-30"
+
+
+def available_free(p, by):
+    """The one rule for 'we can get him without a fee' (user, 2031-05-28: free agents first): a free agent,
+    or a KNOWN contract ending by `by`. The parent club's contract counts for a loanee (Ethan Mbappé)."""
+    ends = (p.get('contract_expires') or '')[:10]
+    return is_free_agent(p) or (bool(ends) and ends <= by)
+
+
 def contract_unknown(p):
     return bool(p.get('club')) and not p.get('contract_club')
 
@@ -513,8 +525,8 @@ def scout_free(rows, groups=None, per=8, date=None):
                 continue
             # Free agent = no club. A club with no decoded contract is an export gap (Lennon Miller,
             # Udinese, cost a £10M bid), not free agency: 3,861 such players, 0 clubless (2027-05).
-            free = not p['club']
-            expiring = bool(p['contract_expires']) and p['contract_expires'][:10] <= season_end
+            free = is_free_agent(p)
+            expiring = not free and available_free(p, season_end)
             fringe = p['squad_status'] in ('Fringe Player', 'Backup')
             if not (free or expiring or fringe):
                 continue

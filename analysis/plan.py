@@ -13,7 +13,7 @@ fm price's numbers (open at, walk away) so the approval is one line.
 """
 import argparse, json, re, statistics as st
 from pathlib import Path
-import manager as m, window as w
+import manager as m, window as w, free_agents as fa
 
 sr = m.sr
 STARTERS = {'CB': ('LCB', 'CB', 'RCB'), 'DM': ('LDM', 'RDM')}   # slots per group in the XI
@@ -170,7 +170,9 @@ def plan(rows, tactic, budget, prev=None, max_value=60e6, lens='moneyball', max_
     report = w.report(rows, None, max_value, max_age, 8e6, tactic, young_age=max_age if lens in ('attributes', 'growth', 'wonderkid') else None, incoming=incoming)
     picks, skipped, left, shortlist = shopping(report, rows, tactic, budget, lens, max_age)
     xi = {s['slot']: (s['ours'][0]['name'] if s['ours'] else None) for s in report['slots']}
-    return {'date': report['date'], 'data': report['data'], 'alerts': report['alerts'],
+    # Free agents and expiring contracts come first (user, 2031-05-28): worth £30M+ on a free is always a buy.
+    free = fa.scan(rows, max_age=max(max_age, 30))['players'][:15]
+    return {'date': report['date'], 'data': report['data'], 'alerts': report['alerts'], 'free_first': free,
             'changes': changes(rows, prev) if prev else 'no snapshot export to compare with',
             'slots': [{'slot': s['slot'], 'status': s['status'], 'solid': s['solid'], 'need': s['need'],
                        'ours': [f"{c['name']} {c['blended']}" for c in s['ours'][:4]]} for s in report['slots']],

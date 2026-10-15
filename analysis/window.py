@@ -67,7 +67,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
     today = m.today_of(rows).isoformat()
     # Free agents and contracts ending by the coming 30 June (free in the summer window).
     t = m.today_of(rows)
-    free_by = f"{t.year + (1 if t.month >= 7 else 0)}-06-30"
+    free_by = m.free_by(t)
     fresh_from = f"{t.year + (5 if t.month >= 7 else 4)}-06-30"
     adj = lambda p, k: sr.num(p, k) if k in sc.RATE else sr.num(p, k) * strength.get(p['competition'], 0)
     real = lambda p: p['mins'] >= MIN_SAMPLE and strength.get(p['competition'], 0) >= STRONG and not CUP.search(p['competition'] or 'x')
@@ -144,7 +144,9 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
         ranked = sorted((pct(adist, sc.attr_fit(p, role)) for p in squad if p['pos'] & natural), reverse=True)
         top_attr = max(ranked[need - 2] if len(ranked) >= need - 1 and need >= 2 else 0, YOUNG_FLOOR)
         for p in market:
-            if p['contract_club'] == m.CLUB or p['club'] == m.CLUB or p['on_loan_at'] or p['club'].startswith('club#'):
+            # Loanees are targets too: the parent club sells, and an expiring parent contract is a free
+            # (Ethan Mbappé, Lille on loan at Kiel, to June 2031: skipped here, joined Monaco free).
+            if p['contract_club'] == m.CLUB or p['club'] == m.CLUB or p['club'].startswith('club#'):
                 continue
             if slot == 'DM' and p['pos'] & (FULLBACK | WIDE):
                 continue
@@ -174,7 +176,7 @@ def report(rows, slots=None, max_value=60e6, max_age=29, bench_max=8e6, tactic=N
                 continue
             age, value = int(p['age'] or 99), int(p['value'])
             # Free = no club and no contract, or a KNOWN contract ending by free_by; an unknown contract is neither.
-            is_free = m.is_free_agent(p) or (bool(p['contract_expires']) and p['contract_expires'][:10] <= free_by)
+            is_free = m.available_free(p, free_by)
             if is_free and age <= 31:
                 free.append({**card(p), 'free_from': (p['contract_expires'] or '')[:10] or 'now'})
             if value <= bench_max and age <= 31 and p['mins'] >= 900:

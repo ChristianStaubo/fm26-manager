@@ -217,5 +217,7 @@
   "information": {
     "hide_hidden_attributes": true,
     "_why": "User 2026-10-09: a real manager never sees FM's CA/PA. The manager judges ability by visible attributes (1-20), stats, value, wage, age and contract."
-  }
+  },
+  "free_agents": {"_section": "1b, 5", "_about": "User, 2031-05-28: free agents first. A free agent or a contract ending by 30 June (pre-contract from January; loanees count, the parent club's contract) is a buy when his worth (what the same attributes and age sell for) clears always_buy_worth: no fee, pure resale.", "always_buy_worth": 30000000, "list_min_worth": 5000000, "max_age": 30, "min_attr_pct": 35},
+  "newgens": {"_section": "1b", "_about": "1 May checkpoint: the new class (aged <= 16, joined since 15 Feb). Foreign under-18s are not a route (none would join, 2031-05-28); home nations can sign now.", "min_pa": 150, "signable_nations": ["England", "Wales", "Scotland", "Northern Ireland"], "joined_since_mmdd": "02-15", "max_age": 16}
 }
