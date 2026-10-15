@@ -39,13 +39,20 @@ export const STEPS = {
     const sq = ctx.squad ??= analysis('manager.py', ['squad'], {date: ctx.date});
     const md = (sq.positions || []).map(p => `${p.position} (${p.slots.join('/')}): ${p.specialists.slice(0, 5).map(s => `${s.name} ${s.age} ${money(s.value)} ${s.minutes}m${s.standing?.output != null ? ' out ' + s.standing.output : ''}`).join('; ')}`);
     if (sq.needs?.length) md.push(`needs: ${JSON.stringify(sq.needs)}`);
+    const hg = sq.homegrown;
+    if (hg) md.push(`homegrown seniors: ${hg.count}/${hg.min}${hg.short ? ` (**${hg.short} short**: prefer homegrown signings)` : ''}: ${hg.players.join(', ') || '-'}`);
     if (sq.sell_candidates?.length) md.push(`sell candidates: ${sq.sell_candidates.map(c => `${c.name} (${c.why})`).join('; ')}`);
-    return {data: {positions: sq.positions, needs: sq.needs, sell_candidates: sq.sell_candidates}, md};
+    return {data: {positions: sq.positions, needs: sq.needs, sell_candidates: sq.sell_candidates, homegrown: sq.homegrown}, md};
   },
   async free_agents(ctx) {
     const d = analysis('free_agents.py', ['--top', '25'], {date: ctx.date});
     const md = d.players.map(c => `${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.name} (${c.age}, ${c.slot}, attrs ${c.attributes}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
     return {data: d, md: md.length ? md : [`none worth ${money(5e6)}+ ending by ${d.free_by}`]};
+  },
+  async wonderkids(ctx) {
+    const d = analysis('wonderkids.py', [], {date: ctx.date});
+    return {data: d, md: d.players.length ? d.players.map(x => `${x.homegrown ? '**HG** ' : ''}${x.name} (${x.age}, ${x.positions}, ${x.nation}) ${x.club} PA ${x.pa} CA ${x.ca} ${money(x.value)} to ${x.contract_until || '-'}`)
+      : [`none at PA ${d.rule.min_pa}+, age ${d.rule.max_age} or under, ${money(d.rule.max_value)} or less`]};
   },
   async newgens(ctx) {
     const d = analysis('newgens.py', [], {date: ctx.date});

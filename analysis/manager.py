@@ -157,6 +157,24 @@ def alerts(rows, today=None):
     return sorted(out, key=lambda a: -a['minutes'])
 
 
+ENGLISH_COMPS = ('Premier League', 'Sky Bet', 'English ', 'Vanarama', 'U18 Premier', 'U21 Premier')
+
+
+def homegrown(p, today):
+    """Trained in England for 3 years before 21 (Premier League rule), approximated: the export has no
+    such field. English players, or a player at an English club since 18 or younger with 3 years
+    there before his 21st birthday."""
+    if (p.get('nation') or '') == 'England':
+        return True
+    comp, joined = p.get('competition') or '', (p.get('joined_club') or '')[:10]
+    if not joined or not comp.startswith(ENGLISH_COMPS) or not str(p.get('age') or '').isdigit():
+        return False
+    age = int(p['age'])
+    years = (today - dt.date.fromisoformat(joined)).days / 365.25
+    at_join = age - years
+    return at_join <= 18 and min(age, 21) - at_join >= 3
+
+
 def squad(rows, tactic, date=None):
     today = date or today_of(rows)
     standing = Standing(rows)
@@ -239,6 +257,10 @@ def squad(rows, tactic, date=None):
     loan_or_sell = [y for y in out['youth'] if y['advice'] != 'keep']
     out['youth'] = {'keep': [y for y in out['youth'] if y['advice'] == 'keep'],
                     'loan_or_sell': f"{len(loan_or_sell)} others (lower potential): loan or sell when bids come"}
+    # Homegrown seniors (they take a registration place): count vs policy squad.homegrown_min.
+    hg = [p['name'] for p in ours if int(p['age'] or 0) >= 21 and homegrown(p, today)]
+    out['homegrown'] = {'count': len(hg), 'min': pol_sq.get('homegrown_min'), 'players': hg,
+                        'short': max(0, (pol_sq.get('homegrown_min') or 0) - len(hg))}
     out['hierarchy'] = load_hierarchy()
     tiers = {}
     for tier in ('team_leaders', 'highly_influential', 'influential'):
