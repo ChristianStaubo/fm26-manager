@@ -27,10 +27,14 @@ const chat = s => { const t = s.texts(), i = t.lastIndexOf('Quick Chat'); return
 // by one or more reply buttons (StandardButton, the message text as label). The user's step is the
 // FIRST reply under "Contest". Never Agree.
 const header = (s, title) => s.tree.nodes.find(n => n.visible && n.name === 'GroupTitle' && (n.text || '').trim() === title);
-export function contestTarget(s) {
-  const c = header(s, 'Contest');
+export const contestTarget = s => replyUnder(s, 'Contest');
+// After Contest (user, 2031-01-01): Agree to the (lowered) demands: contract talks follow, which for
+// an expiring contract is a pre-contract.
+export const agreeTarget = s => replyUnder(s, 'Agree');
+function replyUnder(s, title) {
+  const c = header(s, title);
   if (!c) return null;
-  const next = ['Stall', 'Agree'].map(t => header(s, t)).filter(h => h && h.bounds[1] > c.bounds[1]).sort((a, b) => a.bounds[1] - b.bounds[1])[0];
+  const next = ['Agree', 'Contest', 'Stall'].map(t => header(s, t)).filter(h => h && h.bounds[1] > c.bounds[1]).sort((a, b) => a.bounds[1] - b.bounds[1])[0];
   const below = s.items.filter(i => i.kind === 'button' && i.name === 'StandardButton' && i.label && Math.abs(i.bounds[0] - c.bounds[0]) < 60
     && i.bounds[1] > c.bounds[1] && (!next || i.bounds[1] < next.bounds[1])).sort((a, b) => a.bounds[1] - b.bounds[1]);
   return below[0] ? s.node(below[0].id) : null;

@@ -41,7 +41,9 @@ const salaryControl = x => { const i = x.items.findIndex(t => t.kind === 'text' 
 export const salaryOf = x => { const c = salaryControl(x); return c ? (c.kind === 'number-field' ? Number(c.label) : parseMoney(c.label)) : null; };
 const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && parseMoney(i.label) !== null);
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
-const agentLine = s => s.buttons(/ Agent | Player /)[0]?.label || '';
+// The agent's speech bubble ("<Name> Agent …" or "<Name> Player …" when the player talks), never an
+// inbox item ("Paul Hodges 14:00 Player Targets and Promises Updates" was read as his reply, 2031-01-01).
+const agentLine = s => s.buttons(/ Agent | Player /).find(b => b.name !== 'NewsItemButton' && !/^\S+ \S+ \d{1,2}:\d{2} /.test(b.label))?.label || '';
 // "…already provisionally agreed terms. I will once again state what is acceptable…" (Lemaitre, after a
 // second suggestion overrode an accepted one, 2030-07-14) is agreement too, with Finalize Deal.
 // A counter: the agent writes his latest demands into the form and FM shows Finalize Deal (= accept
