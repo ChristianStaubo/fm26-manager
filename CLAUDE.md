@@ -11,6 +11,8 @@ work autonomously and narrate briefly.
    (controlling the game). Load the one that fits before acting.
 3. Machine-specific paths (game copy, Frida venv): `local/paths.md`, else `game/bridge/README.md`.
 4. `node cli/fm.mjs doctor`: are the game, bridge, save and screen ready? (`--fix` starts the bridge.)
+5. **The loop is `fm cycle`**: holiday to the next checkpoint (`playbook/cycle.json`), every step run in
+   code, one report to decide from. Don't sequence the season from memory.
 
 ## First run on someone's own save
 `config/` ships with our experiment's club (Brentford). If the user's club or save differs, set it up
@@ -30,7 +32,7 @@ before anything else (details: `config/README.md`):
   (what it decides, its inputs and outputs, and which playbook section it implements):
   `squad` (needs, sell candidates), `scout` (targets), `value` (what a player is worth to us),
   `buy` (negotiating), `sell` (bids, loans, listing), `contracts`, `xi` (who plays),
-  `season` (Continue, autopilot, holiday, the cycle). Shared: `data.mjs` (export + analysis,
+  `season` (Continue, autopilot, holiday, the cycle: `fm cycle` / checkpoints), `free-agents` (`fm free`). Shared: `data.mjs` (export + analysis,
   notebook), `log.mjs`.
 - `game/`: the operator, which only reads screens and acts; it never decides.
   `bridge/` (Frida), `ui/` (screen reading, controls, overlays), `screens/` (handlers that read a

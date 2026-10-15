@@ -17,21 +17,24 @@ These are the user's rules (decided 2026-10-09).
 - Baseline (claude-2): 2025/26 finished **9th, 55 points**. Over ~3 seasons, finish higher than
   that with a positive transfer balance.
 
-## 1b. The season cycle (user, 2026-10-15)
-1. **Summer window** (July): `fm plan` (lenses: wonderkid/growth for the business, moneyball for
-   starters we need now), approvals, buys (agent chat first), contracts (the split), loans out /
-   loan-backs, renewals (two-season lookahead), registration (assistant assigns), `fm save`.
-   Listed players keep an **Unspecified** asking price (user, 2026-10-15): on holiday the assistant
-   only accepts offers matching the asking price, so nothing sells below our floor; bids come to us.
-2. **Sim to January** (`fm holiday --season --until <year>-01-02`).
-3. **January checkpoint:** contracts ending in June: (a) ours: renew or sell (renewal test), never
-   let value walk out free; (b) other clubs' players with ≤ 6 months left: pre-contract / cheap deals
-   (`fm plan` free lists); (c) new wonderkids (newgens): `fm plan --lens wonderkid`.
-4. **Newgen checkpoint, 1 May** (measured in our save, 2026-10-15: 95% of 15-16-year-olds join in
-   March-April; France/Spain/Italy/NL mostly April, England/Germany March). `fm save`, fresh export,
-   `fm plan --lens wonderkid`: shortlist the new class. Foreign under-18s can't sign for an English
-   club: English newgens now, others at 18. Buy in the summer.
-5. **Sim to the end of the season** (05-28), `fm results`, then the summer window again.
+## 1b. The season cycle (user, 2026-10-15; as code 2031-05-28)
+The order of steps lives in **`playbook/cycle.json`** and runs as code: `fm cycle` holidays to the next
+checkpoint and runs every step, writing one report (`local/reports/checkpoints/`). Decide from the
+report. Checkpoints: **january** (01-02), **newgen** (05-01), **season_end** (05-28), **summer** (07-02).
+The rules behind them:
+- **Free agents first** (user, 2031-05-28): a free player, or one whose contract ends by 30 June
+  (pre-contract from January), worth £30M+ on attributes is always a buy: no fee, pure resale.
+  January is when they're won; by May they've agreed moves (Mbappé → Monaco, Fortea → Bayern).
+  Every one gets an answer: a pre-contract/bid, or a recorded pass (the judge asks).
+- **Contracts ending in June:** ours: renew or sell (renewal test), never let value walk out free.
+- **Summer window:** after the rollover (full-season stats). Lenses: wonderkid/growth for the
+  business, moneyball for starters we need now; agent chat first; the split for contracts;
+  renewals two seasons ahead; registration (assistant assigns); `fm save` before deadline day.
+  Listed players keep an **Unspecified** asking price (user, 2026-10-15): on holiday the assistant
+  only accepts offers matching the asking price, so nothing sells below our floor; bids come to us.
+- **Newgens** (95% of intakes land in March-April, measured in our save): home-nation newgens can sign
+  now; foreign under-18s are not a route (none would join, 2031-05-28). Buy in the summer.
+- **Match days:** holiday only; the assistant picks the team and plays (user, 2031-01-01).
 
 ## 2. Squad shape
 - **Lean squad:** about **two players per position**, plus a few versatile players, so each
