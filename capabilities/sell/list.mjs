@@ -111,7 +111,7 @@ export async function unlistPlayer(name, club, {dryRun = false} = {}) {
   await choose(status, 'No status set', {what: 'transfer status'});
   await click('Confirm', {name: 'ConfirmButton'});
   await waitFor(x => !x.buttons().some(b => b.name === 'ConfirmButton'), {what: 'dialog closed'});
-  const entry = {action: 'unlist', name, club, date: isoDate(profile.date()), was, changed: true};
+  const entry = {action: 'unlist', name, club, date: isoDate(profile.date()), was, changed: true, priceBookRemoved: pricebook.remove(name)};
   await log(entry);
   return entry;
 }

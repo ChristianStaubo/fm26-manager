@@ -20,6 +20,16 @@ export function lookup(name, book = load()) {
   return book.players[k] || Object.values(book.players).find(p => key(p.name).endsWith(' ' + k) || k.endsWith(' ' + key(p.name))) || null;
 }
 
+// Unlisting ends the price: a stale minimum would decide later bids (Brown, 2031-01-08: unlisted to
+// renew him, the book still said £39M against a £72-78M value).
+export function remove(name) {
+  const book = load(), k = key(lookup(name, book)?.name);
+  if (!k || !book.players[k]) return false;
+  delete book.players[k];
+  writeFileSync(FILE, JSON.stringify(book, null, 1));
+  return true;
+}
+
 export function record(entry) {
   const book = load();
   book.players[key(entry.name)] = entry;

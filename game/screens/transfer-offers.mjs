@@ -58,8 +58,9 @@ export const incomingOffer = {
     const offer = readOffer(d, {headClub, shortName, coach});
     offer.countersSoFar = (await history()).filter(e => e.action === 'incoming-offer' && e.offer?.player === offer.player && e.offer?.club === offer.club && e.decision?.action === 'counter' && e.executed).length;
     // Listed through the price book: decide against our minimum, with the range recorded at listing.
+    // A book entry without a range (set with --min on an already-listed player) keeps the live range.
     const book = pricebook.lookup(offer.player);
-    if (book) Object.assign(offer, {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1], priceBook: true});
+    if (book) Object.assign(offer, {minimum: book.minimum, target: book.target, priceBook: true}, book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {});
     // Not listed: price him now
     // with our Moneyball numbers from the bid's value range — importance, cheapest replacement for
     // his output, contract, age. Worth more to us than the market → minimum above his top → kept.
@@ -171,7 +172,7 @@ export const loanOffer = {
       const share = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
       return youthDecision({kind: 'loan-offer', date: isoDate(s.date()), club: loan.club, player: loan.player, wageShare: share, loan}, {dryRun});
     }
-    const o = {...loan, ...(book ? {minimum: book.minimum, target: book.target, vLow: book.range[0], vHigh: book.range[1]} : {}), negotiable: false, countersSoFar: 0};
+    const o = {...loan, ...(book ? {minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
     const decision = decideLoan(o);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
     // An obligation without a price book entry: the detail page has the range and the total.
