@@ -60,7 +60,9 @@ export async function recover({attempts = 6} = {}) {
       }, {recoverOnOcclusion: false});
     } else if (has('popup')) await ui.closeDropdowns();          // dropdown/preset lists ignore Escape
     else if (has('tooltip')) await click('Portal', {recoverOnOcclusion: false}); // leaving the page closes it (2026-06-17)
-    else if (has('chat')) await click('End Chat', {recoverOnOcclusion: false});
+    // The chat's End Chat can vanish or be disabled between reading and clicking (portfolio buys,
+    // 2030-07-21: "Expected one button End Chat, found 0"): a gone button is not an error.
+    else if (has('chat')) await click('End Chat', {recoverOnOcclusion: false}).catch(e => { if (!/Expected one button/.test(e.message)) throw e; });
     else if (has('panel')) await click('Cancel', {name: 'CancelButton', recoverOnOcclusion: false});
     else if (has('search')) await ui.closeSearch();                 // card's click-outside handler
     else await ui.key('Escape');                                   // last resort
