@@ -1,0 +1,17 @@
+{
+  "_about": "The season cycle as data (user, 2031-05-28: workflows defined at the top level, so every loop runs every step). `fm cycle` holidays to the next checkpoint and runs it; `fm checkpoint <name>` runs one now. Each step is a capability function (capabilities/season/checkpoint.mjs STEPS) that writes one section of the report in local/reports/checkpoints/. Steps run in code, in order: none depends on the model remembering it. Decisions start after the report. Why each checkpoint exists: PLAYBOOK §1b.",
+  "checkpoints": [
+    {"name": "january", "on": "01-02",
+     "why": "Contracts ending in June: ours (renew or sell) and everyone else's (pre-contracts: free players, the cheapest Moneyball signing).",
+     "steps": ["results", "contracts", "free_agents", "squad", "audit"]},
+    {"name": "newgen", "on": "05-01",
+     "why": "95% of the youth intakes land in March-April: shortlist the new class.",
+     "steps": ["newgens"]},
+    {"name": "season_end", "on": "05-28",
+     "why": "After the last league match: the season's scoreboard.",
+     "steps": ["results", "audit"]},
+    {"name": "summer", "on": "07-02",
+     "why": "After the rollover, before the first league match: the only time the export has full-season stats. The window's plan.",
+     "steps": ["results", "contracts", "squad", "free_agents", "plan", "audit"]}
+  ]
+}

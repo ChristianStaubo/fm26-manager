@@ -56,6 +56,11 @@ Act
 
 Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after saving the game
   squad [--fresh]                alerts (no contract, regulars in U21), depth, needs, sell candidates, youth (§2)
+  cycle [--budget N]             THE LOOP: holiday to the next checkpoint (playbook/cycle.json), run every step, write one report
+  checkpoint [<name>] [--budget N] [--lens L] [--no-save]   run a checkpoint now (no name: what's next); report in local/reports/checkpoints/
+  free [--max-age N] [--min-worth N] [--min-attr N] [--top N] [--fresh]
+                                 FIRST at every checkpoint: free agents + contracts ending by 30 June (loanees too),
+                                 ranked by what the same attributes/age sell for; January = pre-contract time
   scout [--raw | --ability | --free | --best] [--positions RW,AM] [--budget N] [--per N] [--fresh]
        --best [--max-value N] [--max-wage N] [--max-age N]: simply the best players (CA + stats)
                                  market shortlist: output lens (default), plain stats x league
@@ -208,6 +213,22 @@ try {
         ...['position', 'points'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(flags[f])])], {fresh: !!flags.fresh, date}));
       break;
     }
+    case 'checkpoint': case 'cycle': {
+      // The season cycle as code (playbook/cycle.json): fm cycle = holiday to the next checkpoint, run it;
+      // fm checkpoint <name> = run one now. Every step runs; the report is what we decide from.
+      const cp = await import('../capabilities/season/checkpoint.mjs');
+      const opts = {budget: flags.budget ? num(flags.budget) : undefined, lens: flags.lens, maxAge: flags['max-age'] ? Number(flags['max-age']) : undefined, save: !flags['no-save']};
+      if (cmd === 'cycle') { const r = await cp.cycle(opts); out(r.markdown ? {checkpoint: r.checkpoint, date: r.date, files: r.files, report: r.markdown} : r); break; }
+      if (!a1) { const d = await gameDate(); out({next: cp.nextCheckpoint(d), checkpoints: cp.loadCycle().checkpoints.map(c => `${c.on} ${c.name}: ${c.steps.join(' → ')}`)}); break; }
+      const r = await cp.runCheckpoint(a1, opts);
+      out({checkpoint: r.checkpoint, date: r.date, files: r.files, report: r.markdown}); break;
+    }
+    case 'free':
+      // Free agents and expiring contracts first (user, 2031-05-28): worth = what the same attributes
+      // and age sell for; route = sign now, or a pre-contract from January (fm precontract).
+      out(analysis('free_agents.py', [...['max-age', 'top', 'min-attr'].filter(f => flags[f]).flatMap(f => [`--${f}`, String(flags[f])]),
+        ...(flags['min-worth'] ? ['--min-worth', String(num(flags['min-worth']))] : [])], {fresh: !!flags.fresh, date: await gameDate()}));
+      break;
     case 'xi': out(analysis('manager.py', ['xi'], {fresh: !!flags.fresh, date: await gameDate()})); break;
     case 'price': out(analysis('manager.py', ['price', a1 || ''], {fresh: !!flags.fresh, date: await gameDate()})); break;
     case 'value': {
