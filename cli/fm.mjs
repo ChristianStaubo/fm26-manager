@@ -215,7 +215,13 @@ try {
     case 'dynamics': out(await dynamics()); break;
     case 'note': out(note(pos.slice(1).join(' '))); break;
     case 'press': out(await pressConference({dryRun})); break;
-    case 'sell': out(await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun})); break;
+    case 'sell': {
+      const r = await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun});
+      // A re-price (--price) used to skip the price book: the bid handler then had no floor (Brown,
+      // Ørjasæter, 2030-07-31). Record --min whenever it is given.
+      if (flags.min && !dryRun && !r.recorded && r.minimum == null) { pricebook.record({name: a1, club: flags.club, range: null, minimum: num(flags.min), target: Math.max(num(flags.min), r.askingSet || 0), why: 'set with --min', listed: r.date || null}); r.minimum = num(flags.min); r.recorded = true; }
+      out(r); break;
+    }
     case 'buy': {
       // A swap may pay up to the outgoing player's wage above the cap (playbook §5).
       if (flags['wage-max'] && !dryRun) allowWage(a1, num(flags['wage-max']), `swap${flags.replaces ? ': replaces ' + flags.replaces : ''}`);

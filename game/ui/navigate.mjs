@@ -9,6 +9,12 @@ export async function goTo(tab) {
   return waitFor(s => !overlays(s).length, {what: tab});
 }
 
+// A top menu's dropdown entry ("Squad" → "Registration"): the NavTabDropdown inside the tab's button.
+export async function navMenu(tab, item) {
+  const {choose} = await import('./controls.mjs');
+  const select = x => { const t = x.buttons(tab).find(b => b.name === 'buttons-button-navigation-default'); return t && x.items.find(i => i.kind === 'dropdown' && i.name === 'NavTabDropdown' && i.bounds[0] > t.bounds[0] && i.bounds[0] < t.bounds[0] + t.bounds[2]); };
+  return choose(select, item, {what: `${tab} menu`});
+}
 export const fold = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[łŁ]/g, 'l').replace(/ß/g, 'ss').toLowerCase().trim();
 export const sameName = (a, b) => { const w = t => fold(t).split(/\s+/).filter(Boolean).sort().join(' '); return w(a) === w(b); };
 // Open a player's profile through the global search. `club` disambiguates namesakes.
