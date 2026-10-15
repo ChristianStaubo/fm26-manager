@@ -222,6 +222,9 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (agent?.asked && !agent.willing) return {action: 'buy', name, club, outcome: 'unwilling', agent};
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
+  // The agent's fee range is what the club will accept: use it, not the profile's range, which can
+  // lag (Meïté 2030-07-21: agent £16-20M, profile still higher → we opened at £21.5M).
+  if (agent?.feeRange?.every(Number.isFinite)) { facts.valueRangeProfile = facts.valueRange; facts.valueRange = agent.feeRange; }
   const {top, sub} = await peekActions('Transfer');
   if (sub.includes('Withdraw Transfer Offer')) return {action: 'buy', name, club, alreadyPending: true};
   // His price starts above what the user approved (Gadou listed at £63M vs £58M approved, 2030-07):
