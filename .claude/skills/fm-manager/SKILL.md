@@ -27,6 +27,11 @@ description: Run the FM26 club as its Moneyball manager — plan and run transfe
 | season | `fm run`, `fm holiday --season` | the window autopilot; holiday through the season |
 After saving the game, add `--fresh` to the first data command (re-exports the save, ~30 s).
 
+## The season cycle
+Summer window → `fm save` → `fm holiday --season --until <year>-01-02` → January checkpoint (contracts
+ending in June: ours renew/sell; others' ≤ 6 months left: pre-contracts; newgen wonderkids) →
+holiday to 05-28 → `fm results` → summer. Playbook §1b.
+
 ## A transfer window (the standard workflow)
 1. **Timing:** save the game in the **first days of July** (after the season rollover, before the
    first league match) and run `fm plan --budget N --fresh`. That is the only moment the export has

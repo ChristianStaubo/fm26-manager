@@ -17,6 +17,18 @@ These are the user's rules (decided 2026-10-09).
 - Baseline (claude-2): 2025/26 finished **9th, 55 points**. Over ~3 seasons, finish higher than
   that with a positive transfer balance.
 
+## 1b. The season cycle (user, 2026-10-15)
+1. **Summer window** (July): `fm plan` (lenses: wonderkid/growth for the business, moneyball for
+   starters we need now), approvals, buys (agent chat first), contracts (the split), loans out /
+   loan-backs, renewals (two-season lookahead), registration (assistant assigns), `fm save`.
+   Every listed player gets a real **asking price** (≥ our floor) before any holiday: on holiday the
+   assistant accepts offers matching it.
+2. **Sim to January** (`fm holiday --season --until <year>-01-02`).
+3. **January checkpoint:** contracts ending in June: (a) ours: renew or sell (renewal test), never
+   let value walk out free; (b) other clubs' players with ≤ 6 months left: pre-contract / cheap deals
+   (`fm plan` free lists); (c) new wonderkids (newgens): `fm plan --lens wonderkid`.
+4. **Sim to the end of the season** (05-28), `fm results`, then the summer window again.
+
 ## 2. Squad shape
 - **Lean squad:** about **two players per position**, plus a few versatile players, so each
   position has **three** options. Don't sign beyond that.
