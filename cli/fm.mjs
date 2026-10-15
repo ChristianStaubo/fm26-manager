@@ -43,7 +43,7 @@ Look
 Act
   recover                        close menus/popups/search, answer known dialogs
   click "<label>" [--name <element name>]
-  key Escape|Enter|Tab
+  key Escape|Enter|Tab|Space|C
   save                           save the game (FM menu → Save Game); then --fresh exports read it
   continue [steps]               press Continue up to N times (stops when an action is needed)
   run [--until YYYY-MM-DD] [--dry-run]   autopilot (handles routine screens, stops for decisions)

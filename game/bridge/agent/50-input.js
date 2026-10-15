@@ -1,4 +1,4 @@
-// Virtual keyboard via Unity's Input System (Escape/Enter/Tab only).
+// Virtual keyboard via Unity's Input System (Escape, Enter, Tab, Space, C).
 // A virtual MOUSE was tried and dropped: clicks registered only intermittently and a stuck
 // button swallowed the player's real clicks. Keys are released 80 ms after the press.
 let keyboard = null, lastEventTime = 0; // keyboard: legacy persistent device, removed by removeVirtualDevices
@@ -32,7 +32,9 @@ function queueState(handle, mutate) {
   const arg = Memory.alloc(8); arg.writePointer(ev);
   call(cls('InputSystem'), 'QueueEvent', ptr(0), [arg]);
 }
-const KEYS = {Enter: 2, Tab: 3, Escape: 60}; // UnityEngine.InputSystem.Key
+// UnityEngine.InputSystem.Key. Space opens the required item (as Continue does), C goes on holiday
+// (user, 2031-08-08: keyboard shortcuts to get unstuck).
+const KEYS = {Space: 1, Enter: 2, Tab: 3, C: 17, Escape: 60};
 function pressKey(key) {
   // A temporary keyboard per press: ignore window focus for the press, then remove the device
   // and restore the setting, so nothing lingers that could block the player's real input.
