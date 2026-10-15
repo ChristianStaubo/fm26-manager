@@ -57,8 +57,13 @@ export async function register(names, {dryRun = false} = {}) {
 }
 
 // Autopilot: the "squad to be decided" message with the embedded list → register everyone eligible.
+// The "<Club> squad to be decided" message (2030-07-26) has a Respond button that opens the list.
+const squadMessage = s => s.buttons('Respond').length === 1 && s.hasText(/ squad to be decided$/);
 export const registrationHandler = {
   name: 'squad-registration',
-  match: onRegistration,
-  run: (s, {dryRun = false} = {}) => register(undefined, {dryRun}),
+  match: s => onRegistration(s) || squadMessage(s),
+  async run(s, {dryRun = false} = {}) {
+    if (!onRegistration(s)) { const {click, waitFor} = await import('../../ui/index.mjs'); await click('Respond'); await waitFor(onRegistration, {what: 'squad registration list'}); }
+    return register(undefined, {dryRun});
+  },
 };
