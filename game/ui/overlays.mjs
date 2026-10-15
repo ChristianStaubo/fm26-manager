@@ -27,7 +27,10 @@ export function overlays(s) {
     // no rows or controls. closeDropdowns and Escape leave it open.
     const floating = s.floatingItems() || [];
     const tooltip = !menu && floating.length > 0 && floating.every(i => i.kind === 'text');
-    out.push(tooltip ? {kind: 'tooltip', text: clean(s.floatingItems()?.find(i => i.kind === 'text')?.label).slice(0, 80)} : {kind: 'popup', menu});
+    // An empty floating root (no items, no menu rows) blocks nothing: it lingered after a nav dropdown
+    // (2031-05-28) and made every command stop on "Could not clear overlays".
+    if (menu || floating.length > 0)
+      out.push(tooltip ? {kind: 'tooltip', text: clean(s.floatingItems()?.find(i => i.kind === 'text')?.label).slice(0, 80)} : {kind: 'popup', menu});
   }
   // Card dialogs (Set Transfer Status, vacation, …) have named Cancel/Confirm buttons.
   if (s.buttons().some(b => b.name === 'CancelButton')) out.push({kind: 'panel'});
