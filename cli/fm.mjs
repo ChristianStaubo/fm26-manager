@@ -16,7 +16,7 @@ import {delegateRenewal, renewSelf} from '../capabilities/contracts/renew.mjs';
 import {movePlayer} from '../capabilities/squad/move.mjs';
 import {saveGame} from '../capabilities/season/save.mjs';
 import {allow as allowWage} from '../capabilities/contracts/wage-exceptions.mjs';
-import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
+import {transferActivity, deal, answer} from '../game/screens/transfer-activity.mjs';
 import {pressConference} from '../game/screens/admin/press.mjs';
 import {log} from '../capabilities/log.mjs';
 import {summarize} from '../capabilities/season/autopilot.mjs';
@@ -99,6 +99,8 @@ Transfers
   renew "<name>" --club <club> [--preview] [--dof] [--dry-run]   we negotiate (--preview: stop before Suggest Terms); a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
+  answer "<player>" [--dry-run]   answer his first open bid now (incoming-offer handler; no Continue)
+  negotiations                   every sale negotiation: their offer, our ask (%), their reply, gap closed (data for the counter rule)
 
 Approvals (policy.json autonomy: buying and selling need the user's sign-off)
   approvals                      autonomy per capability + the approvals on record
@@ -278,6 +280,8 @@ try {
     case 'precontract': out(await preContract(a1, flags.club, {preview: !!flags.preview, dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
+    case 'answer': out(await answer(a1, {dryRun})); break;
+    case 'negotiations': { const {report} = await import('../capabilities/sell/negotiations.mjs'); out(await report()); break; }
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun, preview: !!flags.preview})); break;   // we negotiate (tick rule); --dof hands over
     case 'save': { const r = await saveGame(); out(r); process.exitCode = r.saved ? 0 : 1; break; }
     case 'unlist': { const r = await unlistPlayer(a1, flags.club, {dryRun}); if (r.changed) approvals.revoke('sell', a1); out(r); break; }

@@ -27,11 +27,19 @@ const missing = what => new Error(`UI content changed (no ${what} yet)`); // ret
 
 // ---- Basic actions ------------------------------------------------------------------
 // Click a button by exact label (and optionally its element name, when labels repeat).
-// An open message lists its inbox item twice (NewsItemButton, same label): those are one item, take
-// the first. Other repeated labels still need --name.
-const dedupeInbox = list => list.length > 1 && list.every(b => b.name === 'NewsItemButton') ? [list[0]] : list;
+// An open message lists its inbox item twice (NewsItemButton, same label): those are one item. Either
+// copy can be the hidden one (2031-06-17, after loading a save: the first was occluded), so try them in
+// order; an occluded click is refused before it runs. Other repeated labels still need --name.
+const isInboxDup = list => list.length > 1 && list.every(b => b.name === 'NewsItemButton');
 export const click = (label, {name, recoverOnOcclusion} = {}) =>
-  act(s => { const b = one(dedupeInbox(s.buttons(label).filter(b => !name || b.name === name)), `button "${label}"`); return ui.click(s.tree, s.node(b.id)); }, {recoverOnOcclusion});
+  act(async s => {
+    const list = s.buttons(label).filter(b => !name || b.name === name);
+    if (!isInboxDup(list)) return ui.click(s.tree, s.node(one(list, `button "${label}"`).id));
+    for (const [k, b] of list.entries()) {
+      try { return await ui.click(s.tree, s.node(b.id)); }
+      catch (e) { if (k === list.length - 1 || !/occluded/.test(e.message)) throw e; }
+    }
+  }, {recoverOnOcclusion});
 // Click whatever select(screen) returns (a button, or a context menu → opened).
 export const clickWhere = (select, what = 'control', opts) =>
   act(s => { const b = select(s); if (!b) throw missing(what); return b.kind === 'menu' ? ui.menu(s.tree, s.node(b.id)) : ui.click(s.tree, s.node(b.id)); }, opts);

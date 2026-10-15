@@ -15,13 +15,20 @@ const approveSale = (player, decision, amount) =>
 
 const monthsBetween = (a, b) => (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
 
+// Negotiable or not: the offer page shows it as a dropdown labelled "Negotiable" (Man Utd for Doak,
+// 2031-06-17), not a text; reading texts only made every offer non-negotiable and rejected it.
+export const negotiable = d => {
+  const box = d.items.find(i => i.kind === 'dropdown' && /^(Non-)?Negotiable$/i.test(i.label));
+  return box ? !/^Non/i.test(box.label) : !d.hasText('Non-Negotiable') && d.hasText('Negotiable');
+};
+
 // Read an offer's detail page ("View Offer").
-function readOffer(d, {headClub, shortName, coach}) {
+export function readOffer(d, {headClub, shortName, coach}) {
   const player = d.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean) || shortName;
   const club = headClub || d.after('To', i => i.kind === 'text')?.label;
   const offer = {
     club, player, coach,
-    negotiable: !d.hasText('Non-Negotiable') && d.hasText('Negotiable'),
+    negotiable: negotiable(d),
     guaranteed: parseMoney(d.after('Fee:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
     // Everything incl. instalments and add-ons; add-ons count as fee (policy.json addon_weight).
