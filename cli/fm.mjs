@@ -13,6 +13,7 @@ import {buyPlayer} from '../capabilities/buy/buy.mjs';
 import {askAgent} from '../capabilities/buy/ask.mjs';
 import {delegateRenewal, renewSelf} from '../capabilities/contracts/renew.mjs';
 import {movePlayer} from '../capabilities/squad/move.mjs';
+import {saveGame} from '../capabilities/season/save.mjs';
 import {allow as allowWage} from '../capabilities/contracts/wage-exceptions.mjs';
 import {transferActivity, deal} from '../game/screens/transfer-activity.mjs';
 import {pressConference} from '../game/screens/admin/press.mjs';
@@ -42,6 +43,7 @@ Act
   recover                        close menus/popups/search, answer known dialogs
   click "<label>" [--name <element name>]
   key Escape|Enter|Tab
+  save                           save the game (FM menu → Save Game); then --fresh exports read it
   continue [steps]               press Continue up to N times (stops when an action is needed)
   run [--until YYYY-MM-DD] [--dry-run]   autopilot (handles routine screens, stops for decisions)
   holiday [--until YYYY-MM-DD | --days N] [--dry-run]
@@ -134,7 +136,7 @@ const dryRun = !!flags['dry-run'];
 const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
-const ACTING = new Set(['recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
+const ACTING = new Set(['save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
 try {
   if (ACTING.has(cmd) && watchRunning()) throw new Error(`fm watch is recording (pid ${watchRunning()}): stop it before acting, or wait`);
   switch (cmd) {
@@ -246,6 +248,7 @@ try {
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun, preview: !!flags.preview})); break;   // we negotiate (tick rule); --dof hands over
+    case 'save': { const r = await saveGame(); out(r); process.exitCode = r.saved ? 0 : 1; break; }
     case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;
     case 'watch': out(await watch({seconds: Number(flags.seconds || 300), interval: Number(flags.interval || 1000), out: flags.out})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
