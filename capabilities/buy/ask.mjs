@@ -22,16 +22,18 @@ const options = (s, name) => {
 // What the agent said: the chat texts after "Quick Chat" that are not our options.
 const chat = s => { const t = s.texts(), i = t.lastIndexOf('Quick Chat'); return i < 0 ? [] : t.slice(i + 1, i + 40); };
 
-// The Contest answer: FM folds Agree / Contest / Stall into the agent's bubble ("<Agent> Agent Agree
-// Contest Stall"), so it is not a separate screen item. Find the node labelled exactly "Contest" in
-// the tree, or its nearest clickable ancestor that is not the whole bubble. Never Agree.
+// The Contest answer (mapped on Miretti, 2031-01-01): after our answer the right-hand panel lists
+// reply groups under headers "Agree", "Contest", "Stall" (SIText GroupTitle); each header is followed
+// by one or more reply buttons (StandardButton, the message text as label). The user's step is the
+// FIRST reply under "Contest". Never Agree.
+const header = (s, title) => s.tree.nodes.find(n => n.visible && n.name === 'GroupTitle' && (n.text || '').trim() === title);
 export function contestTarget(s) {
-  const n = s.tree.nodes.find(x => x.visible && ((x.label || x.text || '').trim() === 'Contest'));
-  for (let a = n; a; a = s.byId.get(a.parent)) {
-    if (a.button && a.enabled !== false && !/Agree|Stall/.test(a.label || '')) return a;
-    if (a.button) return null;   // the bubble itself (it would hold Agree too): don't guess
-  }
-  return null;
+  const c = header(s, 'Contest');
+  if (!c) return null;
+  const next = ['Stall', 'Agree'].map(t => header(s, t)).filter(h => h && h.bounds[1] > c.bounds[1]).sort((a, b) => a.bounds[1] - b.bounds[1])[0];
+  const below = s.items.filter(i => i.kind === 'button' && i.name === 'StandardButton' && i.label && Math.abs(i.bounds[0] - c.bounds[0]) < 60
+    && i.bounds[1] > c.bounds[1] && (!next || i.bounds[1] < next.bounds[1])).sort((a, b) => a.bounds[1] - b.bounds[1]);
+  return below[0] ? s.node(below[0].id) : null;
 }
 export function readReply(lines) {
   const text = lines.join(' ');

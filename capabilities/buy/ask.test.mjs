@@ -25,3 +25,10 @@ test('agent reply: "somewhere around £17M" and a wage demand (Güreler, 2030-07
   assert.deepEqual(r.feeRange, [17e6, 17e6]);
   assert.equal(r.wage, 70000);
 });
+
+test('Contest = the first reply under the "Contest" header (Miretti, 2031-01-01), never under Agree', async () => {
+  const {loadScreen} = await import('../../test/screens.mjs');
+  const {contestTarget} = await import('./ask.mjs');
+  const n = contestTarget(loadScreen('agent-chat-after-keen-miretti'));
+  assert.match(n.label, /^I think you're asking for too much/);
+});
