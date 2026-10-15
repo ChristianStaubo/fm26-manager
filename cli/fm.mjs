@@ -11,6 +11,7 @@ import {holiday, holidaySeason} from '../capabilities/season/holiday.mjs';
 import {listPlayer} from '../capabilities/sell/list.mjs';
 import {buyPlayer} from '../capabilities/buy/buy.mjs';
 import {askAgent} from '../capabilities/buy/ask.mjs';
+import {preContract} from '../capabilities/buy/precontract.mjs';
 import {delegateRenewal, renewSelf} from '../capabilities/contracts/renew.mjs';
 import {movePlayer} from '../capabilities/squad/move.mjs';
 import {saveGame} from '../capabilities/season/save.mjs';
@@ -83,6 +84,7 @@ Transfers
                                  (price book) for the bid handler. --min overrides the minimum.
        [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
   prices                         the price book: listed players with our minimum and target
+  precontract "<name>" --club <club> [--preview]   expiring contract: agent chat, Approach To Sign, split; joins free 1 July
   ask "<name>" --club <club>     ask his agent about availability (one-time per player): will he join, fee range, demands
   buy "<name>" --club <club> [--loan-back] [--open N] [--max N] [--wage-max N --replaces "<name>"] [--dry-run]
                                  --wage-max: a swap may pay up to the outgoing player's wage above the cap
@@ -136,7 +138,7 @@ const dryRun = !!flags['dry-run'];
 const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
-const ACTING = new Set(['save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
+const ACTING = new Set(['precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
 try {
   if (ACTING.has(cmd) && watchRunning()) throw new Error(`fm watch is recording (pid ${watchRunning()}): stop it before acting, or wait`);
   switch (cmd) {
@@ -251,6 +253,7 @@ try {
     case 'release': out(a1 ? approvals.release(a1) : {released: approvals.load().released || []}); break;
     case 'hold': out(a1 ? approvals.hold(a1, {off: !!flags.off}) : {holds: approvals.load().holds || []}); break;   // no name: list
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
+    case 'precontract': out(await preContract(a1, flags.club, {preview: !!flags.preview, dryRun})); break;
     case 'offers': out(await transferActivity()); break;
     case 'deal': out(await deal(a1)); break;
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun, preview: !!flags.preview})); break;   // we negotiate (tick rule); --dof hands over

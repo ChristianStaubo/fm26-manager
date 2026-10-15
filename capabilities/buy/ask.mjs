@@ -86,6 +86,9 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
     const after = readReply(chat(r));
     contested = {wageBefore: before.wage, wageAfter: after.wage, firm: after.wage == null || after.wage >= (before.wage ?? Infinity)};
     transcript.push({we: 'Contest'}, {agent: chat(r).slice(0, 12)});
+    // Then Agree to the (lowered) demands (user, 2031-01-01).
+    const s2 = await Screen.read(), agree = agreeTarget(s2);
+    if (agree) { await ui.click(s2.tree, agree); await new Promise(res => setTimeout(res, 2000)); transcript.push({we: 'Agree'}); contested.agreed = true; }
   }
   const s = await Screen.read();
   const reply = readReply(chat(s));
