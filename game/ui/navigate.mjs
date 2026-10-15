@@ -32,7 +32,7 @@ export async function openPlayer(name, club) {
       // Search rows show the club's short name ("LOSC" for "LOSC Lille"): match either way.
       // Accents and word order differ between the export and the game ("Zukic"/"Žukić", Japanese
       // family-name-first): compare normalised, as sets of words (portfolio buys, 2030-07-21).
-      const clubMatch = !club || row.some(l => l.length >= 3 && (fold(l) === fold(club) || fold(club).includes(fold(l)) || fold(l).includes(fold(club))));
+      const clubMatch = !club || row.some(l => l.length >= 3 && clubLike(l, club));
       if (row.some(l => sameName(l, name)) && clubMatch) return items[i];
     }
     // The export's club can be stale (Zukic had moved to Cremonese, 2030-07-21): exactly one result
@@ -41,12 +41,41 @@ export async function openPlayer(name, club) {
     return club && named.length === 1 ? named[0] : null;
   };
   // Quirk: the first search sometimes lists only Messages; clearing and retyping fixes it.
+  let found = false;
   for (let attempt = 0; ; attempt++) {
-    try { await waitFor(result, {what: `search result ${name}`, timeout: 3000}); break; }
-    catch (e) { if (attempt >= 2) throw new NeedsAnalyst(`No search result for ${name}${club ? ' (' + club + ')' : ''}`); await type(''); await settle(400); await type(name); }
+    try { await waitFor(result, {what: `search result ${name}`, timeout: 3000}); found = true; break; }
+    catch (e) { if (attempt >= 2 || (await Screen.read()).buttons(/^See All Results/).length) break; await type(''); await settle(400); await type(name); }
   }
-  await clickWhere(result, `search result ${name}`);
+  if (found) await clickWhere(result, `search result ${name}`);
+  // A common name (Ângelo, 2031-05-28: 222 results) doesn't make the dropdown's few rows: the user's
+  // route is "See All Results (N)" → the Search Results page, one row per person ("26 Brazil Player
+  // Hamburger SV") with his name in a NameButton row.
+  else if (!(await openFromAllResults(name, club))) throw new NeedsAnalyst(`No search result for ${name}${club ? ' (' + club + ')' : ''}`);
   return waitFor(s => s.items.some(i => i.kind === 'menu' && i.label === 'Actions') && s.items.some(i => i.name === 'ContractDetails') && !overlays(s).length, {what: `${name} profile`});
+}
+
+// Clubs as the export and the game write them: "Hamburger Sport-Verein" / "Hamburger SV".
+export const clubLike = (a, b) => { const x = fold(a), y = fold(b); if (!x || !y) return false; if (x === y || x.includes(y) || y.includes(x)) return true;
+  const w = t => t.split(/[\s.-]+/).filter(v => v.length >= 4 && !['club', 'sport', 'football'].includes(v)); return w(x).some(v => w(y).includes(v)); };
+/** The Search Results page: the row whose label names `club` and whose name entry is `name`. */
+export function allResultsRow(s, name, club) {
+  const rows = s.items.filter(i => i.kind === 'row');
+  for (const row of rows) {
+    if (!/\bPlayer\b/.test(row.label) || (club && !clubLike(row.label.replace(/^.*?\bPlayer\s+/, ''), club))) continue;
+    const inside = s.items.filter(i => i.bounds[1] >= row.bounds[1] && i.bounds[1] < row.bounds[1] + row.bounds[3]);
+    const label = inside.find(i => sameName(i.label, name));
+    if (label) return inside.find(i => i.name === 'NameButton') || label;
+  }
+  return null;
+}
+async function openFromAllResults(name, club) {
+  const s0 = await Screen.read();
+  if (!s0.buttons(/^See All Results/).length) return false;
+  await click(s0.buttons(/^See All Results/)[0].label);
+  const s = await waitFor(x => x.hasText('Search Results') && x.items.some(i => i.name === 'NameButton'), {what: 'Search Results page'}).catch(() => null);
+  if (!s || !allResultsRow(s, name, club)) return false;
+  await clickWhere(x => allResultsRow(x, name, club), `${name} in Search Results`);
+  return true;
 }
 
 // Facts from a player profile header.
