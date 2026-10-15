@@ -25,3 +25,11 @@ test('"<Club> in offer for <Player>" is a bid for our player (LOSC for Franculin
   const {incomingOffer} = await import('../game/screens/transfer-offers.mjs');
   assert.equal(incomingOffer.match(loadScreen('bid-franculino-losc')), true);
 });
+
+test('loan-back request (Nürnberg for Miceli): matched and accepted by policy', async () => {
+  const {loanBackRequest} = await import('../game/screens/transfer-offers.mjs');
+  const s = loadScreen('loan-back-request-miceli');
+  assert.equal(loanBackRequest.match(s), true);
+  const r = await loanBackRequest.run(s, {dryRun: true});
+  assert.deepEqual([r.club, r.player, r.decision], ['1. FC Nürnberg', 'Miceli', 'accept']);
+});

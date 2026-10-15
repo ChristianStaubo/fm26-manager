@@ -267,4 +267,23 @@ async function youthDecision({kind, date, club, player, wageShare, loan}, {dryRu
   return entry;
 }
 
-export const HANDLERS = [loanOfferPage, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
+// The selling club asks to loan our signing back ("1. FC Nürnberg ask for Miceli loan back", 2030-07-21):
+// Accept / Reject Loan Back. The user (2026-10-15): "ideally their club asks for the loan back, and we
+// accept that": the kid plays and develops. policy.buying.accept_loan_back.
+export const loanBackRequest = {
+  name: 'loan-back-request',
+  match: s => s.buttons('Accept Loan Back').length === 1 && s.buttons('Reject Loan Back').length === 1,
+  async run(s, {dryRun = false} = {}) {
+    const head = s.texts().map(t => /^(.+) ask for (.+) loan back$/.exec(t)).find(Boolean);
+    const entry = {action: 'loan-back', date: isoDate(s.date()), club: head?.[1], player: head?.[2],
+      playingTime: s.after('Agreed Playing Time', i => i.kind === 'text')?.label, salaryPct: s.after('Salary Percentage', i => i.kind === 'text')?.label};
+    const accept = loadRules().buying.accept_loan_back !== false;
+    entry.decision = accept ? 'accept' : 'reject';
+    if (dryRun) return {...entry, dryRun: true};
+    await click(accept ? 'Accept Loan Back' : 'Reject Loan Back');
+    await log({...entry, executed: true});
+    return entry;
+  },
+};
+
+export const HANDLERS = [loanOfferPage, loanBackRequest, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
