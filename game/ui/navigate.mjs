@@ -72,8 +72,9 @@ async function openFromAllResults(name, club) {
   const s0 = await Screen.read();
   if (!s0.buttons(/^See All Results/).length) return false;
   await click(s0.buttons(/^See All Results/)[0].label);
-  const s = await waitFor(x => x.hasText('Search Results') && x.items.some(i => i.name === 'NameButton'), {what: 'Search Results page'}).catch(() => null);
-  if (!s || !allResultsRow(s, name, club)) return false;
+  // Rows render in batches: wait for his row, not just the page (2031-05-28: checked too early, missed).
+  const s = await waitFor(x => x.hasText('Search Results') && allResultsRow(x, name, club), {what: `${name} in Search Results`, timeout: 10000}).catch(() => null);
+  if (!s) return false;
   await clickWhere(x => allResultsRow(x, name, club), `${name} in Search Results`);
   return true;
 }
