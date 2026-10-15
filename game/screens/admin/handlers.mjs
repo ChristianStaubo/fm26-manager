@@ -179,6 +179,10 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   // add ~£9.8M to the budget).
   {...delegate('collective-bonuses', /^Confirm$/, 'kept the preselected collective bonuses'),
     match: s => s.hasText('Collective bonuses to be decided') && s.buttons('Confirm').length === 1},
+  // "Choose <Club> captain for the season" (2031-08-04): keep the current captain and vice-captain
+  // (Confirm Captains). Changing them upsets the dressing room; not our decision to make.
+  {...delegate('confirm-captains', /^Confirm Captains$/, 'kept the captain and vice-captain'),
+    match: s => s.hasText(/^Choose .+ captain for the season$/) && s.buttons('Confirm Captains').length === 1},
   // "<Club> training camp squad" (2031-06-30, Response Required: name a preliminary squad for the
   // pre-season camp; buttons Respond / Auto Select / Auto Select - include youth prospects): the
   // staff pick it (Auto Select), as a person would. Not the match XI.

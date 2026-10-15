@@ -25,3 +25,12 @@ test('collective bonuses: keep the preselection and Confirm', async () => {
     buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
   assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['collective-bonuses']);
 });
+
+test('captains: keep them (Confirm Captains)', async () => {
+  const texts = ['David Rainford', 'Choose Brentford captain for the season'];
+  const buttons = ['Review Captaincy', 'Confirm Captains', 'Warn Savinho About Losing Captaincy'].map(label => ({label}));
+  const s = {texts: () => texts, date: () => new Date(Date.UTC(2031, 7, 4)),
+    hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)),
+    buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
+  assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['confirm-captains']);
+});
