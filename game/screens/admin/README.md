@@ -18,6 +18,7 @@ pending one, the handler opens the wrong one and stops on a timeout (no harm; op
 | Outgoing "Confirm Transfer" ("<Player> set to move on loan to <Club>"; Accept / Delay Transfer / Cancel) | those buttons + "set to move/join/leave", no Delegate-finalizing button | `confirm-outgoing`: Accept only if `decisions.jsonl` shows we accepted a deal for that player; else stop (deals agreed before this tooling, or by staff, e.g. Meghoma → Aston Villa £7M) |
 | Invitations: friendly proposals (Accept/Reject Invitation), youth league entries ("U18 Division 2 invitation", Accept/Decline) | those buttons; Accept/Decline only under a title ending in "invitation" | always accept (user, 2026-10-08): `accept-invitation` |
 | Board "Season expectations" (Response Required) | text "The board are ready to discuss season expectations…" + Confirm | keep the board's preselected objectives, Confirm (`season-expectations`). The Confirm button sits below the objectives; the separate "Board request meeting…" message did not block Continue (2026-06-25) |
+| Board "Change Season Expectations" mid-season ("…opportunity to change your season expectations") | that text + option buttons + Confirm | pick the least ambitious option (top one), Confirm (`change-season-expectations`, 2031-01-01): a raised target only adds sacking risk |
 
 Seen but not automated (the autopilot stops; decide, act, continue):
 - **Registration** (squad registration for competitions): use the recommended registration.

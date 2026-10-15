@@ -152,6 +152,23 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   // of the message, past the objectives (2026-06-25).
   {...delegate('season-expectations', /^Confirm$/, 'kept board expectations (defaults)'),
     match: s => s.hasText('Season expectations') && s.hasText(/^The board are ready to discuss season expectations/) && s.buttons('Confirm').length === 1},
+  // Mid-season "Change Season Expectations" (Response Required, 2031-01-01): "Due to your
+  // performance in the league we would like to offer you the opportunity to change your season
+  // expectations"; options as buttons (Top half finish / Qualify for the Europa League / … Champions
+  // League) + Confirm. Pick the least ambitious (the first): a raised target is judged and only adds
+  // sacking risk (scoreboard floor: never relegated).
+  {name: 'change-season-expectations',
+    match: s => s.hasText('Change Season Expectations') && s.hasText(/opportunity to change your season expectations/) && s.buttons('Confirm').length === 1,
+    async run(s, {dryRun = false} = {}) {
+      const opts = s.buttons(/^(Top half finish|Qualify for |Win |Avoid |Finish |Mid-table|Promotion)/).sort((a, b) => a.bounds[1] - b.bounds[1]);
+      const pick = opts[0]?.label;
+      const entry = {action: 'change-season-expectations', date: isoDate(s.date()), options: opts.map(o => o.label), kept: pick || 'unchanged'};
+      if (dryRun) return {...entry, dryRun: true};
+      if (pick) { await click(pick); await settle(500); }
+      await click('Confirm');
+      await log(entry);
+      return entry;
+    }},
   // "Confirm Transfer" after a signing is agreed: hand finalizing to the General Manager.
   delegate('delegate-finalizing', /^Delegate 'Finalizing player signings/, 'GM finalizes signings'),
   // Squad code of conduct (fines): let the assistant choose.
