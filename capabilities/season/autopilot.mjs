@@ -27,11 +27,14 @@ export function summarize(s) {
 // The fresh-load hand-off: the game can continue, the bridge hasn't seen Continue pressed yet.
 export const firstContinue = (st, label) => st.stateName === 'CanContinue' && !st.actionReady && /^Continue$/.test(label || '');
 
+/** The game stops for a match (Continue slot "Go To Match", a match/team-talk state …). */
+export const isMatchDay = (st, label) => /match/i.test(label || '') || /match|teamtalk/i.test(st?.stateName || '');
+
 export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false;
+    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     for (;;) {
       const r = await control({maxSteps: stopAt ? 3 : 10});
@@ -63,6 +66,14 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           pressedOnce = true;
           try { await click(label, {name: 'continue-button'}); } catch (e) { /* re-read below */ }
           await settle(2500); continue;
+        }
+        // A match day (user, 2031-08-08): never play or sim it ourselves; holiday one day and let the
+        // assistant take the match, then carry on handling the window. Logged so new labels show up.
+        if (isMatchDay(st, label) && !dryRun && lastMatchDay !== isoDate(today)) {
+          lastMatchDay = isoDate(today);   // a second match-day stop on the same date: no progress, stop
+          const {matchDay} = await import('./holiday.mjs');
+          try { decisions.push({...await matchDay(), state: st.stateName, continueLabel: label}); } catch (e) { return stop('error', {handler: 'match-day', error: e.message, doNotRetryAutomatically: true}); }
+          handoffs = 0; continue;
         }
         return stop('unfamiliar-state', {state: st.stateName, automation: st.automationState, actionReady: st.actionReady, continueLabel: label,
           why: `hand-off the autopilot can't resolve: state ${st.stateName}, automation ${st.automationState}, actionReady ${st.actionReady}, Continue slot "${label || '-'}"`, screen: summarize(s)});

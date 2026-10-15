@@ -13,7 +13,7 @@ description: Run the FM26 club as its Moneyball manager — plan and run transfe
 ## Capabilities (each README in `capabilities/<name>/` has the details)
 | Capability | Command | Decides / gives you |
 |---|---|---|
-| cycle | `fm cycle --budget N` / `fm checkpoint <name>` | **the loop**: holiday to the next checkpoint and run every step; one report |
+| cycle | `fm cycle --budget N` / `fm checkpoint <name>` | **the loop**: to the next checkpoint (autopilot inside transfer windows, holiday outside) and run every step; one report |
 | free-agents | `fm free` | free agents + contracts ending by 30 June (loanees too), by worth; first in every checkpoint and plan |
 | plan | `fm plan --budget N` | a step of the summer checkpoint: alerts, departures since the last snapshot, a priced buy list within budget, sells (proposals for the user's approval) |
 | window | `fm window [--slots LB,RW]` | the standard window report (every slot: depth, blended + moneyball scores, best/value/bench/free, sell list) |
@@ -31,7 +31,7 @@ After saving the game, add `--fresh` to the first data command (re-exports the s
 
 ## The loop: `fm cycle`
 The season is a cycle of checkpoints (`playbook/cycle.json`: january, newgen, season_end, summer).
-`fm cycle [--budget N]` holidays to the next one and runs **every step in code**, writing one report
+`fm cycle [--budget N]` goes to the next one and runs **every step in code** (inside a transfer window the autopilot drives the game and a match day is a one-day holiday, so no late bid or loan offer is missed; outside the windows it holidays), writing one report
 (`local/reports/checkpoints/<date>-<name>.md`). Don't run the steps by hand or skip any: read the
 report, then decide. Free agents are a step of january and summer: every **ALWAYS BUY** line needs
 an answer (pre-contract / bid, or a recorded pass). `fm checkpoint` with no name says what's next.

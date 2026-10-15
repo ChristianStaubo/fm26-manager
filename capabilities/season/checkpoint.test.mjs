@@ -49,3 +49,19 @@ test('judge: an always-buy free agent needs an answer', () => {
   assert.ok(!checkCheckpoints({today: '2031-01-20', cycle, reports, decisions: [{action: 'precontract', name: 'Ethan Mbappe'}]}).decide.some(x => /Mbapp/.test(x)));
   assert.ok(!checkCheckpoints({today: '2031-01-20', cycle, reports, interventions: [{capability: 'free_agents', proposed: 'Ethan Mbappé (RW)'}]}).decide.some(x => /Mbapp/.test(x)));
 });
+
+test('cycle: drives the window with the autopilot, holidays outside it (user, 2031-08-08)', async () => {
+  const {cycle} = await import('./checkpoint.mjs');
+  const {inWindow, nextWindowOpen, windowEnd} = await import('./season.mjs');
+  let today = '2031-08-08';
+  const legs = [];
+  const fake = {
+    date: async () => today, inWindow, nextOpen: nextWindowOpen, closeOf: windowEnd,
+    drive: async until => { legs.push(['drive', until]); today = until; return {reason: 'until'}; },
+    away: async until => { legs.push(['holiday', until]); today = until; return {reason: 'returned'}; },
+  };
+  // The checkpoint itself is faked too: a test must never save or click in the live game.
+  const r = await cycle({}, {...fake, check: async name => ({checkpoint: name})});
+  assert.deepEqual(legs, [['drive', '2031-09-02'], ['holiday', '2032-01-01'], ['drive', '2032-01-02']]);
+  assert.equal(r.checkpoint, 'january');
+});

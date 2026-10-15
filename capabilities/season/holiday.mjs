@@ -42,13 +42,21 @@ export async function holiday({days, until, dryRun = false} = {}) {
   return result;
 }
 
+/** A match day inside a transfer window (user, 2031-08-08): holiday one day so the assistant plays
+ *  the match (we never pick the XI or sim), then hand back to the autopilot. */
+export async function matchDay() {
+  const r = await holiday({days: 1});
+  await waitUntilIdle({quietPolls: 2, every: 3000, maxMs: 30 * 60e3});
+  return {...r, action: 'match-day-holiday'};
+}
+
 // ---- A whole stretch on holiday ------------------------------------------------------------
 // FM ends a vacation early when something needs the manager (captaincy, 2026-08-02; …). Going on
 // holiday again lets the assistant settle it (user, 2026-10-08), so: holiday to the return date,
 // and when a leg ends early, note where and why, then go again. Stops at the return date, on an
 // unknown dialog (recover refuses it), or when two legs in a row make no progress.
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function waitUntilIdle({quietPolls = 3, every = 5000, maxMs = 3 * 3600e3} = {}) {
+export async function waitUntilIdle({quietPolls = 3, every = 5000, maxMs = 3 * 3600e3} = {}) {
   const {getState} = await import('../../game/bridge/client.mjs');
   const end = Date.now() + maxMs;
   for (let quiet = 0; quiet < quietPolls && Date.now() < end; ) {

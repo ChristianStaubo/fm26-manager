@@ -11,7 +11,7 @@ work autonomously and narrate briefly.
    (controlling the game). Load the one that fits before acting.
 3. Machine-specific paths (game copy, Frida venv): `local/paths.md`, else `game/bridge/README.md`.
 4. `node cli/fm.mjs doctor`: are the game, bridge, save and screen ready? (`--fix` starts the bridge.)
-5. **The loop is `fm cycle`**: holiday to the next checkpoint (`playbook/cycle.json`), every step run in
+5. **The loop is `fm cycle`**: to the next checkpoint (`playbook/cycle.json`; we drive the transfer windows, holiday the rest), every step run in
    code, one report to decide from. Don't sequence the season from memory.
 
 ## First run on someone's own save

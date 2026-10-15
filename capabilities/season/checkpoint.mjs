@@ -109,10 +109,31 @@ export function reports(dir = REPORTS) {
   }).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Holiday to the next checkpoint, then run it (the loop's one step). */
-export async function cycle(opts = {}) {
-  const today = await gameDate();
-  const next = nextCheckpoint(today);
-  if (next.date > today) { const {holidaySeason} = await import('./holiday.mjs'); const h = await holidaySeason({until: next.date}); if (h.reason !== 'returned') return {stopped: h, next}; }
-  return runCheckpoint(next.name, opts);
+/** To the next checkpoint, then run it (the loop's one step). Inside a transfer window we drive the
+ *  game ourselves with the autopilot (bids, loan offers, deadline deals; match days are a one-day
+ *  holiday): user, 2031-08-08, after late loan offers were missed on holiday. Outside the windows:
+ *  holiday to the next window or checkpoint, whichever comes first. */
+export async function cycle(opts = {}, {date = gameDate, inWindow: inWin, nextOpen, closeOf, drive, away, check = runCheckpoint} = {}) {
+  const season = await import('./season.mjs');
+  inWin ??= season.inWindow; nextOpen ??= season.nextWindowOpen; closeOf ??= season.windowEnd;
+  drive ??= async until => (await import('./autopilot.mjs')).run({until});
+  away ??= async until => (await import('./holiday.mjs')).holidaySeason({until});
+  const iso = d => d.toISOString().slice(0, 10), day = x => new Date(x + 'T00:00:00Z');
+  const next = nextCheckpoint(await date());
+  const legs = [];
+  for (let i = 0; i < 12; i++) {
+    const today = await date();
+    if (today >= next.date) return {legs, ...await check(next.name, opts)};
+    if (inWin(day(today))) {
+      // To the checkpoint if it falls inside this window, else to the window's close.
+      const close = iso(closeOf(day(today))), until = next.date <= close ? next.date : iso(new Date(day(close).getTime() + 86400000));
+      const r = await drive(until); legs.push({drive: until, reason: r.reason});
+      if (!['until', 'window-closed'].includes(r.reason)) return {stopped: r, next, legs};
+    } else {
+      const open = iso(nextOpen(day(today))), until = open < next.date ? open : next.date;
+      const h = await away(until); legs.push({holiday: until, reason: h.reason});
+      if (h.reason !== 'returned') return {stopped: h, next, legs};
+    }
+  }
+  return {stopped: {reason: 'too many legs'}, next, legs};
 }

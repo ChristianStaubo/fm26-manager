@@ -2,7 +2,7 @@
 Implements playbook §1b, §7–8. The cycle: `playbook/cycle.json`. Calendar: `season.json` (window dates). Settings: `playbook/policy.json` → `holiday`.
 
 **Interface:**
-- `fm cycle [--budget N]`: **the loop**. Holiday to the next checkpoint in `playbook/cycle.json`, then
+- `fm cycle [--budget N]`: **the loop**. To the next checkpoint in `playbook/cycle.json` (inside a transfer window the autopilot drives, a match day is a one-day holiday; outside, holiday), then
   run it (`checkpoint.mjs`)
 - `fm checkpoint [<name>] [--budget N] [--no-save]`: run one checkpoint now: save, fresh export,
   every step in order, one report in `local/reports/checkpoints/<date>-<name>.md` (+ `.json`). No
