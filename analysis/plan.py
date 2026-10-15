@@ -86,6 +86,11 @@ def shopping(report, rows, tactic, budget, lens='moneyball', max_age=29):
         proven = len([c for c in s['ours'] if c['blended'] >= w.SOLID and c['moneyball'] is not None])
         starter_gap = max(0, xi - proven)
         depth_gap = max(0, s['need'] - max(s['solid'], proven + starter_gap))
+        # Goalkeepers (user, 2026-10-15): one quality starter and ONE cheap backup; any keeper on
+        # the books is the backup (we bought Hülsmann + Backhaus besides Ortega: two quality GKs, one
+        # who won't play). No depth signing once we have a second keeper.
+        if s['slot'] == 'GK':
+            depth_gap = 0 if len(s['ours']) >= 2 else depth_gap
         def choose(pool, why, cap=float('inf')):
             nonlocal left
             for c in pool:

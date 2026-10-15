@@ -99,3 +99,13 @@ picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.st
 print(json.dumps([x['name'] for x in picks if x['role'] == 'starter']))`);
   assert.deepEqual(out, ['Cheap'], 'z 2.6 and 2.5 share a half-SD band: the £0.9M one first');
 });
+
+test('goalkeepers (user): one quality starter, one cheap backup; no second quality GK once we have two keepers', () => {
+  const k = (name, blended, moneyball) => ({name, blended, attributes: blended, moneyball, value: 1e6, age: 25, wage: 1, league: 'X', chabot: false, minutes: 2000});
+  const report = {slots: [{slot: 'GK', need: 2, solid: 1, attr_bar: 50, ours: [k('Ortega', 75, 70), k('Cox', 20, null)], best: [], value: [], bench: [k('Backhaus', 64, 62)], free: [], by_attributes: []}]};
+  const out = run(`import json, plan as p
+p.m.price = lambda rows, n: {'club': 'C', 'value': 1e6, 'open_at': 1e6, 'walk_away': 1.2e6, 'wage': 1, 'wage_ok': True}
+picks, skipped, left, shortlist = p.shopping(json.loads(${JSON.stringify(JSON.stringify(report))}), [], {'slots': [{'slot': 'GK'}]}, 1e8, 'moneyball', 29)
+print(json.dumps([x['name'] for x in picks]))`);
+  assert.deepEqual(out, [], 'a starter and a backup already: nothing to buy');
+});

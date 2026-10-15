@@ -21,8 +21,8 @@ These are the user's rules (decided 2026-10-09).
 1. **Summer window** (July): `fm plan` (lenses: wonderkid/growth for the business, moneyball for
    starters we need now), approvals, buys (agent chat first), contracts (the split), loans out /
    loan-backs, renewals (two-season lookahead), registration (assistant assigns), `fm save`.
-   Every listed player gets a real **asking price** (≥ our floor) before any holiday: on holiday the
-   assistant accepts offers matching it.
+   Listed players keep an **Unspecified** asking price (user, 2026-10-15): on holiday the assistant
+   only accepts offers matching the asking price, so nothing sells below our floor; bids come to us.
 2. **Sim to January** (`fm holiday --season --until <year>-01-02`).
 3. **January checkpoint:** contracts ending in June: (a) ours: renew or sell (renewal test), never
    let value walk out free; (b) other clubs' players with ≤ 6 months left: pre-contract / cheap deals
@@ -37,6 +37,9 @@ These are the user's rules (decided 2026-10-09).
 - Registration: the assistant picks the 25. Check that new signings are in it.
 - **Youth (under 21):** keep the high-potential ones; loan out those who won't play; sell the
   rest when bids come.
+
+- **Goalkeepers** (user, 2026-10-15): one quality starter and one cheap backup. Never two quality
+  keepers (Ortega + Hülsmann + Backhaus: one is paid to sit).
 
 ## 3. Valuation: what a player is worth to *us*
 - **Trust FM's valuation** as the anchor: the game's value range [v_low, v_high] is what the
