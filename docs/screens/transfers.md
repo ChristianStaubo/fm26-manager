@@ -44,9 +44,16 @@ Make Offer / Withdraw Offer, plus Transfer Value).
 
 ## Incoming offers (autopilot)
 NeedAction "Review Transfer Offer": message with Accept / Reject / View Offer. The handler opens
-View Offer, reads Negotiable, fee, guaranteed total ("Fee:"), Transfer Value, contract expiry,
-and the coach report (key player?), decides with `decideSale`, then Negotiate Offer (after
-setting the up-front fee) / Accept Offer / Reject Offer. Counters per player+club come from the log.
+View Offer, reads Negotiable (a **dropdown** labelled "Negotiable", not a text), fee, guaranteed
+total ("Fee:"), Transfer Value, contract expiry, and the coach report (key player?), decides with
+`decideSale`, then Accept Offer / Reject Offer, or counters in one sitting, as when buying (the
+user, Villa for Doak, 2031-06-17):
+1. Set the up-front Fee → **Suggest Terms** (NOT Negotiate Offer: that sends a counter the club
+   answers days later, and the deal sits at "Negotiated").
+2. The GM line answers on the spot: "<club> feel the negotiation for <player> is acceptable." with
+   **Accept Offer** / Reject Offer → Accept Offer → the deal moves to "Contract £40M (£52M)".
+   Other answers aren't mapped yet: the handler logs them and stops.
+Answer one now (no Continue): `fm answer "<player>" [--club C]`. Rounds: `fm negotiations`.
 
 A listed player's offer page shows **one amount** under Transfer Value (his asking price), not a
 range. `readOffer` treats it as `[v, v]` (`valueSingle: true`).

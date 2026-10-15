@@ -22,7 +22,7 @@ export const negotiable = d => {
   return box ? !/^Non/i.test(box.label) : !d.hasText('Non-Negotiable') && d.hasText('Negotiable');
 };
 
-// The GM's answer after Negotiate Offer: "Phil Giles General Manager Aston Villa feel the negotiation
+// The GM's answer after Suggest Terms: "Phil Giles General Manager Aston Villa feel the negotiation
 // for Ben Gannon Doak is acceptable." (a button).
 export const verdict = s => s.items.find(i => i.kind === 'button' && / feel the negotiation for /.test(i.label))?.label.replace(/^.*?General Manager /, '') ?? null;
 
@@ -87,11 +87,13 @@ export const incomingOffer = {
     if (decision.action === 'counter') {
       const fee = await setFee('Fee', decision.upfront, {mode: 'nearest'});
       entry.counterSet = fee.set;
-      await click('Negotiate Offer');
-      // The buyer answers on the spot (the user, Villa for Doak, 2031-06-17): the GM's line "<club> feel
-      // the negotiation for <player> is acceptable." with Accept Offer / Reject Offer. Accept it: the
-      // ask was approved above. Any other answer: log it and stop, so we learn what it looks like.
-      const v = await waitFor(x => verdict(x), {what: 'the buyer\'s answer', timeout: 12000});
+      // Suggest Terms, not Negotiate Offer (user, 2031-06-17): Suggest Terms puts our terms to the buyer
+      // and the GM answers on the spot ("<club> feel the negotiation for <player> is acceptable.", with
+      // Accept Offer / Reject Offer); Negotiate Offer sends a counter they answer days later. Accept an
+      // acceptable answer (the ask was approved above). Any other answer: log it and stop, to learn it.
+      // While waiting we only read the screen.
+      await click('Suggest Terms', {name: 'StandardButton'});
+      const v = await waitFor(x => verdict(x), {what: 'the buyer\'s answer', timeout: 30000});
       entry.verdict = verdict(v);
       if (!/is acceptable\.?$/.test(entry.verdict)) { await log({...entry, executed: true}); throw new NeedsAnalyst(`Counter for ${offer.player}: ${entry.verdict}`, entry); }
       await click('Accept Offer');

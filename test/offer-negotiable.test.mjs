@@ -36,3 +36,9 @@ test("the GM's answer after Negotiate Offer", async () => {
   assert.equal(verdict(fake), 'Aston Villa feel the negotiation for Ben Gannon Doak is acceptable.');
   assert.equal(verdict(s), null);
 });
+
+test('counters use Suggest Terms (answered on the spot), never Negotiate Offer (answered days later)', async () => {
+  const {readFileSync} = await import('node:fs');
+  const src = readFileSync(new URL('../game/screens/transfer-offers.mjs', import.meta.url), 'utf8');
+  assert.ok(!/click\('Negotiate Offer'/.test(src));
+});
