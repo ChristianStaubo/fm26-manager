@@ -6,47 +6,31 @@ import {inWindow, nextWindowOpen, nextDate, daysBetween, loadSeason} from '../se
 const policy = loadRules();
 const sale = o => decideSale({negotiable: true, countersSoFar: 0, monthsLeft: 24, ...o}, policy);
 
-test('first negotiable offer is always countered at 1.20 x v_high', () => {
-  // Lyon's first Igor bid: £5.75M up front + £1.2M instalments; value £7.6M-£8.4M.
-  const r = sale({guaranteed: 6950000, upfront: 5750000, vLow: 7600000, vHigh: 8400000});
+// Not listed: for sale only at our price, sell_ask (1.3) x the top of his value (user, 2031-07-22:
+// "we should not reject bids, we should counter them at prices we want to sell our players at").
+test('Kislyak (value £36-39M) bid £34M → counter at our sell price ~£50.7M', () => {
+  const r = sale({guaranteed: 34e6, upfront: 26.75e6, vLow: 36e6, vHigh: 39e6, minimum: 36e6, negotiable: false});
   assert.equal(r.action, 'counter');
-  assert.equal(r.guaranteedAsk, 10100000);
-  assert.equal(r.upfront, 10100000 - 1200000);
+  assert.equal(r.guaranteedAsk, 50.7e6);
+  assert.equal(r.upfront, 50.7e6 - 7.25e6);
 });
-test('counter never asks less than 10% above an already generous offer', () => {
-  const r = sale({guaranteed: 12e6, upfront: 12e6, vLow: 7e6, vHigh: 8e6});
-  assert.equal(r.guaranteedAsk, 13.2e6);
-});
-test('reply at or above 1.05 x v_high is accepted', () => {
-  assert.equal(sale({guaranteed: 8.85e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 1}).action, 'accept');
-});
-test('reply below 1.05 x v_high gets a second counter at 1.10 x', () => {
-  const r = sale({guaranteed: 8.75e6, upfront: 7.55e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 1});
+test('Kayode (value £63-75M, a player we want to keep) bid £61.5M → counter ~£97.5M', () => {
+  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, keyPlayer: true, negotiable: false});
   assert.equal(r.action, 'counter');
-  assert.equal(r.guaranteedAsk, 9250000);
+  assert.equal(r.guaranteedAsk, 97.5e6);
 });
-test('after max counters: accept at or above the floor (bottom of the range), reject below', () => {
-  assert.equal(sale({guaranteed: 7.6e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3}).action, 'accept');
-  assert.equal(sale({guaranteed: 7.5e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3}).action, 'reject');
+test('a bid at or above our sell price is accepted; lowballs are countered, not rejected', () => {
+  assert.equal(sale({guaranteed: 51e6, vLow: 36e6, vHigh: 39e6}).action, 'accept');
+  assert.equal(sale({guaranteed: 1000, vLow: 63e6, vHigh: 63e6, negotiable: false}).action, 'counter');
 });
-test('expiring contracts lower the floor to 0.8 x v_low', () => {
-  assert.equal(sale({guaranteed: 6.2e6, vLow: 7.6e6, vHigh: 8.4e6, countersSoFar: 3, monthsLeft: 11}).action, 'accept');
+test('reject only once the counters are spent', () => {
+  assert.equal(sale({guaranteed: 40e6, vLow: 36e6, vHigh: 39e6, countersSoFar: 2}).action, 'counter');
+  assert.equal(sale({guaranteed: 40e6, vLow: 36e6, vHigh: 39e6, countersSoFar: 3}).action, 'reject');
 });
-test('lowball bids are rejected rather than countered (Wrexham £53.75K vs £110K-£210K)', () => {
-  assert.equal(sale({guaranteed: 53750, vLow: 110000, vHigh: 210000}).action, 'reject');
+test('a contract in its last year sells at the bottom of his range', () => {
+  assert.equal(sale({guaranteed: 7.6e6, vLow: 7.6e6, vHigh: 8.4e6, monthsLeft: 11}).action, 'accept');
 });
-test('small deals: one counter, then accept anything at or above v_low', () => {
-  assert.equal(sale({guaranteed: 85000, vLow: 110000, vHigh: 210000}).action, 'counter');
-  assert.equal(sale({guaranteed: 120000, vLow: 110000, vHigh: 210000, countersSoFar: 1}).action, 'accept');
-  assert.equal(sale({guaranteed: 100000, vLow: 110000, vHigh: 210000, countersSoFar: 1}).action, 'reject');
-});
-test('non-negotiable offers: accept at the bottom of the range, else reject (Birmingham £24.5M for Osman goes to escalation first)', () => {
-  assert.equal(sale({negotiable: false, guaranteed: 0.75e6, vLow: 0.75e6, vHigh: 1.2e6}).action, 'accept');
-  assert.equal(sale({negotiable: false, guaranteed: 0.7e6, vLow: 0.75e6, vHigh: 1.2e6}).action, 'reject');
-  assert.equal(sale({negotiable: false, guaranteed: 24.5e6, vLow: 20e6, vHigh: 30e6}).action, 'escalate');
-});
-test('key players and unreadable offers escalate', () => {
-  assert.equal(sale({guaranteed: 9e6, vLow: 7e6, vHigh: 8e6, keyPlayer: true}).action, 'escalate');
+test('unreadable offers escalate', () => {
   assert.equal(sale({guaranteed: NaN, vLow: 7e6, vHigh: 8e6}).action, 'escalate');
 });
 test('agent payoff: counter at 70%, accept any reply up to the opening ask (Igor: £450K → £325K)', () => {
@@ -68,14 +52,8 @@ test('holiday return: next 28 May and day count (4 Aug 2025 → 297 days)', () =
   assert.equal(daysBetween(from, back), 297);
 });
 
-test('lowball for a big-name player is rejected without escalating (Everton £1K for Thiago, £63M)', () => {
-  const d = decideSale({guaranteed: 1000, upfront: 1000, vLow: 63e6, vHigh: 63e6, negotiable: false, countersSoFar: 0, monthsLeft: 60, keyPlayer: true});
-  assert.equal(d.action, 'reject');
-  assert.equal(d.reason, 'lowball');
-});
-
 // Price book: listed with an Unspecified asking price; our minimum decides (user, 2026-10-08).
-const listed = o => decideSale({vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0, monthsLeft: 24, ...o});
+const listed = o => decideSale({priceBook: true, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0, monthsLeft: 24, ...o});
 test('price book: a bid at or above our minimum is accepted, even for a £60M player (no escalation)', () => {
   assert.equal(listed({guaranteed: 55e6, upfront: 55e6}).action, 'accept');
 });
@@ -86,15 +64,15 @@ test('price book: below the minimum → counter at the target first, then halfwa
   assert.equal(c2.action, 'counter'); assert.equal(c2.guaranteedAsk, 61.65e6);
   assert.equal(listed({guaranteed: 52e6, upfront: 52e6, countersSoFar: 3}).action, 'reject');
 });
-test('price book: non-negotiable below the minimum is rejected; lowballs still rejected first', () => {
-  assert.equal(listed({guaranteed: 50e6, upfront: 50e6, negotiable: false}).action, 'reject');
-  assert.equal(listed({guaranteed: 1e6, upfront: 1e6}).reason, 'lowball');
+test('price book: non-negotiable below the minimum is countered too, at the target', () => {
+  const c = listed({guaranteed: 50e6, upfront: 50e6, negotiable: false});
+  assert.equal(c.action, 'counter'); assert.equal(c.guaranteedAsk, 68.5e6);
 });
 
 // Loans (user, 2026-10-08): an obligation to buy makes it a sale.
 test('loan with obligation to buy is decided as a sale of the summed fees', async () => {
   const {decideLoan} = await import('./decide.mjs');
-  const d = decideLoan({loanFee: 2e6, monthlyFee: 100e3, months: 10, obligationFee: 54e6, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0});
+  const d = decideLoan({priceBook: true, loanFee: 2e6, monthlyFee: 100e3, months: 10, obligationFee: 54e6, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0});
   assert.equal(d.asSale, true); assert.equal(d.guaranteed, 57e6); assert.equal(d.action, 'accept');
 });
 test('loan with only an option to buy is a plain loan → escalate', async () => {
@@ -103,9 +81,8 @@ test('loan with only an option to buy is a plain loan → escalate', async () =>
   assert.equal(d.asSale, false); assert.equal(d.action, 'escalate');
 });
 
-test('add-ons count as fee: Newcastle for Yarmoliuk (35.75M guaranteed, 48.5M total, range 44-49M) is accepted', () => {
-  const noEscalation = {...policy, escalate: {...policy.escalate, offer_v_high_over: Infinity}};
-  const o = {negotiable: false, guaranteed: 35.75e6, upfront: 25.5e6, total: 48.5e6, vLow: 44e6, vHigh: 49e6, countersSoFar: 0, monthsLeft: 36};
-  assert.equal(decideSale(o, noEscalation).action, 'accept');
-  assert.equal(decideSale({...o, total: 35.75e6}, noEscalation).action, 'reject');
+test('add-ons count as fee: Newcastle for Yarmoliuk (35.75M guaranteed, 48.5M total) vs a price-book minimum of 46M', () => {
+  const o = {priceBook: true, minimum: 46e6, target: 49e6, negotiable: false, guaranteed: 35.75e6, upfront: 25.5e6, total: 48.5e6, vLow: 44e6, vHigh: 49e6, countersSoFar: 0, monthsLeft: 36};
+  assert.equal(decideSale(o).action, 'accept');
+  assert.equal(decideSale({...o, total: 35.75e6}).action, 'counter');
 });

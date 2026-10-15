@@ -87,7 +87,8 @@ test('Loan-to-buy detail page (Aston Villa for Milambo): value = overall + wage 
   assert.equal(l.player, 'Antoni Milambo'); assert.equal(l.overall, 15.25e6); assert.deepEqual(l.range, [16e6, 18.5e6]);
   assert.equal(l.mandatory, true); assert.ok(l.wageRelief > 1e6, `wage relief ${l.wageRelief}`);
   const noEsc = {...loadRules(), escalate: {...loadRules().escalate, offer_v_high_over: Infinity}};
-  assert.equal(decideSale({guaranteed: l.overall + l.wageRelief, vLow: l.range[0], vHigh: l.range[1], negotiable: false, countersSoFar: 0}, noEsc).action, 'accept');
+  // Not listed: below our sell price (1.3 x £18.5M) → counter (the loan handler stops for it).
+  assert.equal(decideSale({guaranteed: l.overall + l.wageRelief, vLow: l.range[0], vHigh: l.range[1], negotiable: false, countersSoFar: 0}, noEsc).action, 'counter');
 });
 
 test('Squad hierarchy (Dynamics): sections read from the raw tree, below the fold included', async () => {

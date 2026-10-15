@@ -20,7 +20,7 @@ export function negotiations(entries) {
     const rounds = d.entries.map((e, k) => {
       const offer = e.offer.guaranteed, ask = money(e.decision.guaranteedAsk), next = d.entries[k + 1];
       // Their answer on the spot (verdict) or their next offer.
-      const reply = e.accepted ? ask : next ? next.offer.guaranteed : null;
+      const reply = e.accepted ? ask : e.reply ? e.reply.guaranteed : next ? next.offer.guaranteed : null;
       return {date: e.date, offer, upfront: e.offer.upfront, addOns: addOns(e.offer), action: e.decision.action, ask, verdict: e.verdict ?? null, accepted: !!e.accepted,
         askPct: ask ? +(ask / offer - 1).toFixed(3) : null,
         reply, replyPct: reply ? +(reply / offer - 1).toFixed(3) : null,

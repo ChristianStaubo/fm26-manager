@@ -18,14 +18,13 @@ const tidy = v => roundTo(v, v >= 1e6 ? 50000 : v >= 1e5 ? 5000 : 1000);
  */
 export function decideSale(offer, policy = loadRules()) {
   let o = offer;
-  const p = policy.selling, esc = policy.escalate;
+  const p = policy.selling;
   if (![o.guaranteed, o.vLow, o.vHigh].every(Number.isFinite)) return {action: 'escalate', reason: 'offer or valuation unreadable'};
   // Judge the offer on its value: guaranteed money plus add-ons at addon_weight (o.total is the
   // offer page's "Future & Potential Total Cost with Additional Fees").
   const w = policy.valuation?.addon_weight ?? 1;
   o = {...o, guaranteed: o.guaranteed + w * Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed)};
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;
-  const floor = expiring ? o.vLow * p.floor.contract_under_12_months : o.keyPlayer ? o.vHigh * p.floor.key_player : o.vLow * p.floor.default;
   // Counters ask on the GUARANTEED money (fee + instalments); their add-ons stay on top as a bonus.
   // Doak (2031-06-17): Villa offered £27.5M + £7.75M instalments + £4.4M add-ons; the user asked
   // £40M up front (£47.75M guaranteed) and Villa accepted at once. Counting the add-ons as fee here
@@ -36,39 +35,29 @@ export function decideSale(offer, policy = loadRules()) {
     return {action: 'counter', upfront: ask - instalments, guaranteedAsk: ask};
   };
 
-  // Rejecting a lowball never loses a player, so it needs no analyst even for big names
-  // (Everton bid £1K, non-negotiable, for Thiago, valued £63M: 2026-06-25).
-  if (o.guaranteed < o.vLow * p.lowball_reject_below) return {action: 'reject', reason: 'lowball'};
-  // Listed through the price book: the analysis was done at listing time (fm sell), so no
-  // escalation; our minimum decides. o.minimum / o.target come from pricebook.lookup.
-  if (Number.isFinite(o.minimum)) {
+  // Never just reject a bid (user, 2031-07-22): counter at the price we'd sell him for. If they say
+  // no, it's the same as a rejection; if they say yes, we've sold at a profit. Kayode (bid £61.5M,
+  // value £63-75M, release clause £95M) → counter ~£95M; Kislyak (bid £34M, value £39M) → £50-55M.
+  // A reject only ends a deal whose counters are spent. Non-negotiable bids are countered too (the
+  // handler falls back to Reject if the page won't take a fee).
+  const counters = Number.isFinite(p.max_counters) ? p.max_counters : 3;
+  // Listed (price book): we want to sell; our asking price (target) and minimum decide.
+  if (o.priceBook && Number.isFinite(o.minimum)) {
     if (o.guaranteed >= o.minimum) return {action: 'accept', reason: `>= our minimum ${o.minimum}`};
-    if (o.negotiable && o.countersSoFar < p.max_counters) {
+    if (o.countersSoFar < counters) {
       // First counter at the target; later ones step halfway towards the minimum.
       const aim = o.countersSoFar === 0 ? o.target : Math.max(o.minimum, (o.target + o.minimum) / 2);
       return {...counter(aim, p.min_raise_over_offer), reason: `below our minimum ${o.minimum}: counter ${o.countersSoFar + 1}`};
     }
-    return {action: 'reject', reason: `below our minimum ${o.minimum}${o.negotiable ? ', counters spent' : ', non-negotiable'}`};
+    return {action: 'reject', reason: `below our minimum ${o.minimum}, counters spent`};
   }
-  if (o.vHigh >= esc.offer_v_high_over) return {action: 'escalate', reason: `valuation above ${esc.offer_v_high_over}`};
-  if (o.keyPlayer && esc.key_starter) return {action: 'escalate', reason: 'key player'};
-  if (!o.negotiable) {
-    const bar = expiring ? floor : o.vLow * p.non_negotiable_accept_at;
-    return o.guaranteed >= bar ? {action: 'accept', reason: `non-negotiable, ${o.guaranteed} >= ${Math.round(bar)}`}
-      : {action: 'reject', reason: `non-negotiable, ${o.guaranteed} < ${Math.round(bar)}`};
-  }
-  if (o.guaranteed < o.vLow * p.lowball_reject_below) return {action: 'reject', reason: 'lowball'};
-
-  const small = o.vHigh < p.small_deal_v_high_under;
-  if (o.countersSoFar === 0) return {...counter(o.vHigh * p.first_counter, p.min_raise_over_offer), reason: 'first offer: always counter'};
-  if (small) return o.guaranteed >= o.vLow ? {action: 'accept', reason: 'small deal at or above v_low'} : {action: 'reject', reason: 'small deal below v_low'};
-  if (o.guaranteed >= o.vHigh * p.accept_reply_at) return {action: 'accept', reason: `reply >= ${p.accept_reply_at} x v_high`};
-  if (o.countersSoFar < p.max_counters) {
-    const c = counter(o.vHigh * p.second_counter);
-    if (c.guaranteedAsk > o.guaranteed) return {...c, reason: `counter ${o.countersSoFar + 1}`};
-  }
-  return o.guaranteed >= floor ? {action: 'accept', reason: `counters exhausted, at or above floor ${Math.round(floor)}`}
-    : {action: 'reject', reason: `counters exhausted, below floor ${Math.round(floor)}`};
+  // Not listed: he's for sale only at our price: sell_ask x the top of his value (above our own
+  // minimum, which counts what he's worth to us).
+  // A contract in its last year sells for what it is: the bottom of his range.
+  const sellAt = tidy(expiring ? o.vLow : Math.max(o.vHigh * p.sell_ask, Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0));
+  if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt}`, sellAt};
+  if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt}: counter ${o.countersSoFar + 1}`, sellAt};
+  return {action: 'reject', reason: `below our sell price ${sellAt}, counters spent`, sellAt};
 }
 
 /**

@@ -71,8 +71,13 @@ The rules behind them:
 - Players **aged 30+ on big wages** are sellable at the bottom of their range: their value only falls.
 - **Sell high on luck:** a 26+ attacker who scored 3+ goals above his xG had a lucky season; his value peaks now and his finishing will regress (`fm squad` flags him).
 - Add-ons count as part of the fee (they are usually hit).
-- Accept a bid when its total (incl. add-ons) is at or above our minimum; counter towards the
-  target; reject lowballs. Up to 3 counters.
+- **Never just reject a bid: counter at the price we'd sell for** (user, 2031-07-22). If they say
+  no, it's the same as a rejection; if they say yes, we've made a profit, and we're good at
+  replacing players. A player who isn't listed sells at 1.3x the top of his value (Kislyak, value
+  £39M → ~£51M; Kayode, whom we want to keep → ~£97M); a counter or accept at that price is approved
+  by this rule. Listed players: accept at our minimum (add-ons included), else counter at the
+  target, then towards the minimum. Non-negotiable bids are countered too. Reject only once 3
+  counters are spent. Counters go through **Suggest Terms** (answered on the spot).
 - A loan with an **obligation** to buy is a sale. A loan with an **option** to buy is a loan:
   accept it when he's surplus and the wage relief is real.
 - Never sell without knowing who replaces him (already in the squad, or a target we can afford).
@@ -160,8 +165,8 @@ The rules behind them:
   (`policy.json` `autonomy`). It starts on approval and is promoted to auto once its tests pass
   consistently: the agent earns autonomy one capability at a time.
 - Now (user, 2026-10-14): **buying, selling and taking bids need approval**; contracts, agent
-  payoffs, the season (Continue, holiday, popups), scouting and the XI run alone. Rejecting a bid
-  stays automatic.
+  payoffs, the season (Continue, holiday, popups), scouting and the XI run alone. Countering a bid
+  at our sell price (above) is automatic; so is accepting a bid at or above it.
 - An approval is one player, one action and a price: buy up to a maximum, sell from a minimum.
   The manager proposes (`fm buy … --dry-run` prices it); the user approves in chat; the main
   session records it (`fm approve`). The tools refuse anything outside it.

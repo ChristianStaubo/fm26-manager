@@ -10,8 +10,10 @@ import {gate, load as loadApprovals, mode} from '../../capabilities/approvals.mj
 
 // Taking money for a player (accept, or counter = willing to sell at that fee) needs the user's
 // approval while autonomy.incoming_offers is 'approve'. Rejecting stays automatic.
+// Our sell price (decideSale sellAt, policy selling.sell_ask) is the user's standing approval: a
+// counter or accept at or above it needs no per-player approval (user, 2031-07-22).
 const approveSale = (player, decision, amount) =>
-  ['accept', 'counter'].includes(decision.action) && gate('incoming_offers', 'sell', player, {price: amount, what: `${decision.action} ${player} at £${(amount / 1e6).toFixed(2)}M (${decision.reason || 'playbook'})`});
+  ['accept', 'counter'].includes(decision.action) && !(Number.isFinite(decision.sellAt) && amount >= decision.sellAt) && gate('incoming_offers', 'sell', player, {price: amount, what: `${decision.action} ${player} at £${(amount / 1e6).toFixed(2)}M (${decision.reason || 'playbook'})`});
 
 const monthsBetween = (a, b) => (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
 
@@ -92,7 +94,16 @@ export const incomingOffer = {
     try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.guaranteedAsk : offer.total ?? offer.guaranteed); }
     catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     if (decision.action === 'counter') {
-      const fee = await setFee('Fee', decision.upfront, {mode: 'nearest'});
+      // A non-negotiable bid may not take a new fee: then it's a plain reject (the counter is ours to try).
+      let fee;
+      try { fee = await setFee('Fee', decision.upfront, {mode: 'nearest'}); }
+      catch (e) {
+        if (offer.negotiable) throw e;
+        entry.counterFailed = e.message;
+        await click('Reject Offer', {name: 'StandardButton'});
+        await log({...entry, executed: true, fellBackTo: 'reject'});
+        return {...entry, fellBackTo: 'reject'};
+      }
       entry.counterSet = fee.set;
       // Suggest Terms, not Negotiate Offer (user, 2031-06-17): Suggest Terms puts our terms to the buyer
       // and the GM answers on the spot ("<club> feel the negotiation for <player> is acceptable.", with
@@ -210,7 +221,7 @@ export const loanOffer = {
       const share = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
       return youthDecision({kind: 'loan-offer', date: isoDate(s.date()), club: loan.club, player: loan.player, wageShare: share, loan}, {dryRun});
     }
-    const o = {...loan, ...(book ? {minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
+    const o = {...loan, ...(book ? {priceBook: true, minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
     const decision = decideLoan(o);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
     // An obligation without a price book entry: the detail page has the range and the total.
@@ -219,7 +230,8 @@ export const loanOffer = {
       const page = await waitFor(x => loanOfferPage.match(x), {what: 'loan offer page', timeout: 15000});
       return loanOfferPage.run(page);
     }
-    if (decision.action === 'escalate' || !book || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan approach for ${loan.player} (${loan.club}): ${decision.reason}`, entry); }
+    // A counter on a loan (its obligation fee) isn't automated yet: stop rather than reject (user, 2031-07-22).
+    if (['escalate', 'counter'].includes(decision.action) || !book || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan approach for ${loan.player} (${loan.club}): ${decision.reason}`, entry); }
     try { approveSale(loan.player, decision, (loan.obligationFee ?? 0) + (loan.loanFee ?? 0)); }
     catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     await click(decision.action === 'accept' ? 'Accept' : 'Reject');
@@ -257,8 +269,8 @@ export const loanOfferPage = {
     if (!l.mandatory) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan for ${l.player} (${l.club}) has no obligation to buy: decide on wage relief and depth`, entry); }
     const [vLow, vHigh] = book ? book.range : (l.range || [NaN, NaN]);
     entry.decision = decideSale({guaranteed: (l.overall ?? NaN) + l.wageRelief, vLow, vHigh, negotiable: false, countersSoFar: 0,
-      ...(book ? {minimum: book.minimum, target: book.target} : {})});
-    if (entry.decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan-to-buy for ${l.player}: ${entry.decision.reason}`, entry); }
+      ...(book ? {priceBook: true, minimum: book.minimum, target: book.target} : {})});
+    if (['escalate', 'counter'].includes(entry.decision.action) || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan-to-buy for ${l.player}: ${entry.decision.reason}`, entry); }
     try { approveSale(l.player, entry.decision, l.overall); }
     catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     await click(entry.decision.action === 'accept' ? 'Accept Offer' : 'Reject Offer');
