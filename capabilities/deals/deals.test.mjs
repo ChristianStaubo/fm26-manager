@@ -65,3 +65,9 @@ test('the first observation only takes this window\'s actions', async () => {
   const ev = events([{action: 'buy', name: 'Satoshi Tanaka', outcome: 'agreed', date: '2028-06-27'}, {action: 'buy', name: 'Martín Luna', outcome: 'release-clause', date: '2032-06-16'}], null, {fromDate: '2032-05-02'});
   assert.deepEqual(ev.map(e => e.player), ['Martín Luna']);
 });
+
+test('an acknowledged stuck deal raises no alert until its date (Didi, 2032-06-21)', () => {
+  const deals = {didi: {player: 'Didi', dir: 'in', state: 'contract', since: '2032-06-16', seen: '2032-06-16', history: [], ackUntil: '2032-06-25'}};
+  assert.deepEqual(reduce(deals, {date: '2032-06-22', rows: [{player: 'Didi', stage: 'Contract'}]}).alerts, []);
+  assert.ok(reduce(deals, {date: '2032-06-26', rows: [{player: 'Didi', stage: 'Contract'}]}).alerts.some(a => a.kind === 'stuck'));
+});

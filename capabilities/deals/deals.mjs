@@ -81,6 +81,8 @@ export function reduce(deals = {}, obs, policy = {}) {
       alerts.push({kind: 'vanished', player: d.player, from: d.state, dir: d.dir, stop: d.dir === 'in' && ['fee-agreed', 'contract', 'work-permit'].includes(d.state)});
       d.history.push([date, 'vanished']); d.state = 'vanished'; d.since = date; continue;
     }
+    // Checked by hand and left to run ("ack" until a date, fm deals ack): no stuck alert until then.
+    if (d.ackUntil && date <= d.ackUntil) continue;
     const age = days(d.since, date), limit = stuckDays[d.state];
     if (Number.isFinite(limit) && age > limit) alerts.push({kind: 'stuck', player: d.player, state: d.state, days: age, stop: ['fee-agreed', 'contract', 'confirmation'].includes(d.state)});
   }

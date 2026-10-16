@@ -31,3 +31,12 @@ export async function observe(date, rows) {
   save({deals: r.deals, observed: date, at: new Date().toISOString()});
   return r;
 }
+
+/** We looked at a stuck deal and it's fine for now: no stuck alert until `until` (YYYY-MM-DD). */
+export function ack(player, until, why = '') {
+  const data = load(), k = Object.keys(data.deals).find(k => data.deals[k].player.toLowerCase() === player.toLowerCase());
+  if (!k) throw new Error(`No tracked deal for ${player}`);
+  Object.assign(data.deals[k], {ackUntil: until, ackWhy: why});
+  save(data);
+  return data.deals[k];
+}
