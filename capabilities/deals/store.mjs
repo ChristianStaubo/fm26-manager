@@ -39,8 +39,28 @@ export async function ourPlayers() {
 }
 
 /** One observation (date, Transfer Activity rows) → saved deals + alerts. */
+/** A save reloaded to an earlier date (user, 2033-08-05: back to the pre-buy save to redo three deals):
+ *  forget what happened after `date`, deal by deal; a deal with nothing left is dropped. */
+export function rewind(deals, date) {
+  const out = {};
+  for (const [k, d] of Object.entries(deals)) {
+    const history = (d.history || []).filter(([day]) => day <= date);
+    if (!history.length) continue;
+    const [since, state] = history.at(-1);
+    out[k] = {...d, history, state, since, seen: d.seen > date ? date : d.seen};
+  }
+  return out;
+}
+
 export async function observe(date, rows) {
   const data = load(), entries = await history(), ours = await ourPlayers();
+  // The game date went backwards: a save was reloaded. Drop the abandoned timeline: deal steps after
+  // `date`, and log entries written before the reload (the last one dated after `date` marks it).
+  if (data.observed && date < data.observed) {
+    data.deals = rewind(data.deals, date);
+    const reloaded = entries.filter(e => e.date && e.date > date).at(-1)?.at;
+    if (reloaded && (!data.at || reloaded > data.at)) data.at = reloaded;
+  }
   // Direction from the facts (Ouazane's sale was agreed outside our handler: direction unknown, 2032-07-09).
   rows = (rows || []).map(r => ({...r, dir: r.dir ?? (r.player && ours.has(r.player) ? 'out' : undefined)}));
   for (const d of Object.values(data.deals)) if (!d.dir && ours.has(d.player)) d.dir = 'out';

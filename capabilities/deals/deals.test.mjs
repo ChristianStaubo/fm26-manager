@@ -96,3 +96,15 @@ test('an odd move on a sale is reported, not a stop (Bouhoudane: contract → 2 
   const r = reduce(deals, {date: '2032-07-24', rows: [{player: 'Sami Bouhoudane', stage: '2 Offers'}]});
   assert.ok(r.alerts.some(a => a.kind === 'unknown-transition' && !a.stop));
 });
+
+test('a reloaded save rewinds the deals to its date (2033-08-05: redoing three buys)', async () => {
+  const {rewind} = await import('./store.mjs');
+  const deals = {
+    'arnal ylla': {player: 'Arnal Ylla', dir: 'in', state: 'contract', since: '2033-08-06', seen: '2033-08-09', history: [['2033-08-05', 'offer'], ['2033-08-06', 'contract']]},
+    'jorthy mokio': {player: 'Jorthy Mokio', dir: 'in', state: 'work-permit', since: '2033-08-08', seen: '2033-08-09', history: [['2033-08-05', 'offer'], ['2033-08-06', 'contract'], ['2033-08-08', 'work-permit']]},
+    'later one': {player: 'Later One', dir: 'in', state: 'offer', since: '2033-08-07', seen: '2033-08-09', history: [['2033-08-07', 'offer']]},
+  };
+  const r = rewind(deals, '2033-08-05');
+  assert.deepEqual(Object.keys(r), ['arnal ylla', 'jorthy mokio']);
+  assert.equal(r['jorthy mokio'].state, 'offer'); assert.equal(r['jorthy mokio'].seen, '2033-08-05');
+});
