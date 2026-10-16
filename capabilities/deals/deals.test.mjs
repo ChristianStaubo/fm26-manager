@@ -37,9 +37,9 @@ test('Fisher: offer → contract → work permit → confirmation → off the li
 });
 
 test('an impossible move is an unknown transition (stop); unnamed rows are reported', () => {
-  assert.equal(canMove('completed', 'offer'), false);
+  assert.equal(canMove('confirmation', 'offer'), false);
   const {deals} = reduce({}, {date: '2032-01-29', rows: [{player: 'Michael Kayode', stage: 'Confirmation'}]});
-  deals['michael kayode'].state = 'completed';
+  deals['michael kayode'].state = 'confirmation';
   const r = reduce(deals, {date: '2032-01-30', rows: [{player: 'Michael Kayode', stage: 'Offer Made'}, {player: null, stage: 'Contract'}]});
   assert.ok(r.alerts.some(a => a.kind === 'unknown-transition' && a.stop));
   assert.ok(r.alerts.some(a => a.kind === 'unnamed-deal'));
@@ -85,8 +85,8 @@ test('a vanished deal that comes back goes on, no alert (Miceli, Ingand, Ketu, 2
 });
 
 test('a completed deal that shows up again is a new deal (Luna joined, then a bid for him)', () => {
-  const deals = {'martín luna': {player: 'Martín Luna', dir: 'in', state: 'completed', since: '2032-06-24', seen: '2032-06-24', history: []}};
+  const deals = {'martin luna': {player: 'Martín Luna', dir: 'in', state: 'completed', since: '2032-06-24', seen: '2032-06-24', history: []}};
   const r = reduce(deals, {date: '2032-07-22', rows: [{player: 'Martín Luna', stage: 'Offer Made', dir: 'out'}]});
   assert.deepEqual(r.alerts, []);
-  assert.equal(r.deals['martín luna'].state, 'offer'); assert.equal(r.deals['martín luna'].previous.state, 'completed');
+  assert.equal(r.deals['martin luna'].state, 'offer'); assert.equal(r.deals['martin luna'].previous.state, 'completed');
 });
