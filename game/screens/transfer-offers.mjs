@@ -318,6 +318,18 @@ export const youthLoanOffer = {
     const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l};
     // A first-team player we listed (surplus) on loan with most of his wage paid: accept (Backhaus at
     // Mainz, 90%, 2032-07-23). Other first-team loans: the user decides.
+    // He's already leaving on a deal we agreed (Bouhoudane to Espanyol; Frosinone bid after, 2032-07-31):
+    // further loan offers are turned down.
+    {
+      const {load} = await import('../../capabilities/deals/store.mjs');
+      const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state)
+        && (d.player || '').toLowerCase().endsWith((l.player || '').toLowerCase()));
+      if (going) {
+        entry.decision = 'reject'; entry.why = `already leaving (deal at ${going.state})`;
+        if (dryRun) return {...entry, dryRun: true};
+        await click('Reject'); await log({...entry, executed: true}); return entry;
+      }
+    }
     if (!(l.age <= sell.youth_max_age)) {
       const listed = Object.values(pricebook.load().players || {}).some(e => (e.name || '').toLowerCase().endsWith((l.player || '').toLowerCase()));
       if (listed && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) {
