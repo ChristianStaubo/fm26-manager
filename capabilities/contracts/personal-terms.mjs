@@ -245,6 +245,9 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     // would be sent, then stop. Nothing is suggested; the talks stay open.
     if (preview) {
       const pv = {...entry, outcome: 'preview', would_suggest: contractTerms(await Screen.read()), openTicks: open, tick: step};
+      // Leave nothing ready to send: our opening offer stayed in the form and was sent (Savinho £245K,
+      // 2032-07-02). Revert puts the form back to his own demands.
+      if ((await Screen.read()).buttons('Revert').length) { await click('Revert'); pv.reverted = true; }
       await log(pv);
       return pv;
     }

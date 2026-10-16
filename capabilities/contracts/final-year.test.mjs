@@ -19,8 +19,12 @@ test('replaceable for much less → sell (Kislyak: Marco Company 15.3 vs 14.6, �
 test('30+ and not starting → sell (Torrente)', () => {
   assert.equal(decideFinalYear({age: 30, value: 8.9e6, wage: 26500, minutes: 408, starts: false, replacement: null}, cfg).action, 'sell');
 });
-test('a star is asked first even when replaceable; then the renewal test decides (Savinho)', () => {
+test('a star is asked first even when replaceable; then his demands decide (Savinho)', () => {
   assert.equal(decideFinalYear(savinho, cfg).action, 'ask-demands');
-  assert.equal(decideFinalYear(savinho, cfg, {salary: 210000, years: 4, loyaltyBonus: 3e6, agentFee: 1e6}).action, 'renew');
-  assert.equal(decideFinalYear(savinho, cfg, {salary: 600000, years: 4, loyaltyBonus: 10e6, agentFee: 5e6}).action, 'sell');
+  // £245K on £180K = +36%: over the +25% ceiling (user: too much) → list him and replace.
+  const d = decideFinalYear(savinho, cfg, {salary: 245000, years: 4, loyaltyBonus: 6.5e6, agentFee: 0.625e6, playerSellOnPct: 10});
+  assert.equal(d.action, 'sell'); assert.match(d.why, /ceiling/);
+  assert.ok(d.paths.sellAndReplace > d.paths.renew, JSON.stringify(d.paths));
+  // £220K (+22%): within the ceiling; the full-cost test decides.
+  assert.equal(decideFinalYear(savinho, cfg, {salary: 220000, years: 4, loyaltyBonus: 3e6, agentFee: 0.5e6}).action, 'renew');
 });
