@@ -27,8 +27,8 @@ export function summarize(s) {
 // The fresh-load hand-off: the game can continue, the bridge hasn't seen Continue pressed yet.
 export const firstContinue = (st, label) => st.stateName === 'CanContinue' && !st.actionReady && /^Continue$/.test(label || '');
 
-/** The game stops for a match (Continue slot "Go To Match", a match/team-talk state …). */
-export const isMatchDay = (st, label) => /match/i.test(label || '') || /match|teamtalk/i.test(st?.stateName || '');
+/** The game stops for a match (Continue slot "Go To Match" / "Review Team Selection" (2032-01-01), a match/team-talk state …). */
+export const isMatchDay = (st, label) => /match|team selection/i.test(label || '') || /match|teamtalk/i.test(st?.stateName || '');
 
 export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {

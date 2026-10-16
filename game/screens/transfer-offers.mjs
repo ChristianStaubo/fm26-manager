@@ -85,9 +85,11 @@ export const incomingOffer = {
     }
     const decision = decideSale(offer);
     // A chosen up-front ask (fm answer --upfront, to probe how far a buyer goes): a counter at that fee.
-    if (Number.isFinite(upfront) && decision.action === 'counter') {
+    // It's a counter even when the rule would accept (Hülsmann, 2032-01-01: --upfront 15m was ignored
+    // and Stuttgart's first offer accepted).
+    if (Number.isFinite(upfront) && ['counter', 'accept'].includes(decision.action) && upfront > (offer.upfront ?? 0)) {
       const instalments = Math.max(0, offer.guaranteed - offer.upfront);
-      Object.assign(decision, {upfront, guaranteedAsk: upfront + instalments, rule: {upfront: decision.upfront, guaranteedAsk: decision.guaranteedAsk}, reason: `${decision.reason} (ask set by hand)`});
+      Object.assign(decision, {action: 'counter', upfront, guaranteedAsk: upfront + instalments, rule: {action: decision.action, upfront: decision.upfront, guaranteedAsk: decision.guaranteedAsk}, reason: `${decision.reason} (ask set by hand)`});
     }
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }
