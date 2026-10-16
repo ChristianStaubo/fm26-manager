@@ -16,6 +16,9 @@ export async function holiday({days, until, dryRun = false} = {}) {
   // On a match day Continue opens Team Selection, which has no date button (2032-01-01): go Back
   // to the Portal first (never Go To Match / Instant Result: the assistant plays it on holiday).
   for (let i = 0; i < 3 && !(await Screen.read()).date(); i++) {
+    // Team Selection can open with a notice on a darkened background ("Gallardo has been loaned out…
+    // Miretti is suspended…", Ok; 2032-01-07): dismiss it first, it covers the Back button.
+    if ((await Screen.read()).buttons('Ok').length === 1) { await click('Ok'); await waitFor(x => !x.buttons('Ok').length, {what: 'notice closed', timeout: 5000}).catch(() => null); }
     await clickWhere(x => x.items.find(b => b.kind === 'button' && b.name === 'BackButton'), 'Back button');
     await waitFor(x => !!x.date(), {what: 'the Portal (date button)', timeout: 8000}).catch(() => null);
   }
