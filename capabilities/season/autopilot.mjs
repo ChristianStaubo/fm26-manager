@@ -10,10 +10,11 @@ import {loadRules} from '../sell/decide.mjs';
 import {windowEnd, inWindow} from './season.mjs';
 import {HANDLERS as TRANSFER_HANDLERS} from '../../game/screens/transfer-offers.mjs';
 import {HANDLERS as ADMIN_HANDLERS} from '../../game/screens/admin/handlers.mjs';
+import {offersSummary} from '../../game/screens/transfer-activity.mjs';
 import {handBackContract} from '../contracts/personal-terms.mjs';
 import {pressConference} from '../../game/screens/admin/press.mjs';
 
-export const HANDLERS = [...TRANSFER_HANDLERS, handBackContract, ...ADMIN_HANDLERS];
+export const HANDLERS = [...TRANSFER_HANDLERS, handBackContract, offersSummary, ...ADMIN_HANDLERS];
 
 // What the analyst needs to see: the open message (sidebar excluded) and its buttons.
 export function summarize(s) {

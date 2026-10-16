@@ -52,3 +52,10 @@ test('a player asking for a new contract is a player issue: the assistant handle
     buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
   assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['player-issue']);
 });
+
+test("several bids at once ('Offers made for Brentford's Gallardo') → the offers-summary handler", async () => {
+  const {HANDLERS: ALL} = await import('../capabilities/season/autopilot.mjs');
+  const texts = ['Phil Giles', "Offers made for Brentford's Gallardo", 'Several clubs have made offers for Rubén Gallardo.'];
+  const s = {texts: () => texts, hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)), buttons: () => [], items: []};
+  assert.equal(ALL.find(h => { try { return h.match(s); } catch { return false; } })?.name, 'offers-summary');
+});

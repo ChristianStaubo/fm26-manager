@@ -29,7 +29,8 @@ export async function transferActivity() {
 // (value, wage, contract, and the buttons: Accept/Stall/Reject Offer, Cancel Offer, …).
 export async function deal(name) {
   await transferActivity();
-  const pick = x => x.items.find(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label.toLowerCase().startsWith(name.toLowerCase()));
+  // By full name, or a surname from a message ("Offers made for Brentford's Gallardo").
+  const pick = x => x.items.find(i => i.kind === 'toggle' && i.bounds[0] < 480 && (i.label.toLowerCase().startsWith(name.toLowerCase()) || i.label.toLowerCase().includes(' ' + name.toLowerCase() + ' ')));
   const s0 = await Screen.read();
   if (!pick(s0)) throw new Error(`No deal for "${name}" in Transfer Activity: ${s0.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label).map(i => i.label).join(' | ')}`);
   await toggle(pick, true, `deal ${name}`);
@@ -61,3 +62,19 @@ export async function answer(name, {club, upfront, dryRun = false} = {}) {
   const s = await waitFor(x => handler(x), {what: 'offer details', timeout: 15000});
   return handler(s).run(s, {dryRun, upfront});
 }
+
+// "Offers made for Brentford's <Player>" (several clubs at once, 2032-08-05): answer every open bid for
+// him, one club at a time, with the usual pricing (incoming-offer handler).
+export const offersSummary = {
+  name: 'offers-summary',
+  match: s => s.hasText(/^Offers made for .+'s .+$/),
+  async run(s, {dryRun = false} = {}) {
+    const surname = /^Offers made for .+'s (.+)$/.exec(s.texts().find(t => /^Offers made for .+'s .+$/.test(t)))[1];
+    const answered = [];
+    for (let i = 0; i < 5; i++) {
+      try { answered.push(await answer(surname, {dryRun})); }
+      catch (e) { if (/No open offer/.test(e.message)) break; answered.push({error: e.message.slice(0, 160)}); if (dryRun) break; }
+    }
+    return {action: 'offers-summary', player: surname, answered};
+  },
+};
