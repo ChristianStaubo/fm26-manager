@@ -6,7 +6,7 @@
 import {getState} from '../../game/bridge/client.mjs';
 import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../game/ui/index.mjs';
 import {control, withLock} from './continue.mjs';
-import {windowEnd} from './season.mjs';
+import {windowEnd, inWindow} from './season.mjs';
 import {HANDLERS as TRANSFER_HANDLERS} from '../../game/screens/transfer-offers.mjs';
 import {HANDLERS as ADMIN_HANDLERS} from '../../game/screens/admin/handlers.mjs';
 import {handBackContract} from '../contracts/personal-terms.mjs';
@@ -34,12 +34,24 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null;
+    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     for (;;) {
       const r = await control({maxSteps: stopAt ? 3 : 10});
       if (['error', 'unavailable'].includes(r.reason)) return stop(r.reason, {error: r.error});
       const s = await Screen.read(), today = s.date();
+      // Once per game day in a window: observe the deals (state machine, capabilities/deals). A deal
+      // stuck, vanished before signing, or in a state we don't know stops us (2032-01 wonderkids).
+      if (today && !dryRun && isoDate(today) !== dealsDay && inWindow(today)) {
+        dealsDay = isoDate(today);
+        try {
+          const {transferActivity} = await import('../../game/screens/transfer-activity.mjs');
+          const {observe} = await import('../deals/store.mjs');
+          const a = await transferActivity(), r = await observe(dealsDay, a.rows);
+          const stops = r.alerts.filter(x => x.stop);
+          if (stops.length) return stop('needs-analyst', {handler: 'deals', why: stops.map(x => `${x.kind}: ${x.player || x.stage}${x.from ? ' from ' + x.from : ''}${x.state ? ' (' + x.state + ', ' + x.days + ' days)' : ''}`).join('; '), alerts: r.alerts});
+        } catch (e) { decisions.push({action: 'deals-observe', error: e.message}); }
+      }
       if (stopAt && today && today >= stopAt) return stop('until', {date: isoDate(today)});
       if (!stopAt && today && !closes) closes = windowEnd(today);
       if (closes && today > closes) return stop('window-closed', {date: isoDate(today), closed: isoDate(closes)});

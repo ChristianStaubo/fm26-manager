@@ -44,3 +44,13 @@ test('an impossible move is an unknown transition (stop); unnamed rows are repor
   assert.ok(r.alerts.some(a => a.kind === 'unknown-transition' && a.stop));
   assert.ok(r.alerts.some(a => a.kind === 'unnamed-deal'));
 });
+
+test('our own actions become deal events (fee agreed, bid accepted, counter accepted)', async () => {
+  const {events} = await import('./store.mjs');
+  const ev = events([
+    {at: '2026-10-16T00:20:00Z', action: 'buy', name: 'Pius Collins', outcome: 'agreed'},
+    {at: '2026-10-16T00:21:00Z', action: 'buy', name: 'Kenan Zukic', outcome: 'cannot-sign'},
+    {at: '2026-10-16T00:22:00Z', action: 'incoming-offer', executed: true, offer: {player: 'Hamza Güreler'}, decision: {action: 'counter'}, accepted: true},
+  ], '2026-10-16T00:00:00Z');
+  assert.deepEqual(ev, [{player: 'Pius Collins', dir: 'in', state: 'fee-agreed'}, {player: 'Hamza Güreler', dir: 'out', state: 'contract'}]);
+});

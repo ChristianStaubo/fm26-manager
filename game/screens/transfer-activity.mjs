@@ -1,6 +1,7 @@
 // Our current transfer activity: Recruitment → Transfer Activity. The authoritative list of
 // bids we made (and offers received), with status, plus the potential budget impact.
 import {goTo, click, waitFor, Screen, parseMoney, toggle, settle} from '../ui/index.mjs';
+import {splitLabel, stageState} from '../../capabilities/deals/deals.mjs';
 
 export async function transferActivity() {
   await goTo('Recruitment');
@@ -8,12 +9,20 @@ export async function transferActivity() {
   await waitFor(x => x.buttons('Transfer Activity').length === 1, {what: 'Transfer Activity tab'});
   await click('Transfer Activity');
   const s = await waitFor(x => x.hasText('Potential Transfer Budget Impact') && x.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label), {what: 'Transfer Activity list'}).catch(() => Screen.read());
-  // Left list: one toggle per deal, label "<Player> <Status>".
-  const deals = s.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label).map(i => i.label);
+  // Left list: one toggle per deal, label "<Player> <Status>". Some rows label the toggle with the
+  // stage only ("Contract", 2032-01-06: three unnamed signings): the name is a text inside the row.
+  const toggles = s.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
+  const deals = toggles.map(i => i.label);
+  const inside = (t, i) => i.bounds[0] >= t.bounds[0] - 2 && i.bounds[1] >= t.bounds[1] - 2 && i.bounds[0] + i.bounds[2] <= t.bounds[0] + t.bounds[2] + 2 && i.bounds[1] + i.bounds[3] <= t.bounds[1] + t.bounds[3] + 2;
+  const rows = toggles.map(t => {
+    const r = splitLabel(t.label);
+    if (!r.player) r.player = s.items.find(i => i !== t && ['text', 'button'].includes(i.kind) && i.label && inside(t, i) && !stageState(i.label) && !/^£/.test(i.label))?.label ?? null;
+    return r;
+  });
   const after = t => parseMoney(s.after(t, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   // Detail pane of the selected deal: "Offer Made £7.5M".
   const selected = s.items.find(i => i.kind === 'button' && i.name === 'transfer-link-button')?.label;
-  return {deals, selected, potentialBudgetImpact: after('Potential Transfer Budget Impact'), transferBudget: after('Transfer Budget'), payrollAvailable: after('Payroll Budget')};
+  return {deals, rows, selected, potentialBudgetImpact: after('Potential Transfer Budget Impact'), transferBudget: after('Transfer Budget'), payrollAvailable: after('Payroll Budget')};
 }
 
 // One deal's details: select its toggle ("<Player> <Stage>") and read the pane on the right
