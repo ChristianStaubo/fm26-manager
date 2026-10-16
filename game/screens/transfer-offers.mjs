@@ -95,7 +95,10 @@ export const incomingOffer = {
     }
     const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }
-    try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.guaranteedAsk : offer.total ?? offer.guaranteed); }
+    // Prices are totals, add-ons included (user, 2032-02-02: Güreler "£30M total comp"): a counter is
+    // worth its guaranteed ask plus the add-ons the buyer already offered.
+    const addOns = Math.max(0, (offer.total ?? offer.guaranteed) - offer.guaranteed);
+    try { approveSale(offer.player, decision, decision.action === 'counter' ? decision.guaranteedAsk + addOns : offer.total ?? offer.guaranteed); }
     catch (e) { await log({...entry, executed: false, approval: e.details}); throw e; }
     if (decision.action === 'counter') {
       // A non-negotiable bid may not take a new fee: then it's a plain reject (the counter is ours to try).
