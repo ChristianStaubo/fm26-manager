@@ -8,7 +8,12 @@ export async function transferActivity() {
   // The Recruitment page builds its sub-tabs after the click: wait for the tab first.
   await waitFor(x => x.buttons('Transfer Activity').length === 1, {what: 'Transfer Activity tab'});
   await click('Transfer Activity');
-  const s = await waitFor(x => x.hasText('Potential Transfer Budget Impact') && x.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label), {what: 'Transfer Activity list'}).catch(() => Screen.read());
+  // The rows render with the stage first ("Offer Made") and the names a moment later (2033-08-05: four
+  // deals read with no player): wait for named rows, else take what is there (stage-only rows exist).
+  const list = x => x.hasText('Potential Transfer Budget Impact') && x.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
+  const named = x => list(x) && x.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label).every(i => splitLabel(i.label).player);
+  const s = await waitFor(named, {what: 'Transfer Activity rows with names', timeout: 6000})
+    .catch(() => waitFor(list, {what: 'Transfer Activity list', timeout: 4000})).catch(() => Screen.read());
   // Left list: one toggle per deal, label "<Player> <Status>". Some rows label the toggle with the
   // stage only ("Contract", 2032-01-06: three unnamed signings): the name is a text inside the row.
   const toggles = s.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
