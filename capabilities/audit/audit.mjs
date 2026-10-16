@@ -103,7 +103,9 @@ export function checkCheckpoints({today, cycle, reports = [], decisions = [], in
     // A week's grace: holiday can land a day or two late.
     const late = new Date(Date.parse(due) + 7 * 86400000).toISOString().slice(0, 10);
     if (today < late) continue;
-    const ran = reports.some(r => r.name === c.name && r.date >= due && r.date <= new Date(Date.parse(due) + 60 * 86400000).toISOString().slice(0, 10));
+    // Run up to 2 days early counts too (january ran on 2032-01-01, a day before it was due).
+    const early = new Date(Date.parse(due) - 2 * 86400000).toISOString().slice(0, 10);
+    const ran = reports.some(r => r.name === c.name && r.date >= early && r.date <= new Date(Date.parse(due) + 60 * 86400000).toISOString().slice(0, 10));
     if (!ran) (['january', 'summer'].includes(c.name) ? decide : warn).push(`${c.name} checkpoint (${due}) has no report: fm checkpoint ${c.name}`);
   }
   const answered = name => decisions.some(d => norm(d.name || d.player) === norm(name) && /precontract|buy|ask/.test(d.action || ''))

@@ -78,3 +78,8 @@ test('cycle: a checkpoint already run today is skipped (newgen twice on 2032-05-
   assert.equal(r.checkpoint, 'season_end');
   assert.deepEqual(legs, [['holiday', '2032-05-28']]);
 });
+
+test('judge: a checkpoint run a day early counts (january on 2032-01-01)', () => {
+  const r = checkCheckpoints({today: '2032-05-28', cycle, reports: [report('summer', '2031-07-02'), report('january', '2032-01-01')]});
+  assert.ok(!r.decide.some(x => /january checkpoint/.test(x)));
+});

@@ -11,11 +11,20 @@ median value of players at his position with the same role attributes (±0.4) an
 resale we could get once he's on a long contract. Ranked by that worth; attributes are percentiles vs
 Premier League regulars at the position (Doak 43 at RW).
 """
+import datetime as dt
 import argparse, json, statistics as st
 import manager as m, scorecard as sc
 from window import SLOTS, MIN_SAMPLE
 
 sr = m.sr
+
+
+def approach_on(ends):
+    """The day after a contract ends (YYYY-MM-DD): when an English club's player can be approached."""
+    try:
+        return (dt.date.fromisoformat(ends[:10]) + dt.timedelta(days=1)).isoformat()
+    except (ValueError, TypeError):
+        return 'when his contract ends'
 
 
 def scan(rows, max_age=None, min_worth=None, min_attr=None):
@@ -59,7 +68,9 @@ def scan(rows, max_age=None, min_worth=None, min_attr=None):
                  'route': 'sign now (free agent)' if m.is_free_agent(p)
                  # English clubs: no pre-contract with another English club during the season (user,
                  # 2032-01-01: Burton/Monga "not available for approach yet"); under 24 a compensation fee.
-                 else 'English club: approach when the season ends' + (' (compensation fee: under 24)' if a < 24 else '')
+                 # No "Approach To Sign" on the profile until the contract has run out (user,
+                 # 2032-05-28, Burton/Monga): approach on the day after it ends, as a free agent.
+                 else f"English club: approach on {approach_on(ends)} (no Approach To Sign before the contract ends)" + (' (compensation fee: under 24)' if a < 24 else '')
                  if (p['competition'] or '').startswith(m.ENGLISH_COMPS) and not p['on_loan_at'] or (p.get('contract_club') or '') in ENGLISH_CLUBS
                  else 'pre-contract (fm precontract) from January; free on 1 July'}
             # One entry per player, at the slot where he's worth most. Always-buy: worth and age.

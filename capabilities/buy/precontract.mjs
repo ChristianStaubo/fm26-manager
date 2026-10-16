@@ -22,7 +22,7 @@ export async function preContract(name, club, {preview = false, dryRun = false} 
     profile = await openPlayer(name, club);
     ({top} = await peekActions('Transfer'));
   }
-  if (!top.includes(APPROACH)) return {action: 'pre-contract', name, club, outcome: 'not-offered', why: `no "${APPROACH}" (contract not expiring, or talks already open)`, actions: top};
+  if (!top.includes(APPROACH)) return {action: 'pre-contract', name, club, outcome: 'not-offered', why: `no "${APPROACH}": contract not expiring, talks already open, or (English club) not before his contract ends: approach as a free agent the day after (user, 2032-05-28)`, actions: top};
   const facts = profileFacts(profile);
   const currentWage = facts.wage ?? parseMoney(/£[\d.,]+K?/.exec(facts.contract || '')?.[0] ?? '') ?? null;
   if (dryRun) return {action: 'pre-contract', name, club, dryRun: true, currentWage};
