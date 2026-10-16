@@ -32,6 +32,8 @@ export async function holiday({days, until, dryRun = false} = {}) {
   }
   const today = (await Screen.read()).date();
   if (!today) throw new Error('holiday: no date on screen (still on a match screen?)');
+  // From a message page a TabGroup can cover the date button (Miretti, 2032-07-04): start from the Portal.
+  if ((await Screen.read()).buttons('Portal').length) { await click('Portal'); await waitFor(x => !!x.date(), {what: 'the Portal', timeout: 8000}).catch(() => null); }
   const back = until ? new Date(until + 'T00:00:00Z') : nextDate(today, cfg.return_on);
   const n = days ?? daysBetween(today, back);
   await clickWhere(s => s.items.find(i => i.kind === 'button' && /^\d{1,2}\/\d{1,2}\/\d{4}\b/.test(i.label)), 'date button');
