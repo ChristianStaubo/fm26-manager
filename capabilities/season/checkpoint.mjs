@@ -132,14 +132,14 @@ export async function cycle(opts = {}, {date = gameDate, inWindow: inWin, nextOp
   const iso = d => d.toISOString().slice(0, 10), day = x => new Date(x + 'T00:00:00Z');
   // Today's checkpoint already ran (its report exists): the next one (newgen ran twice, 2032-05-01).
   const start = await date(), ran = done().some(r => r.date === start);
-  const next = nextCheckpoint(ran ? iso(new Date(day(start).getTime() + 864e5)) : start);
+  const next = nextCheckpoint(ran ? season.addDays(start, 1) : start);
   const legs = [];
   for (let i = 0; i < 12; i++) {
     const today = await date();
     if (today >= next.date) return {legs, ...await check(next.name, opts)};
     if (inWin(day(today))) {
       // To the checkpoint if it falls inside this window, else to the window's close.
-      const close = iso(closeOf(day(today))), until = next.date <= close ? next.date : iso(new Date(day(close).getTime() + 86400000));
+      const close = iso(closeOf(day(today))), until = next.date <= close ? next.date : season.addDays(close, 1);
       const r = await drive(until); legs.push({drive: until, reason: r.reason});
       if (!['until', 'window-closed'].includes(r.reason)) return {stopped: r, next, legs};
     } else {

@@ -38,8 +38,8 @@ def scan(rows, tactic, date=None):
     market = [p for p in rows if p['contract_club'] != m.CLUB and p['club'] and not p['club'].startswith('club#')
               and str(p['age'] or '').isdigit() and 21 <= int(p['age']) <= pol.get('replacement_max_age', 25)
               and pol.get('replacement_min_value', 1e6) <= float(p['value'] or 0) < 1e9]
-    cav = lambda x: int(x['ca']) if str(x.get('ca') or '').isdigit() else -1
-    stars = {x['name'] for x in sorted(ours, key=lambda x: -cav(x))[:pol.get('stars_top', 3)]}
+    ca, pa = (lambda x: m.intval(x, 'ca')), (lambda x: m.intval(x, 'pa'))
+    stars = {x['name'] for x in sorted(ours, key=lambda x: -ca(x))[:pol.get('stars_top', 3)]}
     out = []
     for p in ours:
         exp = (p.get('contract_expires') or '')[:10]
@@ -51,20 +51,18 @@ def scan(rows, tactic, date=None):
             pos, role = GROUPS[g[0]]
             # Quality is FM's CA (position-weighted over every attribute; user, 2032-07-02: our role
             # average flattered Marco Company, CA 139 vs Kislyak's 145). The role score only checks fit.
-            ca, my = lambda x: int(x['ca']) if str(x.get('ca') or '').isdigit() else -1, None
             my = ca(p)
             cands = [q for q in market if set((q['positions'] or '').replace('/', ' ').split()) & pos
                      and ca(q) >= my - pol.get('similar_ca', 3) and score(q, role) >= g[2] - pol.get('fit_within', 1.0)
                      and float(q['value']) <= pol.get('replace_value_ratio', 0.75) * max(value, 1)]
             if cands:
-                pa = lambda x: int(x['pa']) if str(x.get('pa') or '').isdigit() else -1
                 q = max(cands, key=lambda q: (ca(q), pa(q) if int(q['age']) <= 23 else 0, -float(q['value'])))
                 card = {'name': q['name'], 'club': q['contract_club'] or q['club'], 'age': int(q['age']), 'value': int(float(q['value'])),
                         'ca': ca(q), 'pa': pa(q), 'role_score': round(score(q, role), 2)}
         out.append({'name': p['name'], 'age': int(p['age']), 'positions': p['positions'], 'value': value,
                     'wage': int(float(p['wage'] or 0)), 'minutes': int(p['mins'] or 0), 'contract_until': exp or None,
                     'no_contract': not exp or exp < today.isoformat(), 'starts': p['name'] in xi, 'star': p['name'] in stars,
-                    'role': ('/'.join(g[1]) if isinstance(g[1], tuple) else g[1]) if g else None, 'ca': int(p['ca']) if str(p.get('ca') or '').isdigit() else None, 'pa': int(p['pa']) if str(p.get('pa') or '').isdigit() else None, 'role_score': round(g[2], 2) if g else None, 'replacement': card})
+                    'role': ('/'.join(g[1]) if isinstance(g[1], tuple) else g[1]) if g else None, 'ca': m.intval(p, 'ca', None), 'pa': m.intval(p, 'pa', None), 'role_score': round(g[2], 2) if g else None, 'replacement': card})
     return {'date': today.isoformat(), 'final_year_by': end.isoformat(), 'players': sorted(out, key=lambda x: -x['value'])}
 
 
@@ -72,6 +70,5 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--csv')
     a = ap.parse_args()
-    rows, _ = m.load(a.csv)
-    tactic = json.load(open(m.ROOT / 'config' / 'tactic.json')) if hasattr(m, 'ROOT') else json.load(open('../config/tactic.json'))
+    rows, tactic = m.load(a.csv)
     print(json.dumps(scan(rows, tactic), default=str))

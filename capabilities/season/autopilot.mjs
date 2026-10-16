@@ -37,26 +37,25 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
     let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null, retried = null;
-    let hard = null;
-    const stop = (reason, extra = {}) => { if (hard) clearInterval(hard); return {reason, decisions, ...extra}; };
+    const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
+    const reportStuck = async why => { try { return await (await import('../../cli/friction.mjs')).stuck(why); } catch { return null; } };
     // Watchdog (user, 2032-07-12: "surely we need something to catch when we get stuck"): no new game
     // date and no decision for watchdog_minutes → save a stuck report and stop, never hang silently.
     let progressAt = Date.now(), lastDate = null, lastCount = 0;
     const limitMs = (loadRules().autopilot?.watchdog_minutes ?? 5) * 60e3;
     // A step that hangs inside the loop (a wait that never returns) is caught by a timer beside it.
-    hard = setInterval(async () => {
+    const hard = setInterval(async () => {
       if (Date.now() - progressAt < limitMs + 120e3) return;
       clearInterval(hard);
-      try { const {stuck} = await import('../../cli/friction.mjs'); await stuck(`autopilot hard watchdog: a step hung, no progress for ${Math.round((limitMs + 120e3) / 60e3)} min on ${lastDate}`); } catch {}
+      await reportStuck(`autopilot hard watchdog: a step hung, no progress for ${Math.round((limitMs + 120e3) / 60e3)} min on ${lastDate}`);
       console.log(JSON.stringify({reason: 'stalled', why: 'a step hung (hard watchdog)', date: lastDate, decisions}));
       process.exit(3);
     }, 30e3);
     hard.unref?.();
-    for (;;) {
+    try { for (;;) {
       if (decisions.length !== lastCount) { lastCount = decisions.length; progressAt = Date.now(); }
       if (Date.now() - progressAt > limitMs) {
-        let report = null;
-        try { const {stuck} = await import('../../cli/friction.mjs'); report = await stuck(`autopilot watchdog: no progress for ${Math.round(limitMs / 60e3)} min on ${lastDate}`); } catch {}
+        const report = await reportStuck(`autopilot watchdog: no progress for ${Math.round(limitMs / 60e3)} min on ${lastDate}`);
         return stop('stalled', {why: `no new game date or decision for ${Math.round(limitMs / 60e3)} minutes`, date: lastDate, report, screen: summarize(await Screen.read().catch(() => null) || {texts: () => [], buttons: () => []})});
       }
       const r = await control({maxSteps: stopAt ? 3 : 10});
@@ -73,13 +72,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           const a = await transferActivity(), r = await observe(dealsDay, a.rows);
           // A signing gone from Transfer Activity has usually completed (Burton, Collins, Luna): his
           // profile then shows our squad actions (Training). Only a real collapse stops us.
-          for (const x of r.alerts.filter(x => x.kind === 'vanished' && x.dir === 'in')) {
+          const vanished = r.alerts.filter(x => x.kind === 'vanished' && x.dir === 'in');
+          const nav = vanished.length && await import('../../game/ui/navigate.mjs'), {resolveVanished} = await import('../deals/store.mjs');
+          const club = vanished.length && (await import('../data.mjs')).club().club;
+          for (const x of vanished) {
             try {
-              const nav = await import('../../game/ui/navigate.mjs'), {readFileSync} = await import('node:fs');
-              const club = JSON.parse(readFileSync(new URL('../../config/club.json', import.meta.url))).club;
               await nav.openPlayer(x.player, club);
               const {top} = await nav.peekActions();
-              const {resolveVanished} = await import('../deals/store.mjs');
               const ours = top.includes('Training');
               resolveVanished(x.player, ours, dealsDay);
               if (ours) { x.stop = false; x.resolved = 'completed'; }
@@ -88,6 +87,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           const stops = r.alerts.filter(x => x.stop);
           if (stops.length) return stop('needs-analyst', {handler: 'deals', why: stops.map(x => `${x.kind}: ${x.player || x.stage}${x.from ? ' from ' + x.from : ''}${x.state ? ' (' + x.state + ', ' + x.days + ' days)' : ''}`).join('; '), alerts: r.alerts});
         } catch (e) { decisions.push({action: 'deals-observe', error: e.message}); }
+        continue;   // observing left the page: read the game again before acting on `s`
       }
       if (stopAt && today && today >= stopAt) return stop('until', {date: isoDate(today)});
       if (!stopAt && today && !closes) closes = windowEnd(today);
@@ -166,6 +166,6 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
         if (e instanceof NeedsAnalyst) return stop('needs-analyst', {handler: handler.name, why: e.message, details: e.details, screen: summarize(await Screen.read())});
         return stop('error', {handler: handler.name, error: e.message, doNotRetryAutomatically: true});
       }
-    }
+    } } finally { clearInterval(hard); }   // also when a step throws
   });
 }

@@ -6,6 +6,7 @@
 import {execFileSync} from 'node:child_process';
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {loadRules} from '../sell/decide.mjs';
+import {samePlayer} from '../../game/ui/navigate.mjs';
 
 const FILE = new URL('../../local/runs/price-book.json', import.meta.url);
 const ROOT = new URL('../..', import.meta.url).pathname;
@@ -17,7 +18,7 @@ export function load() { try { return JSON.parse(readFileSync(FILE, 'utf8')); } 
 export function lookup(name, book = load()) {
   const k = key(name);
   if (!k) return null;
-  return book.players[k] || Object.values(book.players).find(p => key(p.name).endsWith(' ' + k) || k.endsWith(' ' + key(p.name))) || null;
+  return book.players[k] || Object.values(book.players).find(p => samePlayer(p.name, name)) || null;
 }
 
 // Unlisting ends the price: a stale minimum would decide later bids (Brown, 2031-01-08: unlisted to
@@ -57,5 +58,5 @@ export function price(name, range, date, {min} = {}) {
   // Our floor above the top of the market range: nobody will pay it, and he is worth more to us.
   const keep = min === undefined && minimum > vHigh * rules.keep_if_minimum_over;
   return {minimum, target, why, keep, blockers: analysis?.blockers || [], importance: analysis?.importance ?? null,
-    age: analysis?.player?.age ?? null, yearsLeft: analysis?.player?.contract_years_left ?? null};
+    age: analysis?.player?.age ?? null};
 }

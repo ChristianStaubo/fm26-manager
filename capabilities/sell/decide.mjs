@@ -13,7 +13,7 @@ const tidy = v => roundTo(v, v >= 1e6 ? 50000 : v >= 1e5 ? 5000 : 1000);
 /**
  * Incoming offer for one of our players.
  * offer: {guaranteed, upfront, vLow, vHigh, negotiable, countersSoFar,
- *         monthsLeft, keyPlayer}
+ *         monthsLeft, total, priceBook, minimum, target, daysToClose, importance, blockers, paid, age}
  * → {action: 'accept'|'reject'|'counter'|'escalate', upfront?, reason}
  */
 export function decideSale(offer, policy = loadRules()) {
@@ -25,10 +25,6 @@ export function decideSale(offer, policy = loadRules()) {
   const w = policy.valuation?.addon_weight ?? 1;
   o = {...o, guaranteed: o.guaranteed + w * Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed)};
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;
-  // Counters ask on the GUARANTEED money (fee + instalments); their add-ons stay on top as a bonus.
-  // Doak (2031-06-17): Villa offered £27.5M + £7.75M instalments + £4.4M add-ons; the user asked
-  // £40M up front (£47.75M guaranteed) and Villa accepted at once. Counting the add-ons as fee here
-  // would have asked only £36M up front.
   // Prices are TOTALS, add-ons included (user, 2032-02-02: Güreler "£30M total comp"): a counter at
   // `target` asks for target minus the add-ons they already offer, as fee + instalments.
   const raw = offer.guaranteed, instalments = Math.max(0, raw - (o.upfront ?? raw)), addOns = o.guaranteed - raw;
@@ -66,7 +62,7 @@ export function decideSale(offer, policy = loadRules()) {
   //   surplus = fringe: a little under it
   // Never below what we paid, unless he's 30+ or in his last year; a last-year contract sells at the
   // bottom of his range. Selling a core player needs a replacement (flagged).
-  const need = o.blockers?.length || ['key starter', 'starter'].includes(o.importance) ? 'core'
+  const need = o.blockers?.length ? 'core'
     : ['strong rotation', 'rotation', 'weak starter'].includes(o.importance) ? 'depth' : o.importance === 'fringe' ? 'surplus' : 'core';
   const mult = (p.sell_ask_by_need || {})[need] ?? p.sell_ask;
   const paidFloor = Number.isFinite(o.paid) && !(o.age >= 30) && !expiring ? o.paid * (p.paid_floor ?? 1) : 0;

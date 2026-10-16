@@ -4,8 +4,8 @@
 import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../ui/index.mjs';
 import {decideSale, decidePayoff, decideLoan, loadRules} from '../../capabilities/sell/decide.mjs';
 import {negotiate, offerValueRange, defaultMax, buyStep, gmLine} from '../../capabilities/buy/buy.mjs';
-import {classify} from '../../capabilities/deals/replies.mjs';
-import {writeFileSync} from 'node:fs';
+import {classify, saveReplyScreen} from '../../capabilities/deals/replies.mjs';
+import {samePlayer} from '../ui/navigate.mjs';
 import {log, history} from '../../capabilities/log.mjs';
 import * as pricebook from '../../capabilities/value/pricebook.mjs';
 import {paidFor} from '../../capabilities/value/paid.mjs';
@@ -45,7 +45,6 @@ export function readOffer(d, {headClub, shortName, coach}) {
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
     // Everything incl. instalments and add-ons; add-ons count as fee (policy.json addon_weight).
     total: parseMoney(d.after('Future & Potential Total Cost with Additional Fees:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
-    keyPlayer: /\b(key|star|important|regular starter)\b/i.test(coach),
   };
   // The value is a range ("£49M - £60M"), or one amount when the player is listed (his asking
   // price) or valued exactly: Thiago, listed, showed "£63M" (2026-06-25). One amount = [v, v].
@@ -86,10 +85,10 @@ export const incomingOffer = {
     else if (Number.isFinite(offer.vLow) && Number.isFinite(offer.vHigh)) {
       const p = pricebook.price(offer.player, [offer.vLow, offer.vHigh], isoDate(d.date()));
       Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep,
-        importance: p.importance, blockers: p.blockers, age: p.age, paid: paidFor(offer.player)});
+        importance: p.importance, blockers: p.blockers, age: p.age, paid: paidFor(offer.player, await history())});
     }
     // Days to the window's close: late in the window a listed player goes at his minimum.
-    { const {windowEnd} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = Math.round((windowEnd(day) - day) / 864e5); }
+    { const {windowEnd, daysBetween} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = daysBetween(day, windowEnd(day)); }
     const decision = decideSale(offer);
     // A chosen up-front ask (fm answer --upfront, to probe how far a buyer goes): a counter at that fee.
     // It's a counter even when the rule would accept (Hülsmann, 2032-01-01: --upfront 15m was ignored
@@ -126,7 +125,7 @@ export const incomingOffer = {
       // round 1's "have negotiated" at once and logged our own terms as their reply).
       // …or the same line with new terms (Dortmund's second counter for Güreler, 2032-02-02).
       const terms = x => { const o = readOffer(x, {headClub: offer.club, shortName: offer.player, coach: ''}); return `${o.upfront}|${o.guaranteed}|${o.total}`; };
-      const before = verdict(await Screen.read()), termsSent = terms(await Screen.read());
+      const now = await Screen.read(), before = verdict(now), termsSent = terms(now);
       await click('Suggest Terms', {name: 'StandardButton'});
       // From here the counter has been put to them: log the round whatever happens next.
       const v = await waitFor(x => verdict(x) && (verdict(x) !== before || (!x.buttons('Suggest Terms').length && terms(x) !== termsSent)), {what: 'the buyer\'s answer', timeout: 30000}).catch(async e => { await log({...entry, executed: true, verdict: null}); throw e; });
@@ -134,9 +133,7 @@ export const incomingOffer = {
       // "<club> have negotiated the offer for <player>." (Man Utd, 2031-06-17): their counter is written
       // into the form. Record it as their reply and stop; the next call decides round 2 on it.
       entry.replyState = classify(entry.verdict);
-      if (entry.replyState === 'unknown') {
-        writeFileSync(new URL(`../../local/runs/unknown-reply-${Date.now()}.json`, import.meta.url), JSON.stringify({gm: entry.verdict, texts: v.texts().slice(0, 120), buttons: v.buttons(/./).map(b => b.label).slice(0, 80)}, null, 1));
-      }
+      if (entry.replyState === 'unknown') saveReplyScreen('unknown-reply', v, {gm: entry.verdict});
       if (['countered', 'final'].includes(entry.replyState)) {
         const r = readOffer(v, {headClub: offer.club, shortName: offer.player, coach: ''});
         entry.reply = {upfront: r.upfront, guaranteed: r.guaranteed, total: r.total};
@@ -320,23 +317,16 @@ export const youthLoanOffer = {
     // Mainz, 90%, 2032-07-23). Other first-team loans: the user decides.
     // He's already leaving on a deal we agreed (Bouhoudane to Espanyol; Frosinone bid after, 2032-07-31):
     // further loan offers are turned down.
-    {
-      const {load} = await import('../../capabilities/deals/store.mjs');
-      const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state)
-        && (d.player || '').toLowerCase().endsWith((l.player || '').toLowerCase()));
-      if (going) {
-        entry.decision = 'reject'; entry.why = `already leaving (deal at ${going.state})`;
-        if (dryRun) return {...entry, dryRun: true};
-        await click('Reject'); await log({...entry, executed: true}); return entry;
-      }
-    }
+    const answer = async (decision, why) => {
+      Object.assign(entry, {decision, why});
+      if (dryRun) return {...entry, dryRun: true};
+      await click(decision === 'accept' ? 'Accept' : 'Reject'); await log({...entry, executed: true}); return entry;
+    };
+    const {load} = await import('../../capabilities/deals/store.mjs');
+    const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state) && samePlayer(d.player, l.player));
+    if (going) return answer('reject', `already leaving (deal at ${going.state})`);
     if (!(l.age <= sell.youth_max_age)) {
-      const listed = Object.values(pricebook.load().players || {}).some(e => (e.name || '').toLowerCase().endsWith((l.player || '').toLowerCase()));
-      if (listed && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) {
-        entry.decision = 'accept'; entry.why = `listed, ${Math.round(l.wageShare * 100)}% of his wage paid`;
-        if (dryRun) return {...entry, dryRun: true};
-        await click('Accept'); await log({...entry, executed: true}); return entry;
-      }
+      if (pricebook.lookup(l.player) && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) return answer('accept', `listed, ${Math.round(l.wageShare * 100)}% of his wage paid`);
       await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry);
     }
     return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
@@ -376,7 +366,7 @@ export const loanBackRequest = {
     // Only a portfolio/youth buy goes back on loan. A first-team signing stays: Gallardo (our RW
     // starter), Sayman and Carroll were loaned back to their clubs on 2031-07-02 under the old
     // accept-all rule. The buy's approval note says which it is.
-    const approval = loadApprovals().approvals.find(a => a.kind === 'buy' && entry.player && a.player.toLowerCase().endsWith(entry.player.toLowerCase()));
+    const approval = loadApprovals().approvals.find(a => a.kind === 'buy' && samePlayer(a.player, entry.player));
     entry.approvalNote = approval?.note ?? null;
     const accept = loanBackWanted(approval, loadRules().buying);
     entry.decision = accept ? 'accept' : 'reject';

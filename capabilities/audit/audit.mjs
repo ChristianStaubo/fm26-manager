@@ -4,6 +4,7 @@
 import {readFileSync, existsSync, readdirSync, statSync} from 'node:fs';
 import {loadPolicy} from '../sell/decide.mjs';
 import {history} from '../log.mjs';
+import {club as loadClub} from '../data.mjs';
 import {load as loadApprovals} from '../approvals.mjs';
 
 const ROOT = new URL('../../', import.meta.url).pathname;
@@ -74,7 +75,7 @@ export function checkMoney({club, ledger, position, rules}) {
 
 // ---- Live data --------------------------------------------------------------------------
 function clubRow() {
-  const dir = `${ROOT}local/exports`, club = JSON.parse(readFileSync(`${ROOT}config/club.json`, 'utf8')).club;
+  const dir = `${ROOT}local/exports`, club = loadClub().club;
   const f = readdirSync(dir).filter(n => n.endsWith('_clubs.csv')).map(n => `${dir}/${n}`).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0];
   if (!f) return null;
   const [head, ...rows] = readFileSync(f, 'utf8').trim().split('\n').map(l => l.split(','));

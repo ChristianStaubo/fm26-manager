@@ -100,7 +100,7 @@ Transfers
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
   answer "<player>" [--club C] [--upfront N] [--dry-run]   answer his (or club C's) open bid now (incoming-offer handler; no Continue)
-  deals [ack "<player>" --days N --why "…"]   tracked deals and their states; ack: a stuck deal we checked, no alert for N days (the deal state machine (the deal state machine; observed daily by fm run in a window)
+  deals [ack "<player>" --days N --why "…"]   tracked deals and their states; ack: a stuck deal we checked, no alert for N days (the deal state machine; observed daily by fm run in a window)
   negotiations                   every sale negotiation: their offer, our ask (%), their reply, gap closed (data for the counter rule)
 
 Approvals (policy.json autonomy: buying and selling need the user's sign-off)
@@ -284,7 +284,7 @@ try {
     case 'answer': out(await answer(a1, {club: flags.club, upfront: num(flags.upfront), dryRun})); break;
     case 'deals': {
       const st = await import('../capabilities/deals/store.mjs');
-      if (a1 === 'ack') { const {gameDate} = await import('../capabilities/data.mjs'); const t = await gameDate(); const until = new Date(Date.parse(t) + (num(flags.days) || 3) * 864e5).toISOString().slice(0, 10); out(st.ack(a2, until, flags.why || '')); }
+      if (a1 === 'ack') { const {gameDate} = await import('../capabilities/data.mjs'); const t = await gameDate(); const {addDays} = await import('../capabilities/season/season.mjs'); const until = addDays(t, num(flags.days) || 3); out(st.ack(a2, until, flags.why || '')); }
       else out(st.load());
       break;
     }

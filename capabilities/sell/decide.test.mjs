@@ -15,7 +15,7 @@ test('Kislyak (value £36-39M) bid £34M → counter at our sell price ~£50.7M'
   assert.equal(r.upfront, 50.7e6 - 7.25e6);
 });
 test('Kayode (value £63-75M, a player we want to keep) bid £61.5M → counter ~£97.5M', () => {
-  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, keyPlayer: true, negotiable: false, importance: 'key starter'});
+  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, negotiable: false, importance: 'key starter'});
   assert.equal(r.action, 'counter');
   assert.equal(r.totalAsk, 97.5e6, 'a total, add-ons included');
   assert.equal(r.need, 'core'); assert.equal(r.replace, true);

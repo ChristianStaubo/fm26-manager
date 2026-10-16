@@ -41,6 +41,12 @@ def fits(p, slot, natural=True):
     return best >= 20 if natural else best >= 15
 
 
+def intval(p, k, default=-1):
+    """A whole-number column (ca, pa, age), or default when blank or unreadable."""
+    s = str(p.get(k) or '')
+    return int(s) if s.lstrip('-').isdigit() else default
+
+
 def load(csv=None):
     rows = sr.load(csv or sr.export_save('latest'))
     tactic = json.loads((ROOT / 'config' / 'tactic.json').read_text())

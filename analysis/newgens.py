@@ -10,7 +10,7 @@ def scan(rows, top=15):
     pol = m.POLICY['newgens']
     t = m.today_of(rows)
     since = f"{t.year}-{pol['joined_since_mmdd']}"
-    pa = lambda p: int(p['pa']) if str(p.get('pa') or '').lstrip('-').isdigit() else -1
+    pa = lambda p: m.intval(p, 'pa')
     new = [p for p in rows if p['age'] and int(p['age']) <= pol['max_age'] and (p.get('joined_club') or '') >= since
            and p['club'] and not p['club'].startswith('club#')]
     card = lambda p: {'name': p['name'], 'age': int(p['age']), 'positions': p['positions'], 'nation': p.get('nation'),

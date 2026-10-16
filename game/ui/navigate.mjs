@@ -18,6 +18,8 @@ export async function navMenu(tab, item) {
   return choose(select, item, {what: `${tab} menu`});
 }
 export const fold = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').replace(/[łŁ]/g, 'l').replace(/ß/g, 'ss').toLowerCase().trim();
+// The same player under a full or short name ("Thiago" for "Thiago Almada"): equal, or one ends the other at a word.
+export const samePlayer = (a, b) => { const x = fold(a), y = fold(b); return !!x && !!y && (x === y || x.endsWith(' ' + y) || y.endsWith(' ' + x)); };
 export const sameName = (a, b) => { const w = t => fold(t).split(/\s+/).filter(Boolean).sort().join(' '); return w(a) === w(b); };
 // Open a player's profile through the global search. `club` disambiguates namesakes.
 export async function openPlayer(name, club) {

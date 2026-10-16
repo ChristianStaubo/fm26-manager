@@ -7,6 +7,7 @@
 //   in  (we buy):  offer → negotiating → fee-agreed → contract → work-permit → confirmation → completed
 //   out (we sell): offer → negotiating → contract → confirmation → completed
 //   any → collapsed ("Contract Rejected", rejected bids, withdrawn)
+import {daysBetween} from '../season/season.mjs';
 export const STATES = ['offer', 'negotiating', 'fee-agreed', 'contract', 'work-permit', 'confirmation', 'completed', 'collapsed'];
 const NEXT = {
   offer: ['negotiating', 'fee-agreed', 'contract', 'work-permit', 'confirmation', 'collapsed'],
@@ -43,7 +44,7 @@ export function splitLabel(label) {
   return {player: player || null, stage: m[1]};
 }
 const key = name => (name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-const days = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+const days = (a, b) => daysBetween(new Date(a), new Date(b));
 
 /**
  * reduce(deals, obs, policy) → {deals, alerts}

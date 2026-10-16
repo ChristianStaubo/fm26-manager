@@ -5,7 +5,8 @@ import {execFileSync} from 'node:child_process';
 import {existsSync, readFileSync, appendFileSync, mkdirSync, writeFileSync, readdirSync, statSync} from 'node:fs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const club = () => JSON.parse(readFileSync(new URL('../config/club.json', import.meta.url), 'utf8'));
+/** config/club.json: club, league, save_pattern. */
+export const club = () => JSON.parse(readFileSync(new URL('../config/club.json', import.meta.url), 'utf8'));
 export const saveName = () => club().save_pattern.replace(/\.fm$/, '').replace(/[*?]/g, '');
 // The exporter names its CSV after the save file (claude-3.1.fm -> claude-3.1.csv): read the export
 // of the newest save matching the pattern (skipping FM's "(v02)" backups), not one named after the

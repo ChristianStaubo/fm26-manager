@@ -29,9 +29,8 @@ def approach_on(ends):
 
 def scan(rows, max_age=None, min_worth=None, min_attr=None):
     pol = m.POLICY['free_agents']
-    global WATCH, ENGLISH_CLUBS
-    WATCH = {w['name']: w['why'] for w in pol.get('watch', [])}
-    ENGLISH_CLUBS = {q['contract_club'] for q in rows if q.get('contract_club') and q['club'] == q['contract_club'] and (q['competition'] or '').startswith(m.ENGLISH_COMPS)}
+    watch = {w['name']: w['why'] for w in pol.get('watch', [])}
+    english_clubs = {q['contract_club'] for q in rows if q.get('contract_club') and q['club'] == q['contract_club'] and (q['competition'] or '').startswith(m.ENGLISH_COMPS)}
     max_age = max_age or pol['max_age']; min_worth = min_worth or pol['list_min_worth']; min_attr = min_attr or pol['min_attr_pct']
     t = m.today_of(rows)
     by = m.free_by(t)
@@ -55,7 +54,7 @@ def scan(rows, max_age=None, min_worth=None, min_attr=None):
             if len(sim) < 6:
                 continue
             worth, attrs = st.median(sim), pct(f)
-            watched = p['name'] in WATCH
+            watched = p['name'] in watch
             if (worth < min_worth or attrs < min_attr) and not watched:
                 continue
             c = {'name': p['name'], 'age': a, 'slot': slot, 'positions': p['positions'], 'attributes': attrs,
@@ -64,14 +63,14 @@ def scan(rows, max_age=None, min_worth=None, min_attr=None):
                  'on_loan': bool(p['on_loan_at']), 'contract_until': ends or None, 'free_now': m.is_free_agent(p),
                  'nation': p.get('nation'), 'league': p['competition'] or '-', 'minutes': int(p['mins']),
                  'ca': p.get('ca') or None, 'pa': p.get('pa') or None,
-                 'homegrown': m.homegrown(p, t), 'watch': WATCH.get(p['name']),
+                 'homegrown': m.homegrown(p, t), 'watch': watch.get(p['name']),
                  'route': 'sign now (free agent)' if m.is_free_agent(p)
                  # English clubs: no pre-contract with another English club during the season (user,
                  # 2032-01-01: Burton/Monga "not available for approach yet"); under 24 a compensation fee.
                  # No "Approach To Sign" on the profile until the contract has run out (user,
                  # 2032-05-28, Burton/Monga): approach on the day after it ends, as a free agent.
                  else f"English club: approach on {approach_on(ends)} (no Approach To Sign before the contract ends)" + (' (compensation fee: under 24)' if a < 24 else '')
-                 if (p['competition'] or '').startswith(m.ENGLISH_COMPS) and not p['on_loan_at'] or (p.get('contract_club') or '') in ENGLISH_CLUBS
+                 if (p['competition'] or '').startswith(m.ENGLISH_COMPS) and not p['on_loan_at'] or (p.get('contract_club') or '') in english_clubs
                  else 'pre-contract (fm precontract) from January; free on 1 July'}
             # One entry per player, at the slot where he's worth most. Always-buy: worth and age.
             c['always_buy'] = worth >= pol['always_buy_worth'] and a <= pol.get('always_buy_max_age', 99)

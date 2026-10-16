@@ -4,9 +4,10 @@
 import {statSync, readdirSync, readFileSync} from 'node:fs';
 import {Screen, click, clickWhere, recover, settle, overlays} from '../../game/ui/index.mjs';
 import {getState} from '../../game/bridge/client.mjs';
+import {club} from '../data.mjs';
 
 const DIR = process.env.FM26_SAVE_DIR || `${process.env.HOME}/Library/Application Support/Sports Interactive/Football Manager 26/games`;
-const pattern = () => JSON.parse(readFileSync(new URL('../../config/club.json', import.meta.url), 'utf8')).save_pattern;
+const pattern = () => club().save_pattern;
 function newestSave() {
   const re = new RegExp('^' + pattern().replace(/[.]/g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
   return readdirSync(DIR).filter(f => re.test(f) && !f.includes(' (v')).map(f => ({f, t: statSync(`${DIR}/${f}`).mtimeMs})).sort((a, b) => b.t - a.t)[0] || null;

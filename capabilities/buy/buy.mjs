@@ -9,12 +9,11 @@
 //        fee and contract talks follow later as a NeedAction.
 import {Screen, waitFor, click, clickWhere, setFee, recover, openPlayer, actionPath, peekActions, profileFacts,
   isoDate, parseMoney, parseRange, NeedsAnalyst, overlays} from '../../game/ui/index.mjs';
-import {writeFileSync, mkdirSync} from 'node:fs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {gate} from '../approvals.mjs';
 import {askAgent} from './ask.mjs';
-import {classify} from '../deals/replies.mjs';
+import {classify, saveReplyScreen} from '../deals/replies.mjs';
 
 // Opening bid: rules.buying.open_at × FM's value, the middle of the range (lower if the club wants
 // to sell). Bids well below value get a flat "unacceptable", which ends the deal.
@@ -127,16 +126,12 @@ async function suggest() {
     const x = await Screen.read(), r = replyState(x), ov = overlays(x).filter(o => o.kind === 'dialog');
     // A line we have never seen: stop now and keep the screen (it becomes a test), no 30 s wait.
     if (r === 'unknown' && gmLine(x) !== before) {
-      const dump = {gm: gmLine(x), buttons: x.buttons(/./).map(b => b.label).slice(0, 80), texts: x.texts().slice(0, 120)};
-      mkdirSync(new URL('../../local/runs/', import.meta.url), {recursive: true});
-      writeFileSync(new URL(`../../local/runs/unknown-reply-${Date.now()}.json`, import.meta.url), JSON.stringify(dump, null, 1));
+      const dump = saveReplyScreen('unknown-reply', x, {gm: gmLine(x)});
       throw new NeedsAnalyst(`Unknown club answer: ${gmLine(x).slice(0, 160)} (screen saved in local/runs/unknown-reply-*.json)`, dump);
     }
     if (r && (!x.buttons('Suggest Terms').length || gmLine(x) !== before)) return {...offerState(x), state: r};
     if (Date.now() > end || ov.length) {
-      const dump = {gmBefore: before, gm: gmLine(x), overlays: ov, buttons: x.buttons(/./).map(b => b.label).slice(0, 80), texts: x.texts().slice(0, 120)};
-      mkdirSync(new URL('../../local/runs/', import.meta.url), {recursive: true});
-      writeFileSync(new URL(`../../local/runs/buy-timeout-${Date.now()}.json`, import.meta.url), JSON.stringify(dump, null, 1));
+      const dump = saveReplyScreen('buy-timeout', x, {gmBefore: before, gm: gmLine(x), overlays: ov});
       throw new NeedsAnalyst(ov.length ? 'A dialog opened after Suggest Terms' : 'Timed out waiting for club response (30 s); screen saved in local/runs/buy-timeout-*.json', dump);
     }
     await new Promise(r => setTimeout(r, 300));

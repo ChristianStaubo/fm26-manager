@@ -27,3 +27,5 @@ export function nextDate(date, mmdd) {
   return d > date ? d : new Date(`${y + 1}-${mmdd}T00:00:00Z`);
 }
 export const daysBetween = (a, b) => Math.round((b - a) / 86400000);
+/** 'YYYY-MM-DD' plus n days, as 'YYYY-MM-DD'. */
+export const addDays = (iso, n) => new Date(Date.parse(iso) + n * 86400000).toISOString().slice(0, 10);
