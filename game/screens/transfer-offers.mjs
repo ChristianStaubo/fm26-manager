@@ -316,7 +316,17 @@ export const youthLoanOffer = {
   async run(s, {dryRun = false} = {}) {
     const l = readYouthLoan(s), sell = loadRules().selling;
     const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l};
-    if (!(l.age <= sell.youth_max_age)) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry); }
+    // A first-team player we listed (surplus) on loan with most of his wage paid: accept (Backhaus at
+    // Mainz, 90%, 2032-07-23). Other first-team loans: the user decides.
+    if (!(l.age <= sell.youth_max_age)) {
+      const listed = Object.values(pricebook.load().players || {}).some(e => (e.name || '').toLowerCase().endsWith((l.player || '').toLowerCase()));
+      if (listed && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) {
+        entry.decision = 'accept'; entry.why = `listed, ${Math.round(l.wageShare * 100)}% of his wage paid`;
+        if (dryRun) return {...entry, dryRun: true};
+        await click('Accept'); await log({...entry, executed: true}); return entry;
+      }
+      await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry);
+    }
     return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
   },
 };

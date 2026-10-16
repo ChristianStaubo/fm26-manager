@@ -41,6 +41,8 @@
     "youth_max_age": 21,
     "youth_loan_min_wage_share": 0.75,
     "_youth_loan": "Supervisor rule (2026-10-15, for the user's review): a youth player's loan offer that blocks Continue: accept if the loan pays this share of his wage or more, else reject (Adelaide 70% rejected, Wellington 80% the better offer for Sullivan).",
+    "listed_loan_min_wage_share": 0.8,
+    "_listed_loan": "A first-team player we listed (surplus) loaned out with at least this share of his wage paid: accept (Backhaus at Mainz 90%, 2032-07-23). Other first-team loans stop for the user.",
     "sell_ask": 1.3,
     "sell_ask_by_need": {"core": 1.3, "depth": 1.0, "surplus": 0.9},
     "paid_floor": 1.0,
