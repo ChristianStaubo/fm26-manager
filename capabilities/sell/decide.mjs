@@ -86,6 +86,11 @@ export function decideLoan(l, policy = loadRules()) {
     const d = decideSale({...l, guaranteed, upfront: l.loanFee || 0}, policy);
     return {...d, asSale: true, guaranteed, reason: `loan with obligation to buy = sale of ${guaranteed}: ${d.reason}`};
   }
+  // A plain loan of a player outside our XI with most of his wage paid: accept. He plays, which keeps
+  // his value for a sale, and we save wages (Muharemović to Lens, 80%, 2033-01-07, renewed to sell).
+  const min = policy.selling.listed_loan_min_wage_share ?? 0.8;
+  if (!l.optionFee && l.starter === false && l.wageShare >= min)
+    return {action: 'accept', asSale: false, reason: `plain loan, not in our XI, ${Math.round(l.wageShare * 100)}% of his wage paid (>= ${Math.round(min * 100)}%)`};
   return {action: 'escalate', asSale: false, reason: l.optionFee ? `loan with an option (not obligation) to buy ${l.optionFee}: decide on wage relief and depth` : 'plain loan: decide on wage relief and depth'};
 }
 

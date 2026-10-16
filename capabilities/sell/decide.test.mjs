@@ -107,3 +107,13 @@ test('never below what we paid, unless 30+ or in his last year', () => {
   assert.equal(sale({...base, age: 31}).sellAt, 18e6);
   assert.equal(sale({...base, monthsLeft: 6}).sellAt, 18e6);
 });
+
+test('plain loan: accept when he is outside our XI and they pay 80%+ of his wage (Muharemović to Lens, 2033-01-07)', async () => {
+  const {decideLoan} = await import('./decide.mjs');
+  const loan = {loanFee: 92e3, monthlyFee: 41.5e3, months: 4, wageShare: 0.8};
+  assert.equal(decideLoan({...loan, starter: false}).action, 'accept');
+  assert.equal(decideLoan({...loan, starter: true}).action, 'escalate', 'a starter: the user decides');
+  assert.equal(decideLoan({...loan, starter: undefined}).action, 'escalate', 'XI unknown: the user decides');
+  assert.equal(decideLoan({...loan, starter: false, wageShare: 0.5}).action, 'escalate', 'too little wage relief');
+  assert.equal(decideLoan({...loan, starter: false, optionFee: 5e6}).action, 'escalate', 'an option to buy: the user decides');
+});

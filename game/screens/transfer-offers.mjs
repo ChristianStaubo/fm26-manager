@@ -238,8 +238,14 @@ export const loanOffer = {
       return youthDecision({kind: 'loan-offer', date: isoDate(s.date()), club: loan.club, player: loan.player, wageShare: share, loan}, {dryRun});
     }
     const o = {...loan, ...(book ? {priceBook: true, minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
+    o.wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
+    if (!loan.obligationFee && !loan.optionFee) o.starter = await inOurXI(loan.player);
     const decision = decideLoan(o);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
+    if (decision.action === 'accept' && !decision.asSale) {
+      if (dryRun) return {...entry, dryRun: true};
+      await click('Accept'); await log({...entry, executed: true}); return entry;
+    }
     // An obligation without a price book entry: the detail page has the range and the total.
     if (loan.obligationFee && !book && !dryRun) {
       await click('View Offer');
@@ -274,6 +280,14 @@ export function readLoanPage(s) {
   const weeks = today && end ? Math.max(0, Math.round((end - today) / 6048e5)) : 0;
   return {player, club: s.after('To', i => i.kind === 'text')?.label, overall, range, wage, wageShare: pct, weeks,
     wageRelief: Math.round((wage || 0) * pct * weeks), mandatory: s.hasText('Mandatory Future Fee')};
+}
+
+// Is he in the suggested XI (analysis xi)? Unknown → undefined: the loan stops for the user.
+async function inOurXI(player) {
+  try {
+    const {analysis, gameDate} = await import('../../capabilities/data.mjs');
+    return analysis('manager.py', ['xi'], {date: await gameDate()}).xi.some(x => samePlayer(x.player, player));
+  } catch { return undefined; }
 }
 
 export const loanOfferPage = {
