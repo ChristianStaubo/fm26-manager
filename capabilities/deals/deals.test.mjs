@@ -90,3 +90,9 @@ test('a completed deal that shows up again is a new deal (Luna joined, then a bi
   assert.deepEqual(r.alerts, []);
   assert.equal(r.deals['martin luna'].state, 'offer'); assert.equal(r.deals['martin luna'].previous.state, 'completed');
 });
+
+test('an odd move on a sale is reported, not a stop (Bouhoudane: contract → 2 Offers)', () => {
+  const deals = {'sami bouhoudane': {player: 'Sami Bouhoudane', dir: 'out', state: 'contract', since: '2032-07-22', seen: '2032-07-22', history: []}};
+  const r = reduce(deals, {date: '2032-07-24', rows: [{player: 'Sami Bouhoudane', stage: '2 Offers'}]});
+  assert.ok(r.alerts.some(a => a.kind === 'unknown-transition' && !a.stop));
+});

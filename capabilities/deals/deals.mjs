@@ -59,7 +59,9 @@ export function reduce(deals = {}, obs, policy = {}) {
   const stuckDays = policy.max_days_in_state ?? {offer: 7, negotiating: 3, 'fee-agreed': 2, contract: 3, 'work-permit': 7, confirmation: 2};
   const move = (k, d, to, why) => {
     if (d.state === to) return;
-    if (!canMove(d.state, to)) alerts.push({kind: 'unknown-transition', player: d.player, from: d.state, to, why, stop: true});
+    // Sales see several clubs and the row shows the combined stage ("contract" → "2 Offers",
+    // Bouhoudane 2032-07-24): an odd move on a sale is reported; on a signing it stops us.
+    if (!canMove(d.state, to)) alerts.push({kind: 'unknown-transition', player: d.player, from: d.state, to, why, dir: d.dir, stop: d.dir !== 'out'});
     d.history.push([date, to]); d.state = to; d.since = date;
   };
   const touch = (player, dir, state, why) => {
