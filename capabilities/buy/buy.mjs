@@ -95,7 +95,7 @@ async function removeAllClauses({keepLoanBack = false} = {}) {
 export async function payReleaseClause(fee, {keepLoanBack = false} = {}) {
   await removeAllClauses({keepLoanBack});
   const set = await setFee('Fee', fee);
-  await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+  if (await nextStep() === 'make') return {...await makeOffer([]), outcome: 'release-clause', fee: set.set};
   const reply = await suggest();
   if (reply.state === 'accepted') await finalize();
   else if (reply.state !== 'made') throw new NeedsAnalyst(`Release clause fee ${fee} not accepted: ${reply.state}`, reply);
@@ -145,6 +145,21 @@ async function finalize() {
   if ((await Screen.read()).buttons('Exit Talks').length) await click('Exit Talks');
 }
 
+// After a fee edit the page offers Suggest Terms (haggling on) or, when the club wants a formal bid,
+// only Make Offer (Ylla, 2033-08-05: the edit after "can get more" timed out waiting for Suggest
+// Terms). Returns 'suggest' or 'make'.
+async function nextStep() {
+  const make = x => x.buttons('Make Offer').some(b => b.name === 'StandardButton');
+  const x = await waitFor(y => y.buttons('Suggest Terms').length === 1 || make(y), {what: 'Suggest Terms or Make Offer'});
+  return x.buttons('Suggest Terms').length === 1 ? 'suggest' : 'make';
+}
+async function makeOffer(history) {
+  await click('Make Offer', {name: 'StandardButton'});
+  await waitFor(x => offerState(x).state === 'made' || x.buttons('Exit Talks').length > 0, {what: 'offer made'});
+  if ((await Screen.read()).buttons('Exit Talks').length) await click('Exit Talks');
+  return {outcome: 'bid-made', history};
+}
+
 /**
  * Negotiate on an open offer screen (fresh, or already countered by the club).
  * firstFee: our opening fee if the screen is fresh. max: walk-away deal value
@@ -182,19 +197,14 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     if (reply.state === 'rejected') { if (capRelease) return payClause(history); break; }
     // "Declined to give an immediate answer. An offer will need to be submitted" (HSV for Ângelo):
     // a formal bid at the current fee, answered later; the deal state machine follows it from here.
-    if (reply.state === 'submit') {
-      await click('Make Offer');
-      await waitFor(x => offerState(x).state === 'made' || x.buttons('Exit Talks').length > 0, {what: 'offer made'});
-      if ((await Screen.read()).buttons('Exit Talks').length) await click('Exit Talks');
-      return {outcome: 'bid-made', history};
-    }
+    if (reply.state === 'submit') return makeOffer(history);
     // "They can get more": raise by a step (to max as the final offer) and suggest again.
     if (reply.state === 'more') {
       if (capRelease && (fee == null || fee + step >= release)) return payClause(history);
       if (finalOffer || fee == null) break;
       fee = fee + step >= max ? (finalOffer = true, max) : fee + step;
       await setFee('Fee', fee);
-      await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+      if (await nextStep() === 'make') return makeOffer(history);
       continue;
     }
     if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
@@ -207,7 +217,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
       await removeSellOn();
       fee = Math.min(reply.upfront ?? fee, max);
       await setFee('Fee', fee);
-      await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+      if (await nextStep() === 'make') return makeOffer(history);
       continue;
     }
     // Never sign a sell-on (user, 2033-07-09: Ortega came with 40% of the profit on his next sale owed
@@ -236,7 +246,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     else fee = next;
     // Editing any field brings back Suggest Terms.
     await setFee('Fee', fee);
-    await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+    if (await nextStep() === 'make') return makeOffer(history);
   }
   // After a counter we withdraw; after a flat rejection there is no offer to withdraw: just leave.
   if ((await Screen.read()).buttons('Withdraw Offer').length) await click('Withdraw Offer');
