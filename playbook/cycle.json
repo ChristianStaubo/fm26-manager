@@ -3,7 +3,7 @@
   "checkpoints": [
     {"name": "january", "on": "01-02",
      "why": "Contracts ending in June: ours (renew or sell) and everyone else's (pre-contracts: free players, the cheapest Moneyball signing). Then the wonderkid portfolio (user, 2031-08-08: the free agents and the wonderkids were the best buys).",
-     "steps": ["results", "contracts", "free_agents", "wonderkids", "squad", "audit"]},
+     "steps": ["results", "contracts", "final_year", "free_agents", "wonderkids", "squad", "audit"]},
     {"name": "newgen", "on": "05-01",
      "why": "95% of the youth intakes land in March-April: shortlist the new class.",
      "steps": ["newgens"]},
@@ -12,6 +12,6 @@
      "steps": ["results", "free_agents", "audit"]},
     {"name": "summer", "on": "07-02",
      "why": "After the rollover, before the first league match: the only time the export has full-season stats. The window's plan.",
-     "steps": ["results", "contracts", "squad", "free_agents", "plan", "audit"]}
+     "steps": ["results", "contracts", "final_year", "squad", "free_agents", "plan", "audit"]}
   ]
 }

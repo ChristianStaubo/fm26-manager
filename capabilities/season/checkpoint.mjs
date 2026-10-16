@@ -35,6 +35,17 @@ export const STEPS = {
     return {data: {alerts, expiring: sq.expiring || []},
       md: alerts.length ? alerts.map(a => `${a.name} (${a.age}, ${a.positions}, ${money(a.value)}): ${a.issue}${a.expires ? ' to ' + a.expires : ''} → ${a.do}`) : ['no contract alerts']};
   },
+  // Final-year contracts through the decision matrix (capabilities/contracts/final-year.mjs): each
+  // player gets an action, not a warning. 'ask-demands' = run the renewal preview, then decide.
+  async final_year(ctx) {
+    const {decideFinalYear} = await import('../contracts/final-year.mjs');
+    const {loadPolicy} = await import('../sell/decide.mjs');
+    const pol = loadPolicy().contracts, d = analysis('final_year.py', [], {date: ctx.date});
+    const rows = d.players.map(f => ({...f, decision: decideFinalYear(f, {finalYear: pol.final_year, renewal: pol.renewal})}));
+    return {data: {final_year_by: d.final_year_by, players: rows},
+      md: rows.length ? rows.map(r => `**${r.decision.action.toUpperCase()}** ${r.name} (${r.age}, ${r.role}, ${money(r.value)}, £${Math.round(r.wage / 1e3)}K/wk, ${r.minutes} min${r.starts ? ', starts' : ''}): ${r.decision.why}`)
+        : [`no contracts ending by ${d.final_year_by}`]};
+  },
   async squad(ctx) {
     const sq = ctx.squad ??= analysis('manager.py', ['squad'], {date: ctx.date});
     const md = (sq.positions || []).map(p => `${p.position} (${p.slots.join('/')}): ${p.specialists.slice(0, 5).map(s => `${s.name} ${s.age} ${money(s.value)} ${s.minutes}m${s.standing?.output != null ? ' out ' + s.standing.output : ''}`).join('; ')}`);
