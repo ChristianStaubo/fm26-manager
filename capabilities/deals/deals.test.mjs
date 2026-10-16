@@ -54,3 +54,14 @@ test('our own actions become deal events (fee agreed, bid accepted, counter acce
   ], '2026-10-16T00:00:00Z');
   assert.deepEqual(ev, [{player: 'Pius Collins', dir: 'in', state: 'fee-agreed'}, {player: 'Hamza Güreler', dir: 'out', state: 'contract'}]);
 });
+
+test('a fee agreed, then the formal offer shows as Offer Made: allowed (Collins, Luna, 2032-06-16)', () => {
+  const {deals} = reduce({}, {date: '2032-06-16', events: [{player: 'Pius Collins', dir: 'in', state: 'fee-agreed'}]});
+  const r = reduce(deals, {date: '2032-06-16', rows: [{player: 'Pius Collins', stage: 'Offer Made'}]});
+  assert.deepEqual(r.alerts, []);
+});
+test('the first observation only takes this window\'s actions', async () => {
+  const {events} = await import('./store.mjs');
+  const ev = events([{action: 'buy', name: 'Satoshi Tanaka', outcome: 'agreed', date: '2028-06-27'}, {action: 'buy', name: 'Martín Luna', outcome: 'release-clause', date: '2032-06-16'}], null, {fromDate: '2032-05-02'});
+  assert.deepEqual(ev.map(e => e.player), ['Martín Luna']);
+});

@@ -11,7 +11,8 @@ export const STATES = ['offer', 'negotiating', 'fee-agreed', 'contract', 'work-p
 const NEXT = {
   offer: ['negotiating', 'fee-agreed', 'contract', 'work-permit', 'confirmation', 'collapsed'],
   negotiating: ['offer', 'fee-agreed', 'contract', 'work-permit', 'confirmation', 'collapsed'],
-  'fee-agreed': ['contract', 'work-permit', 'confirmation', 'completed', 'collapsed'],
+  // After Suggest Terms agrees a fee, the formal offer shows as "Offer Made" until the club confirms.
+  'fee-agreed': ['offer', 'contract', 'work-permit', 'confirmation', 'completed', 'collapsed'],
   contract: ['work-permit', 'confirmation', 'completed', 'collapsed'],
   'work-permit': ['contract', 'confirmation', 'completed', 'collapsed'],
   confirmation: ['completed', 'collapsed'],
