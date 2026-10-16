@@ -2,11 +2,13 @@
 import {Screen, waitFor, settle, clean, parseMoney, parseRange} from './screen.mjs';
 import {click, clickWhere, openMenu, hover, type} from './controls.mjs';
 import {recover, overlays, NeedsAnalyst} from './overlays.mjs';
+// A hover tooltip (an attribute description left open, 2032-01-01) blocks nothing: don't wait for it.
+const blocking = s => overlays(s).filter(o => o.kind !== 'tooltip');
 
 export async function goTo(tab) {
   await recover();
   await click(tab);
-  return waitFor(s => !overlays(s).length, {what: tab});
+  return waitFor(s => !blocking(s).length, {what: tab});
 }
 
 // A top menu's dropdown entry ("Squad" → "Registration"): the NavTabDropdown inside the tab's button.
@@ -51,7 +53,7 @@ export async function openPlayer(name, club) {
   // route is "See All Results (N)" → the Search Results page, one row per person ("26 Brazil Player
   // Hamburger SV") with his name in a NameButton row.
   else if (!(await openFromAllResults(name, club))) throw new NeedsAnalyst(`No search result for ${name}${club ? ' (' + club + ')' : ''}`);
-  return waitFor(s => s.items.some(i => i.kind === 'menu' && i.label === 'Actions') && s.items.some(i => i.name === 'ContractDetails') && !overlays(s).length, {what: `${name} profile`});
+  return waitFor(s => s.items.some(i => i.kind === 'menu' && i.label === 'Actions') && s.items.some(i => i.name === 'ContractDetails') && !blocking(s).length, {what: `${name} profile`});
 }
 
 // Clubs as the export and the game write them: "Hamburger Sport-Verein" / "Hamburger SV".
@@ -97,7 +99,7 @@ const entries = s => s.tree.nodes.filter(n => n.type === 'EntryElement' && n.vis
 // Intermediate entries open their submenu by hover; the last entry is clicked.
 export async function actionPath(path) {
   // The profile can still be rebuilding after a previous menu closed: wait for the menu.
-  await waitFor(x => x.items.some(i => i.kind === 'menu' && i.label === 'Actions') && !overlays(x).length, {what: 'Actions menu button'});
+  await waitFor(x => x.items.some(i => i.kind === 'menu' && i.label === 'Actions') && !blocking(x).length, {what: 'Actions menu button'});
   await openMenu('Actions');
   let s = await waitFor(x => entries(x).length > 0, {what: 'Actions menu'});
   for (let k = 0; k < path.length; k++) {
@@ -113,7 +115,7 @@ export async function actionPath(path) {
 // List the Actions menu (and optionally one submenu) without choosing anything.
 export async function peekActions(sub) {
   // The profile can still be rebuilding after a previous menu closed: wait for the menu.
-  await waitFor(x => x.items.some(i => i.kind === 'menu' && i.label === 'Actions') && !overlays(x).length, {what: 'Actions menu button'});
+  await waitFor(x => x.items.some(i => i.kind === 'menu' && i.label === 'Actions') && !blocking(x).length, {what: 'Actions menu button'});
   await openMenu('Actions');
   let s = await waitFor(x => entries(x).length > 0, {what: 'Actions menu'});
   const top = entries(s).map(e => e.label);
