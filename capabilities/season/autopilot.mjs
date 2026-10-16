@@ -36,7 +36,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null;
+    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null, retried = null;
     let hard = null;
     const stop = (reason, extra = {}) => { if (hard) clearInterval(hard); return {reason, decisions, ...extra}; };
     // Watchdog (user, 2032-07-12: "surely we need something to catch when we get stuck"): no new game
@@ -155,6 +155,14 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           return stop('needs-analyst', {handler: handler.name, why: `sold ${done.offer?.player} to ${done.offer?.club} (${done.offer?.total ?? done.offer?.guaranteed}): follow-up buy?`, sale: done});
       }
       catch (e) {
+        // The page changed under the handler before it clicked anything ("UI content changed (no X
+        // yet)": McAidoo's injury, Backhaus's confirmation): reopen it from the Continue slot, retry once.
+        if (/UI content changed/.test(e.message) && retried !== key) {
+          retried = key;
+          const label = (await Screen.read()).continueLabel();
+          if (label && !/^(Continue|Processing)/.test(label)) { try { await click(label, {name: 'continue-button'}); } catch {} }
+          await settle(2000); lastAction = null; continue;
+        }
         if (e instanceof NeedsAnalyst) return stop('needs-analyst', {handler: handler.name, why: e.message, details: e.details, screen: summarize(await Screen.read())});
         return stop('error', {handler: handler.name, error: e.message, doNotRetryAutomatically: true});
       }
