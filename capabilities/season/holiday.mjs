@@ -13,7 +13,14 @@ const radio = prefix => s => s.items.find(i => i.kind === 'toggle' && i.label.st
 export async function holiday({days, until, dryRun = false} = {}) {
   const cfg = loadPolicy().holiday;
   await recover();
+  // On a match day Continue opens Team Selection, which has no date button (2032-01-01): go Back
+  // to the Portal first (never Go To Match / Instant Result: the assistant plays it on holiday).
+  for (let i = 0; i < 3 && !(await Screen.read()).date(); i++) {
+    await clickWhere(x => x.items.find(b => b.kind === 'button' && b.name === 'BackButton'), 'Back button');
+    await waitFor(x => !!x.date(), {what: 'the Portal (date button)', timeout: 8000}).catch(() => null);
+  }
   const today = (await Screen.read()).date();
+  if (!today) throw new Error('holiday: no date on screen (still on a match screen?)');
   const back = until ? new Date(until + 'T00:00:00Z') : nextDate(today, cfg.return_on);
   const n = days ?? daysBetween(today, back);
   await clickWhere(s => s.items.find(i => i.kind === 'button' && /^\d{1,2}\/\d{1,2}\/\d{4}\b/.test(i.label)), 'date button');
