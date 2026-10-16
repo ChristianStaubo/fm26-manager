@@ -40,14 +40,15 @@ export async function ourPlayers() {
 
 /** One observation (date, Transfer Activity rows) → saved deals + alerts. */
 /** A save reloaded to an earlier date (user, 2033-08-05: back to the pre-buy save to redo three deals):
- *  forget what happened after `date`, deal by deal; a deal with nothing left is dropped. */
+ *  forget what happened on or after `date` (the save's own day is ambiguous: it was saved mid-day), deal
+ *  by deal; a deal with nothing left is dropped and the next observation sees it afresh. */
 export function rewind(deals, date) {
   const out = {};
   for (const [k, d] of Object.entries(deals)) {
-    const history = (d.history || []).filter(([day]) => day <= date);
+    const history = (d.history || []).filter(([day]) => day < date);
     if (!history.length) continue;
     const [since, state] = history.at(-1);
-    out[k] = {...d, history, state, since, seen: d.seen > date ? date : d.seen};
+    out[k] = {...d, history, state, since, seen: d.seen >= date ? history.at(-1)[0] : d.seen};
   }
   return out;
 }

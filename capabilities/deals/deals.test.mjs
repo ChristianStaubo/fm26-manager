@@ -104,7 +104,8 @@ test('a reloaded save rewinds the deals to its date (2033-08-05: redoing three b
     'jorthy mokio': {player: 'Jorthy Mokio', dir: 'in', state: 'work-permit', since: '2033-08-08', seen: '2033-08-09', history: [['2033-08-05', 'offer'], ['2033-08-06', 'contract'], ['2033-08-08', 'work-permit']]},
     'later one': {player: 'Later One', dir: 'in', state: 'offer', since: '2033-08-07', seen: '2033-08-09', history: [['2033-08-07', 'offer']]},
   };
-  const r = rewind(deals, '2033-08-05');
-  assert.deepEqual(Object.keys(r), ['arnal ylla', 'jorthy mokio']);
+  const r = rewind(deals, '2033-08-06');
+  assert.deepEqual(Object.keys(r), ['arnal ylla', 'jorthy mokio'], 'only steps before the save day survive');
   assert.equal(r['jorthy mokio'].state, 'offer'); assert.equal(r['jorthy mokio'].seen, '2033-08-05');
+  assert.deepEqual(Object.keys(rewind(deals, '2033-08-05')), [], 'the save day itself is dropped: the next observation re-seeds it');
 });
