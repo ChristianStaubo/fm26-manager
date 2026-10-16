@@ -48,6 +48,20 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           const {transferActivity} = await import('../../game/screens/transfer-activity.mjs');
           const {observe} = await import('../deals/store.mjs');
           const a = await transferActivity(), r = await observe(dealsDay, a.rows);
+          // A signing gone from Transfer Activity has usually completed (Burton, Collins, Luna): his
+          // profile then shows our squad actions (Training). Only a real collapse stops us.
+          for (const x of r.alerts.filter(x => x.kind === 'vanished' && x.dir === 'in')) {
+            try {
+              const nav = await import('../../game/ui/navigate.mjs'), {readFileSync} = await import('node:fs');
+              const club = JSON.parse(readFileSync(new URL('../../config/club.json', import.meta.url))).club;
+              await nav.openPlayer(x.player, club);
+              const {top} = await nav.peekActions();
+              const {resolveVanished} = await import('../deals/store.mjs');
+              const ours = top.includes('Training');
+              resolveVanished(x.player, ours, dealsDay);
+              if (ours) { x.stop = false; x.resolved = 'completed'; }
+            } catch { /* keep the stop: look by hand */ }
+          }
           const stops = r.alerts.filter(x => x.stop);
           if (stops.length) return stop('needs-analyst', {handler: 'deals', why: stops.map(x => `${x.kind}: ${x.player || x.stage}${x.from ? ' from ' + x.from : ''}${x.state ? ' (' + x.state + ', ' + x.days + ' days)' : ''}`).join('; '), alerts: r.alerts});
         } catch (e) { decisions.push({action: 'deals-observe', error: e.message}); }

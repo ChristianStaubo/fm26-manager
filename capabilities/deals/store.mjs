@@ -1,7 +1,7 @@
 // The deals file (local/runs/deals.json) and one daily observation: Transfer Activity + our own
 // actions from the decision log since the last observation → reduce → alerts.
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
-import {reduce} from './deals.mjs';
+import {reduce, resolve} from './deals.mjs';
 import {history} from '../log.mjs';
 import {loadPolicy} from '../sell/decide.mjs';
 
@@ -39,4 +39,11 @@ export function ack(player, until, why = '') {
   Object.assign(data.deals[k], {ackUntil: until, ackWhy: why});
   save(data);
   return data.deals[k];
+}
+
+/** A vanished deal checked in the game: completed (he's ours / gone from us) or collapsed. */
+export function resolveVanished(player, completed, date) {
+  const data = load();
+  resolve(data.deals, player, completed, date);
+  save(data);
 }
