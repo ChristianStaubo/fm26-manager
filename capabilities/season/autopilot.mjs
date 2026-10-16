@@ -6,6 +6,7 @@
 import {getState} from '../../game/bridge/client.mjs';
 import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../game/ui/index.mjs';
 import {control, withLock} from './continue.mjs';
+import {loadRules} from '../sell/decide.mjs';
 import {windowEnd, inWindow} from './season.mjs';
 import {HANDLERS as TRANSFER_HANDLERS} from '../../game/screens/transfer-offers.mjs';
 import {HANDLERS as ADMIN_HANDLERS} from '../../game/screens/admin/handlers.mjs';
@@ -35,11 +36,32 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
     let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null;
-    const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
+    let hard = null;
+    const stop = (reason, extra = {}) => { if (hard) clearInterval(hard); return {reason, decisions, ...extra}; };
+    // Watchdog (user, 2032-07-12: "surely we need something to catch when we get stuck"): no new game
+    // date and no decision for watchdog_minutes → save a stuck report and stop, never hang silently.
+    let progressAt = Date.now(), lastDate = null, lastCount = 0;
+    const limitMs = (loadRules().autopilot?.watchdog_minutes ?? 5) * 60e3;
+    // A step that hangs inside the loop (a wait that never returns) is caught by a timer beside it.
+    hard = setInterval(async () => {
+      if (Date.now() - progressAt < limitMs + 120e3) return;
+      clearInterval(hard);
+      try { const {stuck} = await import('../../cli/friction.mjs'); await stuck(`autopilot hard watchdog: a step hung, no progress for ${Math.round((limitMs + 120e3) / 60e3)} min on ${lastDate}`); } catch {}
+      console.log(JSON.stringify({reason: 'stalled', why: 'a step hung (hard watchdog)', date: lastDate, decisions}));
+      process.exit(3);
+    }, 30e3);
+    hard.unref?.();
     for (;;) {
+      if (decisions.length !== lastCount) { lastCount = decisions.length; progressAt = Date.now(); }
+      if (Date.now() - progressAt > limitMs) {
+        let report = null;
+        try { const {stuck} = await import('../../cli/friction.mjs'); report = await stuck(`autopilot watchdog: no progress for ${Math.round(limitMs / 60e3)} min on ${lastDate}`); } catch {}
+        return stop('stalled', {why: `no new game date or decision for ${Math.round(limitMs / 60e3)} minutes`, date: lastDate, report, screen: summarize(await Screen.read().catch(() => null) || {texts: () => [], buttons: () => []})});
+      }
       const r = await control({maxSteps: stopAt ? 3 : 10});
       if (['error', 'unavailable'].includes(r.reason)) return stop(r.reason, {error: r.error});
       const s = await Screen.read(), today = s.date();
+      if (today && isoDate(today) !== lastDate) { lastDate = isoDate(today); progressAt = Date.now(); }
       // Once per game day in a window: observe the deals (state machine, capabilities/deals). A deal
       // stuck, vanished before signing, or in a state we don't know stops us (2032-01 wonderkids).
       if (today && !dryRun && isoDate(today) !== dealsDay && inWindow(today)) {

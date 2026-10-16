@@ -60,6 +60,9 @@ function status() {
   const s = continueState();
   // The game can ignore a Continue (no Processing follows); release the latch after 8 s.
   if (inFlight && !sawProcessing && Date.now() - inFlightAt > 8000 && s.canContinue) { inFlight = false; ignoredContinues++; }
+  // The Continue ended on something that needs us (NeedAction), not back at CanContinue: release the
+  // latch, or every UI action is refused as "in flight" and the autopilot hangs (2032-07-12, 4th time).
+  if (inFlight && s.requiresDecision && Date.now() - inFlightAt > 3000) inFlight = false;
   return {...s, actionReady: !!s.canContinue && pumpFound && manualTimer !== null && !inFlight,
     actionInFlight: inFlight, ignoredContinues, pumpFound, manualTimer};
 }
