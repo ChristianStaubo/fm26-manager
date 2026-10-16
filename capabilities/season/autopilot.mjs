@@ -109,7 +109,12 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           if (lastAction === 'press') return stop('needs-analyst', {why: 'press conference still pending after handling it', screen: summarize(s)});
           lastAction = 'press';
           try { decisions.push(await pressConference()); continue; }
-          catch (e) { return stop(e instanceof NeedsAnalyst ? 'needs-analyst' : 'error', {handler: 'press-conference', why: e.message, details: e.details, screen: summarize(await Screen.read())}); }
+          catch (e) {
+            // The conference can end on its own while we look for it (2033-01-19, pre-match: the game was
+            // back at CanContinue): nothing is blocking, carry on.
+            if ((await getState()).stateName !== 'PressConference') { decisions.push({action: 'press-conference', skipped: 'ended before we attended', error: e.message}); continue; }
+            return stop(e instanceof NeedsAnalyst ? 'needs-analyst' : 'error', {handler: 'press-conference', why: e.message, details: e.details, screen: summarize(await Screen.read())});
+          }
         }
         // A button in the Continue slot ("News Site", …) is what a person would press next.
         const label = s.continueLabel();
