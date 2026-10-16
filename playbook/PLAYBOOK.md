@@ -73,11 +73,12 @@ The rules behind them:
 - Add-ons count as part of the fee (they are usually hit).
 - **Never just reject a bid: counter at the price we'd sell for** (user, 2031-07-22). If they say
   no, it's the same as a rejection; if they say yes, we've made a profit, and we're good at
-  replacing players. A player who isn't listed sells at 1.3x the top of his value (Kislyak, value
-  £39M → ~£51M; Kayode, whom we want to keep → ~£97M); a counter or accept at that price is approved
+  replacing players. A player who isn't listed sells at our sell price, a multiple of the top of his value (below); a counter or accept at that price is approved
   by this rule. **How much we need him sets the price** (user, 2032-02-02, Güreler): core (a starter,
-  or no comparable replacement) 1.3x the top of his value, depth (rotation) 1.0x, surplus (fringe)
-  0.9x; never below what we paid unless he's 30+ or in his last year; selling a core player means
+  or no comparable replacement) 1.5x the top of his value, depth (rotation) 1.2x, surplus (fringe)
+  1.0x (raised 2033-06-24, Champions League); a rising player (23 or under) 1.1x more; anyone our
+  analysis would keep never below his minimum (Gallardo sold at his value, £56M; the user's estimate
+  was £70-75M: FM's value is a reference, it follows contract length and wages); never below what we paid unless he's 30+ or in his last year; selling a core player means
   buying a replacement, depth doesn't. **All prices are totals, add-ons included**: a counter asks
   for our total minus the add-ons they offer. **Listed players: get the most we can** (user, 2032-01-04, Fresneda went at his
   minimum to the first bid): accept outright only at the target (top of his value, add-ons

@@ -64,10 +64,15 @@ export function decideSale(offer, policy = loadRules()) {
   // bottom of his range. Selling a core player needs a replacement (flagged).
   const need = o.blockers?.length ? 'core'
     : ['strong rotation', 'rotation', 'weak starter'].includes(o.importance) ? 'depth' : o.importance === 'fringe' ? 'surplus' : 'core';
-  const mult = (p.sell_ask_by_need || {})[need] ?? p.sell_ask;
+  // A rising player (age <= sell_rising.max_age) is worth more next year: sell_rising.factor on top.
+  // Our minimum (from the analysis) floors the price for a core player, and for anyone we'd keep
+  // (Gallardo, 2032-08: keep, minimum £58.5M, sold at £56M as depth; £121.5M a year later).
+  const rising = Number.isFinite(o.age) && o.age <= (p.sell_rising?.max_age ?? -1);
+  const mult = ((p.sell_ask_by_need || {})[need] ?? p.sell_ask) * (rising ? p.sell_rising.factor : 1);
   const paidFloor = Number.isFinite(o.paid) && !(o.age >= 30) && !expiring ? o.paid * (p.paid_floor ?? 1) : 0;
-  const sellAt = tidy(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, need === 'core' && Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0));
-  const tag = {sellAt, need, replace: need === 'core'};
+  const ourFloor = (need === 'core' || o.keep) && Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0;
+  const sellAt = tidy(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor));
+  const tag = {sellAt, need, rising, replace: need === 'core'};
   if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt} (${need})${need === 'core' ? ': replacement needed' : ''}`, ...tag};
   if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
   return {action: 'reject', reason: `below our sell price ${sellAt} (${need}), counters spent`, ...tag};

@@ -8,20 +8,20 @@ const sale = o => decideSale({negotiable: true, countersSoFar: 0, monthsLeft: 24
 
 // Not listed: for sale only at our price, sell_ask (1.3) x the top of his value (user, 2031-07-22:
 // "we should not reject bids, we should counter them at prices we want to sell our players at").
-test('Kislyak (value £36-39M) bid £34M → counter at our sell price ~£50.7M', () => {
+test('Kislyak (value £36-39M) bid £34M → counter at our sell price 1.5 x £39M = £58.5M (core)', () => {
   const r = sale({guaranteed: 34e6, upfront: 26.75e6, vLow: 36e6, vHigh: 39e6, minimum: 36e6, negotiable: false});
   assert.equal(r.action, 'counter');
-  assert.equal(r.guaranteedAsk, 50.7e6);
-  assert.equal(r.upfront, 50.7e6 - 7.25e6);
+  assert.equal(r.guaranteedAsk, 58.5e6);
+  assert.equal(r.upfront, 58.5e6 - 7.25e6);
 });
-test('Kayode (value £63-75M, a player we want to keep) bid £61.5M → counter ~£97.5M', () => {
+test('Kayode (value £63-75M, a player we want to keep) bid £61.5M → counter 1.5 x £75M = £112.5M', () => {
   const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, negotiable: false, importance: 'key starter'});
   assert.equal(r.action, 'counter');
-  assert.equal(r.totalAsk, 97.5e6, 'a total, add-ons included');
+  assert.equal(r.totalAsk, 112.5e6, 'a total, add-ons included');
   assert.equal(r.need, 'core'); assert.equal(r.replace, true);
 });
 test('a bid at or above our sell price is accepted; lowballs are countered, not rejected', () => {
-  assert.equal(sale({guaranteed: 51e6, vLow: 36e6, vHigh: 39e6}).action, 'accept');
+  assert.equal(sale({guaranteed: 59e6, vLow: 36e6, vHigh: 39e6}).action, 'accept');
   assert.equal(sale({guaranteed: 1000, vLow: 63e6, vHigh: 63e6, negotiable: false}).action, 'counter');
 });
 test('reject only once the counters are spent', () => {
@@ -92,19 +92,19 @@ test('add-ons count as fee: Newcastle for Yarmoliuk (35.75M guaranteed, 48.5M to
 });
 
 // Sell price by need (user, 2032-02-02): Güreler, rotation CB, value £28-30M, bought for £17M.
-test('need tiers: core 1.3x, depth 1.0x, surplus 0.9x the top of his value; totals with add-ons', () => {
+test('need tiers: core 1.5x, depth 1.2x, surplus 1.0x the top of his value; totals with add-ons', () => {
   const base = {guaranteed: 17.45e6, upfront: 13.25e6, total: 23.7e6, vLow: 28e6, vHigh: 30e6, minimum: 32.2e6, monthsLeft: 40};
   const depth = sale({...base, importance: 'rotation', paid: 17e6});
-  assert.equal(depth.need, 'depth'); assert.equal(depth.sellAt, 30e6); assert.equal(depth.totalAsk, 30e6);
-  assert.equal(depth.upfront, 30e6 - 6.25e6 - 4.2e6, 'fee = total - their add-ons - their instalments');
-  assert.equal(sale({...base, importance: 'fringe'}).sellAt, 27e6);
-  assert.equal(sale({...base, importance: 'starter'}).sellAt, 39e6);
+  assert.equal(depth.need, 'depth'); assert.equal(depth.sellAt, 36e6); assert.equal(depth.totalAsk, 36e6);
+  assert.equal(depth.upfront, 36e6 - 6.25e6 - 4.2e6, 'fee = total - their add-ons - their instalments');
+  assert.equal(sale({...base, importance: 'fringe'}).sellAt, 30e6);
+  assert.equal(sale({...base, importance: 'starter'}).sellAt, 45e6);
   assert.equal(sale({...base, importance: 'rotation', blockers: ['no comparable squad replacement']}).need, 'core');
 });
 test('never below what we paid, unless 30+ or in his last year', () => {
   const base = {guaranteed: 10e6, upfront: 10e6, vLow: 18e6, vHigh: 20e6, importance: 'fringe', paid: 25e6, monthsLeft: 40};
   assert.equal(sale(base).sellAt, 25e6);
-  assert.equal(sale({...base, age: 31}).sellAt, 18e6);
+  assert.equal(sale({...base, age: 31}).sellAt, 20e6);
   assert.equal(sale({...base, monthsLeft: 6}).sellAt, 18e6);
 });
 
@@ -122,4 +122,13 @@ test('plain loan: a loan fee counts as wage relief (Sayman to Blackburn, £1.6M,
   const {decideLoan} = await import('./decide.mjs');
   assert.equal(decideLoan({loanFee: 1.6e6, wageShare: 0, wageCost: 0.56e6, starter: false}).action, 'accept');
   assert.equal(decideLoan({loanFee: 0, wageShare: 0.5, wageCost: 0.56e6, starter: false}).action, 'escalate');
+});
+
+test('a rising player we would keep is not sold at his value (Gallardo, 21: £56M in 2032, £121.5M a year later)', () => {
+  const g = {guaranteed: 44e6, upfront: 23.5e6, total: 46.6e6, vLow: 56e6, vHigh: 56e6, minimum: 58.52e6, keep: true, importance: 'rotation', age: 21, paid: 24.3e6, monthsLeft: 34, negotiable: true};
+  const r = sale(g);
+  assert.equal(r.need, 'depth'); assert.equal(r.rising, true);
+  assert.equal(r.sellAt, 73.95e6, '56 x 1.2 (depth) x 1.1 (rising): the user put him at £70-75M');
+  assert.equal(sale({...g, age: 27}).sellAt, 67.2e6, 'not rising: 56 x 1.2');
+  assert.equal(sale({...g, age: 27, importance: 'fringe'}).sellAt, 64.4e6, 'keep: our minimum x 1.1 floors even a fringe player');
 });
