@@ -155,8 +155,14 @@ async function finalize() {
 export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, final = false, keepLoanBack = false}) {
   // A release clause within our max ends the negotiation: pay exactly it (Gaitán, £12.75M; we had
   // opened above it from his value range).
+  // The clause is a ceiling, not an opening (user, 2033-08-05: Ylla, Espino and Mokio were all bought
+  // at their clause = their full value): negotiate up from our opening and pay the clause only when
+  // our offer would reach it, or when they refuse outright (the clause can't be refused).
   const release = releaseClause(await Screen.read());
-  if (release != null && release <= max) return {...await payReleaseClause(release, {keepLoanBack}), history: []};
+  const capRelease = release != null && release <= max;
+  if (capRelease && firstFee >= release) return {...await payReleaseClause(release, {keepLoanBack}), history: []};
+  if (capRelease) max = release;
+  const payClause = async history => ({...await payReleaseClause(release, {keepLoanBack}), history});
   const history = [];
   let fee = firstFee, finalOffer = final, sellOnTries = 0;
   for (let round = 1; round <= rounds; round++) {
@@ -173,7 +179,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     if (reply.state === 'made') return {outcome: 'agreed', history};
     // A flat "the offer is unacceptable": walk away, no raising or retrying (user, 2026-10-08:
     // LOSC rejected Ribeiro every time; a club that says no to the offer is left alone).
-    if (reply.state === 'rejected') break;
+    if (reply.state === 'rejected') { if (capRelease) return payClause(history); break; }
     // "Declined to give an immediate answer. An offer will need to be submitted" (HSV for Ângelo):
     // a formal bid at the current fee, answered later; the deal state machine follows it from here.
     if (reply.state === 'submit') {
@@ -184,6 +190,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     }
     // "They can get more": raise by a step (to max as the final offer) and suggest again.
     if (reply.state === 'more') {
+      if (capRelease && (fee == null || fee + step >= release)) return payClause(history);
       if (finalOffer || fee == null) break;
       fee = fee + step >= max ? (finalOffer = true, max) : fee + step;
       await setFee('Fee', fee);
@@ -224,6 +231,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     const next = (fee ?? 0) + step;
     // Their demand is above our max: go to max (as up-front fee net of their add-ons) as a final offer.
     // Started from a club counter (our previous fee unknown) → straight to the final offer.
+    if (capRelease && (fee == null || next + addons * loadRules().valuation.addon_weight >= release)) return payClause(history);
     if (fee == null || next + addons * loadRules().valuation.addon_weight >= max) { fee = Math.max(0, Math.round(max - addons * loadRules().valuation.addon_weight)); finalOffer = true; }
     else fee = next;
     // Editing any field brings back Suggest Terms.

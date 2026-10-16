@@ -18,6 +18,17 @@ import {held} from '../approvals.mjs';
 import {execFileSync} from 'node:child_process';
 
 // First-team wage bands (analysis/wage_bands.py): the contract screen's "Avg." includes youth.
+/** The wage ceiling for a signing (policy contracts.wage_ceiling): min(our peers' median x peer_factor,
+ *  his current wage x current_factor). Unknown parts are left out; null when nothing is known. */
+export function wageCeiling({peerMedian, currentWage}, wc) {
+  const parts = [Number.isFinite(peerMedian) && peerMedian > 0 ? peerMedian * wc.peer_factor : null,
+    Number.isFinite(currentWage) && currentWage > 0 ? currentWage * wc.current_factor : null].filter(x => x != null);
+  return parts.length ? Math.round(Math.min(...parts)) : null;
+}
+function peerBand(player, within) {
+  try { return JSON.parse(execFileSync('python3', ['analysis/wage_bands.py', '--player', player, '--within', String(within)], {cwd: new URL('../..', import.meta.url).pathname, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000})); }
+  catch { return null; }
+}
 function firstTeamBands() {
   try { return JSON.parse(execFileSync('python3', ['analysis/wage_bands.py'], {cwd: new URL('../..', import.meta.url).pathname, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000})); }
   catch { return null; }
@@ -253,17 +264,25 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   const step = Math.max(1, demand - first);
   // A current wage (renewals: ours; signings: at his club) → the split; else open_pct under.
   const current = renewal?.currentWage ?? currentWage ?? null;
+  // A signing's own ceiling (policy contracts.wage_ceiling): what we pay players of his level, and a
+  // multiple of what he earns now. Renewals keep the renewal test instead.
+  const wc = rules.wage_ceiling;
+  const ceiling = !renewal && wc ? wageCeiling({peerMedian: peerBand(player, wc.peer_within_ca)?.peer_median, currentWage: current}, wc) : null;
+  const limit = Math.min(Number.isFinite(cap) ? cap : Infinity, ceiling ?? Infinity);
+  if (ceiling) entry.ceiling = ceiling;
+  const atMost = (salary, k) => Number.isFinite(limit) && salary - k * step > limit ? Math.ceil((salary - limit) / step) : k;
   const useSplit = p.split && Number.isFinite(current) && current > 0 && current < demand;
   const open = useSplit ? Math.max(1, splitTicks({demand, current, target: splitOpening({demand, current}, p), tick: step})) : openingTicks({demand, tick: step}, p);
   entry.method = useSplit ? `split from £${current}` : 'percent';
-  let offered = open > 1 ? await salaryTicksDown(open - 1) : first;
-  Object.assign(entry, {openTicks: open, tick: step});
+  const openTicks = Math.max(open, atMost(demand, open));
+  let offered = openTicks > 1 ? await salaryTicksDown(openTicks - 1) : first;
+  Object.assign(entry, {openTicks, tick: step});
   for (let round = 1; round <= p.max_rounds; round++) {
     if (!(await lowerAgentFeeUntilAllowed())) { entry.tries.push({round, salary: offered, blocked: 'agent fee'}); break; }
     // Preview (user, 2026-10-15: "we can check before you click Suggest Terms"): the opening offer as it
     // would be sent, then stop. Nothing is suggested; the talks stay open.
     if (preview) {
-      const pv = {...entry, outcome: 'preview', would_suggest: contractTerms(await Screen.read()), openTicks: open, tick: step};
+      const pv = {...entry, outcome: 'preview', would_suggest: contractTerms(await Screen.read()), openTicks, tick: step};
       // Leave nothing ready to send: our opening offer stayed in the form and was sent (Savinho £245K,
       // 2032-07-02). Revert puts the form back to his own demands.
       if ((await Screen.read()).buttons('Revert').length) { await click('Revert'); pv.reverted = true; }
@@ -287,7 +306,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
       return {...entry, outcome: 'accepted-pending', salary: offered};
     }
     const lastRound = round >= p.max_rounds;
-    if (r.buttons('Finalize Deal').length && (!counterLine(r) || lastRound)) {
+    if (r.buttons('Finalize Deal').length && (!counterLine(r) || lastRound) && !(salaryOf(r) > limit && !entry.renewal)) {
       const agreed = salaryOf(r);   // what is in the form now, not what we offered
       await click('Finalize Deal');
       await waitFor(x => x.buttons('Exit Talks').length > 0, {what: 'deal finalized'});
@@ -298,12 +317,13 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     // His counter is in the form now.
     const counter = salaryOf(r);
     entry.tries.at(-1).counter = counter;
-    if (counter == null || (cap && counter > cap && !entry.renewal)) break;
+    if (counter == null || (lastRound && counter > limit && !entry.renewal)) break;
     // Split: halfway between our offer and his counter (ticks below his counter, now in the form).
     const k = round >= p.max_rounds - 1 ? 0
       : useSplit ? Math.max(1, Math.round((counter - Math.max(splitCounter({offered, counter}), current)) / step))
       : nextOfferTicks({demand, counter, tick: step}, p);
-    offered = k ? await salaryTicksDown(k) : counter;
+    const kk = entry.renewal ? k : atMost(counter, k);   // never above the ceiling
+    offered = kk ? await salaryTicksDown(kk) : counter;
   }
   // No agreement: leave the talks open (cancelling loses the player and the agreed fee) and ask.
   await log({...entry, outcome: 'no-agreement'});
