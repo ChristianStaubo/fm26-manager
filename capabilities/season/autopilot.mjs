@@ -124,7 +124,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
       const key = handler.name + '|' + screen.texts().join('|').slice(0, 2000);
       if (key === lastAction) return stop('needs-analyst', {handler: handler.name, why: `${handler.name} had no effect (screen unchanged after acting)`, screen: summarize(screen)});
       lastAction = key;
-      try { decisions.push(await handler.run(screen, {dryRun})); await settle(1000); }
+      try {
+        const done = await handler.run(screen, {dryRun}); decisions.push(done); await settle(1000);
+        // A sale agreed (we accepted, or they accepted our counter): stop so the replacement or the
+        // planned follow-up buy happens now (user, 2032-07-02: Muharemović → Natali, Savinho → a winger).
+        if (!dryRun && done?.action === 'incoming-offer' && (done.decision?.action === 'accept' || done.accepted))
+          return stop('needs-analyst', {handler: handler.name, why: `sold ${done.offer?.player} to ${done.offer?.club} (${done.offer?.total ?? done.offer?.guaranteed}): follow-up buy?`, sale: done});
+      }
       catch (e) {
         if (e instanceof NeedsAnalyst) return stop('needs-analyst', {handler: handler.name, why: e.message, details: e.details, screen: summarize(await Screen.read())});
         return stop('error', {handler: handler.name, error: e.message, doNotRetryAutomatically: true});
