@@ -64,7 +64,10 @@ export function reduce(deals = {}, obs, policy = {}) {
   };
   const touch = (player, dir, state, why) => {
     const k = key(player);
-    if (!out[k]) out[k] = {player, dir: dir || null, state, since: date, seen: date, history: [[date, state]]};
+    // A finished deal (completed / collapsed) that shows up again is a NEW deal for the same player:
+    // Luna joined, then a bid for him appeared (2032-07-22). Keep the old one in `previous`.
+    if (out[k] && ['completed', 'collapsed'].includes(out[k].state)) out[k] = {player, dir: dir || null, state, since: date, seen: date, history: [[date, state]], previous: out[k]};
+    else if (!out[k]) out[k] = {player, dir: dir || null, state, since: date, seen: date, history: [[date, state]]};
     else { if (dir && !out[k].dir) out[k].dir = dir; move(k, out[k], state, why); }
     out[k].seen = date; seenNow.add(k);
   };

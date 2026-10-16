@@ -83,3 +83,10 @@ test('a vanished deal that comes back goes on, no alert (Miceli, Ingand, Ketu, 2
   const r = reduce(deals, {date: '2032-07-12', rows: [{player: 'Edoardo Miceli', stage: '2 Offers'}]});
   assert.deepEqual(r.alerts, []); assert.equal(r.deals['edoardo miceli'].state, 'offer');
 });
+
+test('a completed deal that shows up again is a new deal (Luna joined, then a bid for him)', () => {
+  const deals = {'martín luna': {player: 'Martín Luna', dir: 'in', state: 'completed', since: '2032-06-24', seen: '2032-06-24', history: []}};
+  const r = reduce(deals, {date: '2032-07-22', rows: [{player: 'Martín Luna', stage: 'Offer Made', dir: 'out'}]});
+  assert.deepEqual(r.alerts, []);
+  assert.equal(r.deals['martín luna'].state, 'offer'); assert.equal(r.deals['martín luna'].previous.state, 'completed');
+});
