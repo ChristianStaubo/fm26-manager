@@ -5,7 +5,7 @@ import {decideFinalYear} from './final-year.mjs';
 import {loadPolicy} from '../sell/decide.mjs';
 
 const pol = loadPolicy().contracts, cfg = {finalYear: pol.final_year, renewal: pol.renewal};
-const savinho = {name: 'Savinho', age: 28, value: 76.8e6, wage: 180000, minutes: 2657, starts: true, role_score: 15.6, replacement: null};
+const savinho = {name: 'Savinho', age: 28, value: 76.8e6, wage: 180000, minutes: 2657, starts: true, star: true, ca: 155, role_score: 15.6, replacement: {name: 'Lennart Karl', club: 'Liverpool', age: 24, value: 42.2e6, ca: 153}};
 
 test('no contract → release; a cheap fringe player runs down', () => {
   assert.equal(decideFinalYear({no_contract: true}, cfg).action, 'release');
@@ -19,7 +19,7 @@ test('replaceable for much less → sell (Kislyak: Marco Company 15.3 vs 14.6, �
 test('30+ and not starting → sell (Torrente)', () => {
   assert.equal(decideFinalYear({age: 30, value: 8.9e6, wage: 26500, minutes: 408, starts: false, replacement: null}, cfg).action, 'sell');
 });
-test('worth keeping → ask his demands; then the renewal test decides (Savinho)', () => {
+test('a star is asked first even when replaceable; then the renewal test decides (Savinho)', () => {
   assert.equal(decideFinalYear(savinho, cfg).action, 'ask-demands');
   assert.equal(decideFinalYear(savinho, cfg, {salary: 210000, years: 4, loyaltyBonus: 3e6, agentFee: 1e6}).action, 'renew');
   assert.equal(decideFinalYear(savinho, cfg, {salary: 600000, years: 4, loyaltyBonus: 10e6, agentFee: 5e6}).action, 'sell');
