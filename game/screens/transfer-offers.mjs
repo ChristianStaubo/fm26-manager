@@ -116,10 +116,12 @@ export const incomingOffer = {
       // While waiting we only read the screen.
       // A later round still shows the previous answer: wait for a NEW line (round 2 with Man Utd read
       // round 1's "have negotiated" at once and logged our own terms as their reply).
-      const before = verdict(await Screen.read());
+      // …or the same line with new terms (Dortmund's second counter for Güreler, 2032-02-02).
+      const terms = x => { const o = readOffer(x, {headClub: offer.club, shortName: offer.player, coach: ''}); return `${o.upfront}|${o.guaranteed}|${o.total}`; };
+      const before = verdict(await Screen.read()), termsSent = terms(await Screen.read());
       await click('Suggest Terms', {name: 'StandardButton'});
       // From here the counter has been put to them: log the round whatever happens next.
-      const v = await waitFor(x => verdict(x) && verdict(x) !== before, {what: 'the buyer\'s answer', timeout: 30000}).catch(async e => { await log({...entry, executed: true, verdict: null}); throw e; });
+      const v = await waitFor(x => verdict(x) && (verdict(x) !== before || (!x.buttons('Suggest Terms').length && terms(x) !== termsSent)), {what: 'the buyer\'s answer', timeout: 30000}).catch(async e => { await log({...entry, executed: true, verdict: null}); throw e; });
       entry.verdict = verdict(v);
       // "<club> have negotiated the offer for <player>." (Man Utd, 2031-06-17): their counter is written
       // into the form. Record it as their reply and stop; the next call decides round 2 on it.
