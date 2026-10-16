@@ -54,7 +54,10 @@ const outgoingConfirm = {
   name: 'confirm-outgoing',
   // Our own signings show the same buttons plus "Delegate 'Finalizing player signings…'"
   // (delegate-finalizing handles those); outgoing ones read "<Player> set to move/join/leave".
-  match: s => s.buttons('Accept').length === 1 && s.buttons('Delay Transfer').length === 1 && s.buttons('Cancel').length === 1
+  // Also without Delay Transfer: "Kayode close to signing for R. Madrid" (2032-01-29) had Accept /
+  // Cancel / Delegate 'Finalizing player sales…' only.
+  match: s => s.buttons('Accept').length === 1 && s.buttons('Cancel').length === 1
+    && (s.buttons('Delay Transfer').length === 1 || s.buttons(/^Delegate 'Finalizing player sales/).length === 1)
     && !s.buttons(/^Delegate 'Finalizing player signings/).length && s.texts().some(t => OUTGOING.test(t)),
   async run(s, {dryRun = false} = {}) {
     const headline = s.texts().find(t => OUTGOING.test(t)) || '';

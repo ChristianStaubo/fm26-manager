@@ -13,6 +13,7 @@ export const KNOWN_DIALOGS = {
   'Submit completed squad list?': 'Confirm',           // squad registration
   'Enter contract negotiations?': 'Yes',   // renewing ourselves without the agent chat first (Franculino, 2030-07-17)
   'Cancel Negotiations': 'Cancel',   // never drop a deal by accident: keep talking (2028-06-27, Tanaka)
+  'Loan Recall': 'Ok',   // "<player> will return to his club shortly" after Recall From Loan (Gallardo, 2032-01-29)
 };
 // Titles that carry a name: [pattern, button].
 export const KNOWN_DIALOG_PATTERNS = [
