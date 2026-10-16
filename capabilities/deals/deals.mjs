@@ -84,7 +84,10 @@ export function reduce(deals = {}, obs, policy = {}) {
     // Checked by hand and left to run ("ack" until a date, fm deals ack): no stuck alert until then.
     if (d.ackUntil && date <= d.ackUntil) continue;
     const age = days(d.since, date), limit = stuckDays[d.state];
-    if (Number.isFinite(limit) && age > limit) alerts.push({kind: 'stuck', player: d.player, state: d.state, days: age, stop: ['fee-agreed', 'contract', 'confirmation'].includes(d.state)});
+    // A slow sale at 'contract' is the buyer talking to our player (Ouazane, Kislyak, 2032-07-09): if
+    // it falls through he simply stays. Only our signings (and any deal awaiting our confirmation) stop us.
+    if (Number.isFinite(limit) && age > limit) alerts.push({kind: 'stuck', player: d.player, state: d.state, days: age, dir: d.dir,
+      stop: d.state === 'confirmation' || (d.dir !== 'out' && ['fee-agreed', 'contract'].includes(d.state))});
   }
   return {deals: out, alerts};
 }
