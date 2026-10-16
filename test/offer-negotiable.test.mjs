@@ -20,19 +20,20 @@ test('Doak: a negotiable offer below our minimum is countered at our target, not
   assert.deepEqual([o.upfront, o.guaranteed, o.total], [27.5e6, 35e6, 39.6e6]);
   const d = decideSale({...o, vLow: 48e6, vHigh: 48e6, monthsLeft: 12, countersSoFar: 0, minimum: 45.22e6, target: 48e6, priceBook: true});
   assert.equal(d.action, 'counter');
-  assert.equal(d.guaranteedAsk, 62.4e6, 'first counter at 1.3 x his value (user, 2032-01-04: get more for our players)');
-  assert.equal(d.upfront, 54.9e6, 'the ask is on guaranteed money: + their £7.5M instalments; add-ons on top');
+  assert.equal(d.totalAsk, 62.4e6, 'first counter at 1.3 x his value, a total with add-ons (user, 2032-02-02)');
+  assert.equal(d.upfront, 62.4e6 - 4.6e6 - 7.5e6, 'fee = total - their add-ons - their instalments');
 });
 
 test('Villa (2031-06-17): £27.5M + £7.75M instalments + £4.4M add-ons → first counter £54.65M up front (they accepted £46M on the spot)', () => {
   const d = decideSale({club: 'Aston Villa', negotiable: true, guaranteed: 35.25e6, upfront: 27.5e6, total: 39.65e6, vLow: 48e6, vHigh: 48e6, monthsLeft: 12, countersSoFar: 0, minimum: 45.22e6, target: 48e6, priceBook: true});
   assert.equal(d.action, 'counter');
-  assert.equal(d.upfront, 54.65e6);
+  assert.equal(d.upfront, 62.4e6 - 4.4e6 - 7.75e6);
 });
 
-test("the GM's answer after Negotiate Offer", async () => {
+test("the GM's answer after Suggest Terms", async () => {
   const {verdict} = await import('../game/screens/transfer-offers.mjs');
-  const fake = {items: [{kind: 'button', label: 'Phil Giles General Manager Aston Villa feel the negotiation for Ben Gannon Doak is acceptable.'}]};
+  const label = 'Phil Giles General Manager Aston Villa feel the negotiation for Ben Gannon Doak is acceptable.';
+  const fake = {items: [{kind: 'button', label}], buttons: re => [{label}].filter(b => !re || re.test(b.label))};
   assert.equal(verdict(fake), 'Aston Villa feel the negotiation for Ben Gannon Doak is acceptable.');
   assert.equal(verdict(s), null);
 });

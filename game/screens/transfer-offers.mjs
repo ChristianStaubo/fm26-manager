@@ -3,7 +3,9 @@
 // Decisions come from decide.mjs + policy.json; anything outside the rules throws NeedsAnalyst.
 import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../ui/index.mjs';
 import {decideSale, decidePayoff, decideLoan, loadRules} from '../../capabilities/sell/decide.mjs';
-import {negotiate, offerValueRange, defaultMax, buyStep} from '../../capabilities/buy/buy.mjs';
+import {negotiate, offerValueRange, defaultMax, buyStep, gmLine} from '../../capabilities/buy/buy.mjs';
+import {classify} from '../../capabilities/deals/replies.mjs';
+import {writeFileSync} from 'node:fs';
 import {log, history} from '../../capabilities/log.mjs';
 import * as pricebook from '../../capabilities/value/pricebook.mjs';
 import {paidFor} from '../../capabilities/value/paid.mjs';
@@ -29,7 +31,8 @@ export const negotiable = d => {
 // for Ben Gannon Doak is acceptable." (a button).
 // Their counter: "… Man Utd have negotiated the offer for Ben Gannon Doak." (the new terms are in the form).
 // Final answer: "… Man Utd have submitted a non-negotiable offer for Ben Gannon Doak." (take it or leave it).
-export const verdict = s => s.items.find(i => i.kind === 'button' && / (feel the negotiation|have negotiated the offer|have submitted a non-negotiable offer) for /.test(i.label))?.label.replace(/^.*?General Manager /, '') ?? null;
+// Any GM line after the first notes; its meaning comes from classify (capabilities/deals/replies.mjs).
+export const verdict = s => { const line = gmLine(s); return line && classify(line) !== 'notes' ? line.replace(/^.*?General Manager /, '') : null; };
 
 // Read an offer's detail page ("View Offer").
 export function readOffer(d, {headClub, shortName, coach}) {
@@ -130,11 +133,15 @@ export const incomingOffer = {
       entry.verdict = verdict(v);
       // "<club> have negotiated the offer for <player>." (Man Utd, 2031-06-17): their counter is written
       // into the form. Record it as their reply and stop; the next call decides round 2 on it.
-      if (/have negotiated the offer for |non-negotiable offer for /.test(entry.verdict)) {
+      entry.replyState = classify(entry.verdict);
+      if (entry.replyState === 'unknown') {
+        writeFileSync(new URL(`../../local/runs/unknown-reply-${Date.now()}.json`, import.meta.url), JSON.stringify({gm: entry.verdict, texts: v.texts().slice(0, 120), buttons: v.buttons(/./).map(b => b.label).slice(0, 80)}, null, 1));
+      }
+      if (['countered', 'final'].includes(entry.replyState)) {
         const r = readOffer(v, {headClub: offer.club, shortName: offer.player, coach: ''});
         entry.reply = {upfront: r.upfront, guaranteed: r.guaranteed, total: r.total};
       }
-      if (!/is acceptable\.?$/.test(entry.verdict)) { await log({...entry, executed: true}); throw new NeedsAnalyst(`Counter for ${offer.player}: ${entry.verdict}`, entry); }
+      if (entry.replyState !== 'accepted') { await log({...entry, executed: true}); throw new NeedsAnalyst(`Counter for ${offer.player}: ${entry.verdict}`, entry); }
       await click('Accept Offer');
       entry.accepted = true;
     } else await click(decision.action === 'accept' ? 'Accept Offer' : 'Reject Offer');

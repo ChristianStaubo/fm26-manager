@@ -14,6 +14,7 @@ import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {gate} from '../approvals.mjs';
 import {askAgent} from './ask.mjs';
+import {classify} from '../deals/replies.mjs';
 
 // Opening bid: rules.buying.open_at × FM's value, the middle of the range (lower if the club wants
 // to sell). Bids well below value get a flat "unacceptable", which ends the deal.
@@ -109,14 +110,10 @@ const dealValue = o => (o.upfront ?? 0) + ((o.total ?? o.upfront ?? 0) - (o.upfr
 // The club's reply read from the General Manager line alone (offerState says 'editing' while
 // Suggest Terms is on screen, whatever the line says).
 export function replyState(s) {
-  const gm = gmLine(s);
-  return /An offer has been made/i.test(gm) || s.hasText(/An offer has been made/) ? 'made'
-    : /is unacceptable|have rejected/i.test(gm) ? 'rejected'
-    : /prepared to accept|(?<!un)acceptable/i.test(gm) ? 'accepted'
-    : /negotiated the offer|responded to the latest offer/i.test(gm) ? 'countered'
-    // "Brighton feel they can get more for Kellen Fisher. An improved offer will need to be
-    // submitted" (2032-01-29): no figure, just more.
-    : /can get more|improved offer will need/i.test(gm) ? 'more' : null;
+  // The answers are an explicit set (capabilities/deals/replies.mjs). 'notes' is the line before any
+  // answer; an agreement after Make Offer counts as made.
+  const state = s.hasText(/An offer has been made/) ? 'made' : classify(gmLine(s));
+  return state === 'notes' ? null : state === 'agreement' ? 'made' : state;
 }
 // Suggest Terms, then wait for the reply: a NEW General Manager line (or Suggest Terms gone).
 // "Timed out waiting for club response" (Maza, Atubolu 2028-06): the reply can take longer than
@@ -128,6 +125,13 @@ async function suggest() {
   const end = Date.now() + 30000;
   for (;;) {
     const x = await Screen.read(), r = replyState(x), ov = overlays(x).filter(o => o.kind === 'dialog');
+    // A line we have never seen: stop now and keep the screen (it becomes a test), no 30 s wait.
+    if (r === 'unknown' && gmLine(x) !== before) {
+      const dump = {gm: gmLine(x), buttons: x.buttons(/./).map(b => b.label).slice(0, 80), texts: x.texts().slice(0, 120)};
+      mkdirSync(new URL('../../local/runs/', import.meta.url), {recursive: true});
+      writeFileSync(new URL(`../../local/runs/unknown-reply-${Date.now()}.json`, import.meta.url), JSON.stringify(dump, null, 1));
+      throw new NeedsAnalyst(`Unknown club answer: ${gmLine(x).slice(0, 160)} (screen saved in local/runs/unknown-reply-*.json)`, dump);
+    }
     if (r && (!x.buttons('Suggest Terms').length || gmLine(x) !== before)) return {...offerState(x), state: r};
     if (Date.now() > end || ov.length) {
       const dump = {gmBefore: before, gm: gmLine(x), overlays: ov, buttons: x.buttons(/./).map(b => b.label).slice(0, 80), texts: x.texts().slice(0, 120)};
@@ -173,6 +177,14 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     // A flat "the offer is unacceptable": walk away, no raising or retrying (user, 2026-10-08:
     // LOSC rejected Ribeiro every time; a club that says no to the offer is left alone).
     if (reply.state === 'rejected') break;
+    // "Declined to give an immediate answer. An offer will need to be submitted" (HSV for Ângelo):
+    // a formal bid at the current fee, answered later; the deal state machine follows it from here.
+    if (reply.state === 'submit') {
+      await click('Make Offer');
+      await waitFor(x => offerState(x).state === 'made' || x.buttons('Exit Talks').length > 0, {what: 'offer made'});
+      if ((await Screen.read()).buttons('Exit Talks').length) await click('Exit Talks');
+      return {outcome: 'bid-made', history};
+    }
     // "They can get more": raise by a step (to max as the final offer) and suggest again.
     if (reply.state === 'more') {
       if (finalOffer || fee == null) break;

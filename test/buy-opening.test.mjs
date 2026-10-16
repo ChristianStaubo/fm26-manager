@@ -15,7 +15,9 @@ test('club replies are read from the General Manager line', () => {
   assert.equal(replyState(fake('General Manager: SC Freiburg believe the offer for Noah Atubolu is unacceptable')), 'rejected');
   assert.equal(replyState(fake('General Manager: Palace are prepared to accept the latest offer')), 'accepted');
   assert.equal(replyState(fake('General Manager: Palace have responded to the latest offer')), 'countered');
-  assert.equal(replyState(fake('General Manager: waiting')), null);
+  // A line we don't know is 'unknown' now (stop and capture), not "no answer yet" (2032-02 replies).
+  assert.equal(replyState(fake('General Manager: waiting')), 'unknown');
+  assert.equal(replyState(fake("Phil Giles General Manager I've noted some key considerations")), null);
 });
 
 import {termsAccepted} from '../capabilities/contracts/personal-terms.mjs';
