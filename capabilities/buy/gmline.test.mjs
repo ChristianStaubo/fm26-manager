@@ -10,3 +10,8 @@ test('gmLine skips news that mentions a general manager (McAidoo, 2032-01-04)', 
   assert.match(gmLine(s), /^Phil Giles General Manager Man City/);
   assert.equal(replyState(s), 'accepted');
 });
+
+test("'they can get more' (no figure) is its own answer", () => {
+  const s = screen(['Phil Giles General Manager Brighton feel they can get more for Kellen Fisher. An improved offer will need to be submitted for further consideration.']);
+  assert.equal(replyState(s), 'more');
+});

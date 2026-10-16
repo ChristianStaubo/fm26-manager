@@ -113,7 +113,10 @@ export function replyState(s) {
   return /An offer has been made/i.test(gm) || s.hasText(/An offer has been made/) ? 'made'
     : /is unacceptable|have rejected/i.test(gm) ? 'rejected'
     : /prepared to accept|(?<!un)acceptable/i.test(gm) ? 'accepted'
-    : /negotiated the offer|responded to the latest offer/i.test(gm) ? 'countered' : null;
+    : /negotiated the offer|responded to the latest offer/i.test(gm) ? 'countered'
+    // "Brighton feel they can get more for Kellen Fisher. An improved offer will need to be
+    // submitted" (2032-01-29): no figure, just more.
+    : /can get more|improved offer will need/i.test(gm) ? 'more' : null;
 }
 // Suggest Terms, then wait for the reply: a NEW General Manager line (or Suggest Terms gone).
 // "Timed out waiting for club response" (Maza, Atubolu 2028-06): the reply can take longer than
@@ -170,6 +173,14 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     // A flat "the offer is unacceptable": walk away, no raising or retrying (user, 2026-10-08:
     // LOSC rejected Ribeiro every time; a club that says no to the offer is left alone).
     if (reply.state === 'rejected') break;
+    // "They can get more": raise by a step (to max as the final offer) and suggest again.
+    if (reply.state === 'more') {
+      if (finalOffer || fee == null) break;
+      fee = fee + step >= max ? (finalOffer = true, max) : fee + step;
+      await setFee('Fee', fee);
+      await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
+      continue;
+    }
     if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
     // A sell-on clause in their counter costs us resale profit, the point of buying young (user,
     // 2026-10-14): remove it and offer their up-front fee without it (within max). If they put it
