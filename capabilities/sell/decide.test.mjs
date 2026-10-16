@@ -15,9 +15,10 @@ test('Kislyak (value £36-39M) bid £34M → counter at our sell price ~£50.7M'
   assert.equal(r.upfront, 50.7e6 - 7.25e6);
 });
 test('Kayode (value £63-75M, a player we want to keep) bid £61.5M → counter ~£97.5M', () => {
-  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, keyPlayer: true, negotiable: false});
+  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, keyPlayer: true, negotiable: false, importance: 'key starter'});
   assert.equal(r.action, 'counter');
-  assert.equal(r.guaranteedAsk, 97.5e6);
+  assert.equal(r.totalAsk, 97.5e6, 'a total, add-ons included');
+  assert.equal(r.need, 'core'); assert.equal(r.replace, true);
 });
 test('a bid at or above our sell price is accepted; lowballs are countered, not rejected', () => {
   assert.equal(sale({guaranteed: 51e6, vLow: 36e6, vHigh: 39e6}).action, 'accept');
@@ -88,4 +89,21 @@ test('add-ons count as fee: Newcastle for Yarmoliuk (35.75M guaranteed, 48.5M to
   const o = {priceBook: true, minimum: 46e6, target: 48e6, negotiable: false, guaranteed: 35.75e6, upfront: 25.5e6, total: 48.5e6, vLow: 44e6, vHigh: 49e6, countersSoFar: 0, monthsLeft: 36};
   assert.equal(decideSale(o).action, 'accept');
   assert.equal(decideSale({...o, total: 35.75e6}).action, 'reject');
+});
+
+// Sell price by need (user, 2032-02-02): Güreler, rotation CB, value £28-30M, bought for £17M.
+test('need tiers: core 1.3x, depth 1.0x, surplus 0.9x the top of his value; totals with add-ons', () => {
+  const base = {guaranteed: 17.45e6, upfront: 13.25e6, total: 23.7e6, vLow: 28e6, vHigh: 30e6, minimum: 32.2e6, monthsLeft: 40};
+  const depth = sale({...base, importance: 'rotation', paid: 17e6});
+  assert.equal(depth.need, 'depth'); assert.equal(depth.sellAt, 30e6); assert.equal(depth.totalAsk, 30e6);
+  assert.equal(depth.upfront, 30e6 - 6.25e6 - 4.2e6, 'fee = total - their add-ons - their instalments');
+  assert.equal(sale({...base, importance: 'fringe'}).sellAt, 27e6);
+  assert.equal(sale({...base, importance: 'starter'}).sellAt, 39e6);
+  assert.equal(sale({...base, importance: 'rotation', blockers: ['no comparable squad replacement']}).need, 'core');
+});
+test('never below what we paid, unless 30+ or in his last year', () => {
+  const base = {guaranteed: 10e6, upfront: 10e6, vLow: 18e6, vHigh: 20e6, importance: 'fringe', paid: 25e6, monthsLeft: 40};
+  assert.equal(sale(base).sellAt, 25e6);
+  assert.equal(sale({...base, age: 31}).sellAt, 18e6);
+  assert.equal(sale({...base, monthsLeft: 6}).sellAt, 18e6);
 });

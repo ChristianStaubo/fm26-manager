@@ -5,7 +5,8 @@
 import {history} from '../log.mjs';
 
 const money = v => Number.isFinite(v) ? v : null;
-// Asks are on guaranteed money (fee + instalments, decideSale); add-ons are listed apart.
+// Rounds compare guaranteed money (fee + instalments); add-ons are listed apart. Our asks are
+// totals since 2032-02-02 (decideSale totalAsk = guaranteedAsk + their add-ons).
 const addOns = o => Math.max(0, (o.total ?? o.guaranteed) - o.guaranteed);
 
 /** [{player, club, rounds: [{date, offer, ask, askPct, reply, closed}], outcome}] */

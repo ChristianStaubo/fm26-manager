@@ -6,6 +6,7 @@ import {decideSale, decidePayoff, decideLoan, loadRules} from '../../capabilitie
 import {negotiate, offerValueRange, defaultMax, buyStep} from '../../capabilities/buy/buy.mjs';
 import {log, history} from '../../capabilities/log.mjs';
 import * as pricebook from '../../capabilities/value/pricebook.mjs';
+import {paidFor} from '../../capabilities/value/paid.mjs';
 import {gate, load as loadApprovals, mode} from '../../capabilities/approvals.mjs';
 
 // Taking money for a player (accept, or counter = willing to sell at that fee) needs the user's
@@ -81,7 +82,8 @@ export const incomingOffer = {
     // his output, contract, age. Worth more to us than the market → minimum above his top → kept.
     else if (Number.isFinite(offer.vLow) && Number.isFinite(offer.vHigh)) {
       const p = pricebook.price(offer.player, [offer.vLow, offer.vHigh], isoDate(d.date()));
-      Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep});
+      Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep,
+        importance: p.importance, blockers: p.blockers, age: p.age, paid: paidFor(offer.player)});
     }
     // Days to the window's close: late in the window a listed player goes at his minimum.
     { const {windowEnd} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = Math.round((windowEnd(day) - day) / 864e5); }

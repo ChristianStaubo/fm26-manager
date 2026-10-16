@@ -56,5 +56,6 @@ export function price(name, range, date, {min} = {}) {
     : 'no analysis (rules only)';
   // Our floor above the top of the market range: nobody will pay it, and he is worth more to us.
   const keep = min === undefined && minimum > vHigh * rules.keep_if_minimum_over;
-  return {minimum, target, why, keep, blockers: analysis?.blockers || []};
+  return {minimum, target, why, keep, blockers: analysis?.blockers || [], importance: analysis?.importance ?? null,
+    age: analysis?.player?.age ?? null, yearsLeft: analysis?.player?.contract_years_left ?? null};
 }

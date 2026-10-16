@@ -75,7 +75,11 @@ The rules behind them:
   no, it's the same as a rejection; if they say yes, we've made a profit, and we're good at
   replacing players. A player who isn't listed sells at 1.3x the top of his value (Kislyak, value
   £39M → ~£51M; Kayode, whom we want to keep → ~£97M); a counter or accept at that price is approved
-  by this rule. **Listed players: get the most we can** (user, 2032-01-04, Fresneda went at his
+  by this rule. **How much we need him sets the price** (user, 2032-02-02, Güreler): core (a starter,
+  or no comparable replacement) 1.3x the top of his value, depth (rotation) 1.0x, surplus (fringe)
+  0.9x; never below what we paid unless he's 30+ or in his last year; selling a core player means
+  buying a replacement, depth doesn't. **All prices are totals, add-ons included**: a counter asks
+  for our total minus the add-ons they offer. **Listed players: get the most we can** (user, 2032-01-04, Fresneda went at his
   minimum to the first bid): accept outright only at the target (top of his value, add-ons
   included); counter negotiable bids at 1.3x his value, then the target, then towards the
   minimum; turn down non-negotiable bids below the target (more come) until the window's last

@@ -29,10 +29,12 @@ export function decideSale(offer, policy = loadRules()) {
   // Doak (2031-06-17): Villa offered £27.5M + £7.75M instalments + £4.4M add-ons; the user asked
   // £40M up front (£47.75M guaranteed) and Villa accepted at once. Counting the add-ons as fee here
   // would have asked only £36M up front.
-  const raw = offer.guaranteed, instalments = Math.max(0, raw - (o.upfront ?? raw));
+  // Prices are TOTALS, add-ons included (user, 2032-02-02: Güreler "£30M total comp"): a counter at
+  // `target` asks for target minus the add-ons they already offer, as fee + instalments.
+  const raw = offer.guaranteed, instalments = Math.max(0, raw - (o.upfront ?? raw)), addOns = o.guaranteed - raw;
   const counter = (target, minRaise = 1) => {
-    const ask = tidy(Math.max(target, raw * minRaise));
-    return {action: 'counter', upfront: ask - instalments, guaranteedAsk: ask};
+    const ask = tidy(Math.max(target - addOns, raw * minRaise));
+    return {action: 'counter', upfront: ask - instalments, guaranteedAsk: ask, totalAsk: ask + addOns};
   };
 
   // Never just reject a bid (user, 2031-07-22): counter at the price we'd sell him for. If they say
@@ -57,13 +59,22 @@ export function decideSale(offer, policy = loadRules()) {
     }
     return o.guaranteed >= o.minimum ? {action: 'accept', reason: `counters spent, >= our minimum ${o.minimum}`} : {action: 'reject', reason: `below our minimum ${o.minimum}, counters spent`};
   }
-  // Not listed: he's for sale only at our price: sell_ask x the top of his value (above our own
-  // minimum, which counts what he's worth to us).
-  // A contract in its last year sells for what it is: the bottom of his range.
-  const sellAt = tidy(expiring ? o.vLow : Math.max(o.vHigh * p.sell_ask, Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0));
-  if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt}`, sellAt};
-  if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt}: counter ${o.countersSoFar + 1}`, sellAt};
-  return {action: 'reject', reason: `below our sell price ${sellAt}, counters spent`, sellAt};
+  // Not listed: our sell price depends on how much we need him (user, 2032-02-02, Güreler: depth,
+  // how good he is, what we paid). policy selling.sell_ask_by_need x the top of his value:
+  //   core    = a starter, or no comparable replacement in the squad (blockers): not for sale cheap
+  //   depth   = rotation: his value
+  //   surplus = fringe: a little under it
+  // Never below what we paid, unless he's 30+ or in his last year; a last-year contract sells at the
+  // bottom of his range. Selling a core player needs a replacement (flagged).
+  const need = o.blockers?.length || ['key starter', 'starter'].includes(o.importance) ? 'core'
+    : ['strong rotation', 'rotation', 'weak starter'].includes(o.importance) ? 'depth' : o.importance === 'fringe' ? 'surplus' : 'core';
+  const mult = (p.sell_ask_by_need || {})[need] ?? p.sell_ask;
+  const paidFloor = Number.isFinite(o.paid) && !(o.age >= 30) && !expiring ? o.paid * (p.paid_floor ?? 1) : 0;
+  const sellAt = tidy(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, need === 'core' && Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0));
+  const tag = {sellAt, need, replace: need === 'core'};
+  if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt} (${need})${need === 'core' ? ': replacement needed' : ''}`, ...tag};
+  if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
+  return {action: 'reject', reason: `below our sell price ${sellAt} (${need}), counters spent`, ...tag};
 }
 
 /**
