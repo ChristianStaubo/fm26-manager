@@ -154,6 +154,17 @@ async function lowerPlayingTime() {
   return {...pick, suggested: true, reply: agentLine(r).slice(0, 160)};
 }
 
+// The texts listed under "Additional Promises" (above the Reset button) on the promises screen.
+export function additionalPromises(s) {
+  const head = s.items.find(i => i.kind === 'text' && i.label === 'Additional Promises');
+  const reset = s.buttons('Reset').find(b => b.name === 'button-secondary-label');
+  if (!head) return [];
+  const [x0] = head.bounds, top = head.bounds[1] + head.bounds[3], bottom = reset ? reset.bounds[1] : Infinity;
+  return s.items.filter(i => ['text', 'dropdown', 'button'].includes(i.kind) && i.label && i.bounds[1] > top && i.bounds[1] < bottom && i.bounds[0] >= x0 - 10 && i.bounds[0] < x0 + 700).map(i => i.label);
+}
+// "Play as an overlapping centre-back", "Play in his preferred position", "Use him as a …": a role we may not have.
+export const POSITION_PROMISE = /\b(play(ed|ing)? (as|in|at)|position|role|use (him )?as|deploy)\b/i;
+
 // The talks' own "Negotiate Contract" (StandardButton), not the Continue button of the same label.
 const negotiateButton = x => x.buttons('Negotiate Contract').find(b => b.name !== 'continue-button');
 export async function negotiatePersonalTerms({player = '?', ticks, entered = false, renewal = null, preview = false, currentWage = null} = {}) {
@@ -190,6 +201,14 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   }
   let promise = null;   // logged once the entry exists
   if (s.buttons('Finalize Promises').length) {
+    // A promise to play him in a set position/role we can't keep (user, 2033-07-04: Germany, "play as an
+    // overlapping centre-back"; he becomes unhappy when it's broken): never finalize it. Removing a
+    // promise isn't mapped yet (to record with the user), so stop for them.
+    const extra = additionalPromises(s), binding = extra.filter(t => POSITION_PROMISE.test(t));
+    if (binding.length) {
+      await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'stopped-promise', promises: extra});
+      throw new NeedsAnalyst(`${player} wants a promise we can't keep (${binding.join('; ')}): remove it by hand or walk away`, {promises: extra});
+    }
     promise = await lowerPlayingTime().catch(e => ({error: e.message}));
     await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'});
   }
