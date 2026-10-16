@@ -239,7 +239,7 @@ export const loanOffer = {
     }
     const o = {...loan, ...(book ? {priceBook: true, minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
     o.wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
-    if (!loan.obligationFee && !loan.optionFee) o.starter = await inOurXI(loan.player);
+    if (!loan.obligationFee && !loan.optionFee) Object.assign(o, await loanContext(loan.player, isoDate(s.date()), loan.duration));
     const decision = decideLoan(o);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan, decision};
     if (decision.action === 'accept' && !decision.asSale) {
@@ -282,12 +282,18 @@ export function readLoanPage(s) {
     wageRelief: Math.round((wage || 0) * pct * weeks), mandatory: s.hasText('Mandatory Future Fee')};
 }
 
-// Is he in the suggested XI (analysis xi)? Unknown → undefined: the loan stops for the user.
-async function inOurXI(player) {
+// For a plain loan: is he in the suggested XI (analysis xi), and what does he cost us until the loan
+// ends ("End of season": to 31 May)? Unknown → undefined: the loan stops for the user.
+async function loanContext(player, date, duration) {
   try {
     const {analysis, gameDate} = await import('../../capabilities/data.mjs');
-    return analysis('manager.py', ['xi'], {date: await gameDate()}).xi.some(x => samePlayer(x.player, player));
-  } catch { return undefined; }
+    const day = date || await gameDate();
+    const starter = analysis('manager.py', ['xi'], {date: day}).xi.some(x => samePlayer(x.player, player));
+    const wage = analysis('manager.py', ['price', player], {date: day})?.wage;
+    const end = `${Number(day.slice(0, 4)) + (day.slice(5) > '05-31' ? 1 : 0)}-05-31`;
+    const weeks = duration === 'End of season' ? (Date.parse(end) - Date.parse(day)) / (7 * 864e5) : NaN;
+    return {starter, wageCost: Number.isFinite(wage) && Number.isFinite(weeks) ? wage * weeks : undefined};
+  } catch { return {}; }
 }
 
 export const loanOfferPage = {
@@ -345,6 +351,9 @@ export const youthLoanOffer = {
     if (loanListed(l.player)) return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
     if (!(l.age <= sell.youth_max_age)) {
       if (pricebook.lookup(l.player) && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) return answer('accept', `listed, ${Math.round(l.wageShare * 100)}% of his wage paid`);
+      // A plain loan outside our XI that covers most of his wage (fee included): accept (Sayman, 2033-01-12).
+      const plain = decideLoan({loanFee: l.fee, wageShare: l.wageShare, ...await loanContext(l.player, entry.date, l.duration)});
+      if (plain.action === 'accept') return answer('accept', plain.reason);
       await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry);
     }
     return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});

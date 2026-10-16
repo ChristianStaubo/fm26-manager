@@ -88,9 +88,12 @@ export function decideLoan(l, policy = loadRules()) {
   }
   // A plain loan of a player outside our XI with most of his wage paid: accept. He plays, which keeps
   // his value for a sale, and we save wages (Muharemović to Lens, 80%, 2033-01-07, renewed to sell).
+  // Money counts either way: a loan fee covers wages too (Sayman to Blackburn, 2033-01-12: £1.6M, 0% of
+  // his wage, ~£0.56M of wages to the season's end). wageCost: his wage until the loan ends.
   const min = policy.selling.listed_loan_min_wage_share ?? 0.8;
-  if (!l.optionFee && l.starter === false && l.wageShare >= min)
-    return {action: 'accept', asSale: false, reason: `plain loan, not in our XI, ${Math.round(l.wageShare * 100)}% of his wage paid (>= ${Math.round(min * 100)}%)`};
+  const covered = Number.isFinite(l.wageCost) && l.wageCost > 0 ? (fees + (l.wageShare || 0) * l.wageCost) / l.wageCost : l.wageShare;
+  if (!l.optionFee && l.starter === false && covered >= min)
+    return {action: 'accept', asSale: false, reason: `plain loan, not in our XI, ${Math.round(covered * 100)}% of his wage covered (>= ${Math.round(min * 100)}%)`};
   return {action: 'escalate', asSale: false, reason: l.optionFee ? `loan with an option (not obligation) to buy ${l.optionFee}: decide on wage relief and depth` : 'plain loan: decide on wage relief and depth'};
 }
 

@@ -117,3 +117,9 @@ test('plain loan: accept when he is outside our XI and they pay 80%+ of his wage
   assert.equal(decideLoan({...loan, starter: false, wageShare: 0.5}).action, 'escalate', 'too little wage relief');
   assert.equal(decideLoan({...loan, starter: false, optionFee: 5e6}).action, 'escalate', 'an option to buy: the user decides');
 });
+
+test('plain loan: a loan fee counts as wage relief (Sayman to Blackburn, £1.6M, 0% of ~£0.56M wages)', async () => {
+  const {decideLoan} = await import('./decide.mjs');
+  assert.equal(decideLoan({loanFee: 1.6e6, wageShare: 0, wageCost: 0.56e6, starter: false}).action, 'accept');
+  assert.equal(decideLoan({loanFee: 0, wageShare: 0.5, wageCost: 0.56e6, starter: false}).action, 'escalate');
+});
