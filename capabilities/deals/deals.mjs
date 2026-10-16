@@ -17,6 +17,8 @@ const NEXT = {
   'work-permit': ['contract', 'confirmation', 'completed', 'collapsed'],
   confirmation: ['completed', 'collapsed'],
   completed: [], collapsed: [],
+  // Off the list one day, back the next (a new bid, or a partial read): the deal goes on (2032-07-12).
+  vanished: ['offer', 'negotiating', 'fee-agreed', 'contract', 'work-permit', 'confirmation', 'completed', 'collapsed'],
 };
 export const canMove = (from, to) => from === to || (NEXT[from] || []).includes(to);
 

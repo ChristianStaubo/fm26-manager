@@ -77,3 +77,9 @@ test('a slow sale at contract (the buyer talking to our player) is reported, not
   const r = reduce(deals, {date: '2032-07-09', rows: [{player: 'Matvey Kislyak', stage: 'Contract'}]});
   assert.ok(r.alerts.some(a => a.kind === 'stuck' && !a.stop));
 });
+
+test('a vanished deal that comes back goes on, no alert (Miceli, Ingand, Ketu, 2032-07-12)', () => {
+  const deals = {'edoardo miceli': {player: 'Edoardo Miceli', dir: 'out', state: 'vanished', since: '2032-07-10', seen: '2032-07-10', history: []}};
+  const r = reduce(deals, {date: '2032-07-12', rows: [{player: 'Edoardo Miceli', stage: '2 Offers'}]});
+  assert.deepEqual(r.alerts, []); assert.equal(r.deals['edoardo miceli'].state, 'offer');
+});
