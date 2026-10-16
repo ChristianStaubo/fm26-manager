@@ -4,6 +4,9 @@
 // (called each frame) and run at most one queued job when it returns.
 function queueJob(kind, fn, {action = false, timeoutMs = 2000} = {}) {
   if (pending) throw Error('Another game operation is pending');
+  // The latch is released when the status is read (20-continue.js status()): read it before refusing,
+  // or a run stopped mid-Continue leaves every UI action refused (2033-01-21, holiday after a stop).
+  if (action && inFlight) status();
   if (action && inFlight) throw Error('A Continue action is in flight');
   if (!pumpFound) throw Error('UI pump unavailable');
   return new Promise((resolve, reject) => {
