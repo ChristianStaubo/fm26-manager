@@ -121,11 +121,13 @@ export async function peekActions(sub) {
   await openMenu('Actions');
   let s = await waitFor(x => entries(x).length > 0, {what: 'Actions menu'});
   const top = entries(s).map(e => e.label);
+  // `sub`: one submenu, or a path of them (['Transfer', 'Loan Status']): the last one's entries.
   let items = [];
-  const parent = sub && entries(s).find(e => e.label === sub);
-  if (parent) {
-    await hover(sub);
-    s = await waitFor(x => entries(x).some(e => e.x > parent.x + 50), {what: `${sub} submenu`});
+  for (const label of [].concat(sub || [])) {
+    const parent = entries(s).find(e => e.label === label);
+    if (!parent) { items = []; break; }
+    await hover(label);
+    s = await waitFor(x => entries(x).some(e => e.x > parent.x + 50), {what: `${label} submenu`});
     items = entries(s).filter(e => e.x > parent.x + 50).map(e => e.label);
   }
   await recover();

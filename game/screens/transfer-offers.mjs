@@ -325,6 +325,9 @@ export const youthLoanOffer = {
     const {load} = await import('../../capabilities/deals/store.mjs');
     const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state) && samePlayer(d.player, l.player));
     if (going) return answer('reject', `already leaving (deal at ${going.state})`);
+    // Listed for loan to develop (fm loanlist, Juninho 2033-01): the youth loan rule decides.
+    const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
+    if (loanListed(l.player)) return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
     if (!(l.age <= sell.youth_max_age)) {
       if (pricebook.lookup(l.player) && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) return answer('accept', `listed, ${Math.round(l.wageShare * 100)}% of his wage paid`);
       await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry);

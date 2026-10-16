@@ -46,7 +46,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null, retried = null;
+    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null, retried = null, clearedOn = null;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     const reportStuck = async why => { try { return await (await import('../../cli/friction.mjs')).stuck(why); } catch { return null; } };
     // Watchdog (user, 2032-07-12: "surely we need something to catch when we get stuck"): no new game
@@ -152,6 +152,9 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
         screen = await Screen.read();
         handler = HANDLERS.find(h => h.match(screen));
       }
+      // The action can clear by itself before a handler sees it (a news task read, 2033-01-05: the game
+      // was back at CanContinue): carry on, once per game day, instead of stopping for nothing.
+      if (!handler && (await getState()).stateName !== 'NeedAction' && clearedOn !== lastDate) { clearedOn = lastDate; continue; }
       if (!handler) return stop('needs-analyst', {why: 'no handler for this screen', screen: summarize(screen)});
       // Loop guard: the same handler on the same screen twice means its action had no effect.
       const key = handler.name + '|' + screen.texts().join('|').slice(0, 2000);

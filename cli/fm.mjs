@@ -8,7 +8,7 @@ import * as fm from '../game/ui/index.mjs';
 import {control, withLock} from '../capabilities/season/continue.mjs';
 import {run} from '../capabilities/season/autopilot.mjs';
 import {holiday, holidaySeason} from '../capabilities/season/holiday.mjs';
-import {listPlayer, unlistPlayer} from '../capabilities/sell/list.mjs';
+import {listPlayer, unlistPlayer, loanListPlayer} from '../capabilities/sell/list.mjs';
 import {buyPlayer} from '../capabilities/buy/buy.mjs';
 import {askAgent} from '../capabilities/buy/ask.mjs';
 import {preContract} from '../capabilities/buy/precontract.mjs';
@@ -89,6 +89,7 @@ Transfers
                                  (price book) for the bid handler. --min overrides the minimum.
        [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
   unlist "<name>" --club <club>   take him off the transfer list (and drop his sell approval)
+  loanlist "<name>" --club <club> [--why "…"]   list him for loan to develop; loan offers then follow the youth loan rule
   prices                         the price book: listed players with our minimum and target
   precontract "<name>" --club <club> [--preview]   expiring contract: agent chat, Approach To Sign, split; joins free 1 July
   ask "<name>" --club <club>     ask his agent about availability (one-time per player): will he join, fee range, demands
@@ -147,7 +148,7 @@ const dryRun = !!flags['dry-run'];
 const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
-const ACTING = new Set(['unlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
+const ACTING = new Set(['unlist', 'loanlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
 try {
   if (ACTING.has(cmd) && watchRunning()) throw new Error(`fm watch is recording (pid ${watchRunning()}): stop it before acting, or wait`);
   switch (cmd) {
@@ -291,6 +292,7 @@ try {
     case 'negotiations': { const {report} = await import('../capabilities/sell/negotiations.mjs'); out(await report()); break; }
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun, preview: !!flags.preview})); break;   // we negotiate (tick rule); --dof hands over
     case 'save': { const r = await saveGame(); out(r); process.exitCode = r.saved ? 0 : 1; break; }
+    case 'loanlist': out(await loanListPlayer(a1, flags.club, {why: flags.why || '', dryRun})); break;
     case 'unlist': { const r = await unlistPlayer(a1, flags.club, {dryRun}); if (r.changed) approvals.revoke('sell', a1); out(r); break; }
     case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;
     case 'watch': out(await watch({seconds: Number(flags.seconds || 300), interval: Number(flags.interval || 1000), out: flags.out})); break;

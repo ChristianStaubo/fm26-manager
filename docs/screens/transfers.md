@@ -64,6 +64,12 @@ Negotiate → Compensation box (presets + ±; **typed values become £0 here**) 
 "I believe a payoff of £X is suitable" → Accept Payoff (**the StandardButton one**). Selling a
 player can trigger a payoff demand a day later.
 
+## Listing for loan: `fm loanlist "<name>" --club <club> [--why "…"]`
+Profile → Actions → Transfer → **Loan Status** → "Available for loan" (options: Available for loan / No
+status set / Unavailable for loan), then a "Set Loan Status: Are you sure…?" dialog with **Yes** / No.
+The Set Transfer Status card has no loan option. Listed players go in `local/runs/loan-list.json`; their
+loan offers follow the youth loan rule (Juninho, 2033-01-05).
+
 ## Loan approaches for our players (`loan-offer`, `loan-offer-page`)
 Message "<Club> make loan approach for <Player>": Fee, Duration, Playing/Unused Monthly Fee,
 salary percentages and Agreed Playing Time as text; Accept / Reject / View Offer. `readLoan`

@@ -1,9 +1,11 @@
 // Transfer-list one of our players with an asking price.
 import {Screen, waitFor, click, choose, setFee, parseMoney, openPlayer, actionPath, profileFacts, isoDate, NeedsAnalyst} from '../../game/ui/index.mjs';
+import {peekActions} from '../../game/ui/navigate.mjs';
 import {loadRules} from './decide.mjs';
 import {log} from '../log.mjs';
 import {gate} from '../approvals.mjs';
 import * as pricebook from '../value/pricebook.mjs';
+import * as loanlist from './loanlist.mjs';
 
 // Default asking price: rules.selling.asking_price × the top of the player's valuation (1.0: we
 // want to sell). --deter uses asking_price_deter for players listed but not really for sale.
@@ -114,4 +116,23 @@ export async function unlistPlayer(name, club, {dryRun = false} = {}) {
   const entry = {action: 'unlist', name, club, date: isoDate(profile.date()), was, changed: true, priceBookRemoved: pricebook.remove(name)};
   await log(entry);
   return entry;
+}
+
+// List for loan (user, 2033-01-05, Juninho: no slot in our shape, so he develops elsewhere).
+// Profile → Actions → Transfer → Loan Status → "Available for loan" (the Set Transfer Status card has no
+// loan option). Offers are then accepted by the youth loan rule.
+export async function loanListPlayer(name, club, {why = '', dryRun = false} = {}) {
+  const profile = await openPlayer(name, club), date = isoDate(profile.date());
+  const {sub} = await peekActions(['Transfer', 'Loan Status']);
+  if (!sub.includes('Available for loan')) throw new NeedsAnalyst(`No "Available for loan" for ${name}`, {options: sub});
+  const entry = {action: 'loan-list', name, club, date, why};
+  if (dryRun) return {...entry, dryRun: true};
+  await actionPath(['Transfer', 'Loan Status', 'Available for loan']);
+  // "Set Loan Status: Are you sure you want to change the loan status of <name>?" Yes / No.
+  await waitFor(x => x.hasText('Set Loan Status') && x.buttons('Yes').length === 1, {what: 'Set Loan Status dialog'});
+  await click('Yes');
+  await waitFor(x => !x.hasText('Set Loan Status'), {what: 'Set Loan Status closed'});
+  loanlist.add({name, club, listed: date, why});
+  await log(entry);
+  return {...entry, listed: true};
 }
