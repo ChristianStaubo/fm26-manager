@@ -55,6 +55,9 @@ export const toggle = (select, checked, what = 'toggle') =>
 export const setNumber = (select, number, what = 'number field') =>
   act(s => { const f = select(s); if (!f) throw missing(what); return ui.number(s.tree, s.node(f.id), number); });
 export const key = name => ui.key(name);
+// Scroll the scroll view that contains select(screen)'s element by dy pixels (down is positive).
+export const scrollWithin = (select, dy, what = 'scroll anchor') =>
+  act(s => { const a = select(s); if (!a) throw missing(what); return ui.scroll(s.tree, s.node(a.id), dy); });
 
 // ---- Dropdowns ------------------------------------------------------------------------
 // Select an option of an SIDropdown by its visible text; verifies and corrects index offsets.

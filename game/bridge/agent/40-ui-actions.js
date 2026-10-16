@@ -49,6 +49,20 @@ const ELEMENT_ACTIONS = {
     if (combo) call(cls('FMCombobox'), 'OnLostFocusInput', combo, [ptr(0)]);
     return {value: n.intField ? A.unbox(call(c, 'get_value', t)).readS32() : Number(A.unbox(call(c, 'get_value', t)).readS64())};
   }},
+  // Scroll the ScrollView around this element by dy pixels (its vertical Scroller's value), so rows
+  // and sections below the fold get built and become actionable (loan-to-buy fees, the
+  // registration list; 2032-01-16). Any visible element inside the scroll view can anchor it.
+  scroll: {accepts: () => true, perform(t, n, r) {
+    if (!Number.isFinite(r.dy) || Math.abs(r.dy) > 20000) throw Error('dy (pixels) required');
+    const sv = ancestor(t, 'ScrollView', 60);
+    if (!sv) throw Error('No scroll view around this element');
+    const bar = call(cls('ScrollView'), 'get_verticalScroller', sv), sc = cls('Scroller');
+    const f32 = v => { const m = Memory.alloc(4); m.writeFloat(v); return m; }, num = p => A.unbox(p).readFloat();
+    const from = num(call(sc, 'get_value', bar)), high = num(call(sc, 'get_highValue', bar)), low = num(call(sc, 'get_lowValue', bar));
+    const to = Math.max(low, Math.min(high, from + r.dy));
+    call(sc, 'set_value', bar, [f32(to)]);
+    return {from, to, high};
+  }},
   // Checkboxes and FM radio buttons.
   toggle: {accepts: n => n.toggle, perform(t, n, r) {
     if (typeof r.checked !== 'boolean') throw Error('checked (true/false) required');

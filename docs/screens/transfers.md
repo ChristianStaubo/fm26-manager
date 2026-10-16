@@ -91,3 +91,17 @@ a sale (`decideLoan`); option-only loans stop for a decision.
 - `fm offers` (Recruitment → Transfer Activity) is the source of truth for bids in progress and
   the budget impact.
 - Fee boxes ignore typed numbers on some screens: the tools use presets + ± (see `../ui-notes.md`).
+
+## Countering a loan offer with a mandatory future fee (recorded from the user, 2032-01-16)
+Liverpool's loan approach for Kayode (negotiable; £77K monthly fee, 80% wages, end of season):
+1. Scroll the loan terms (`SIScrollView` named **loan-offer-scroll**; the loan-to-buy section is
+   only built once scrolled into view, it is not in the tree before).
+2. **Loan-to-buy Fees → Add** (dropdown) → rows: **Mandatory Future Fee** / Future Fee After
+   Matches Played / Future Fee After Competition Achievement / Optional Future Fee.
+3. A **Mandatory Future Fee** box appears (£0): a fee combobox with presets (… £40M, £60M, £80M,
+   £120M, £150M, £300M) and −/+ steps (the user went £60M → £76M → £85M).
+4. The user also set the Playing/Unused Monthly Fee to £0.
+5. **Suggest Terms** → Liverpool rejected it; **Exit Talks** appeared.
+Lesson (user): a big lump-sum mandatory fee is hard for a club to accept; split it into
+instalments (and add-ons) to make it easier. Not automated yet: `fm` scroll (bridge action
+`scroll`) must target loan-offer-scroll (the first attempt moved an inner scroll view: range 0).

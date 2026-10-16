@@ -2,7 +2,7 @@
 // To support a new FM control: add its class here, then teach ui-tree/ui-actions about it.
 const CLASSES = {
   'UnityEngine.UIElements': ['VisualElement', 'Button', 'Clickable', 'Panel', 'UIElementsRuntimeUtility', 'TextElement',
-    'TextField', 'LongField', 'IntegerField', 'Toggle', 'NavigationSubmitEvent', 'MouseEnterEvent'],
+    'TextField', 'LongField', 'IntegerField', 'Toggle', 'NavigationSubmitEvent', 'MouseEnterEvent', 'ScrollView', 'Scroller'],
   'UnityEngine': ['Application'],
   'UnityEngine.InputSystem': ['InputSystem'],
   'UnityEngine.InputSystem.LowLevel': ['StateEvent'],

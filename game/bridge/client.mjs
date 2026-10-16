@@ -48,6 +48,7 @@ export const ui = {
   dropdown: (t, n, mode, index) => uiAction('dropdown', t, n, {mode, index}),
   preset: (t, n, index) => uiAction('preset', t, n, {index}),
   row: (t, n) => uiAction('row', t, n),
+  scroll: (t, n, dy) => uiAction('scroll', t, n, {dy}),
   // Not tied to an element:
   key: key => request({op: 'ui', action: 'key', key}),
   closeDropdowns: () => request({op: 'ui', action: 'closeDropdowns'}),
