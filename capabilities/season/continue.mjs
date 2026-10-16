@@ -1,6 +1,7 @@
 // Bounded Continue loop: press Continue until the game needs an action, an unknown state
 // appears, or a step/time limit is hit. Each call returns; the caller decides what's next.
 import {open, unlink} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {classifyState, getState, request, RUNTIME_DIR} from '../../game/bridge/client.mjs';
 
@@ -57,10 +58,22 @@ export async function control({maxSteps=10, durationMs=50000, pollMs=200}={}, io
 
 // One operator at a time: an exclusive lock file while the loop or autopilot runs.
 export const LOCK = path.join(RUNTIME_DIR, 'controller.lock');
+/** The lock's process is gone (or the lock is unreadable). */
+export function staleLock(file = LOCK) {
+  try { const {pid} = JSON.parse(readFileSync(file, 'utf8')); process.kill(pid, 0); return false; }
+  catch (e) { return e.code !== 'EPERM'; }
+}
 export async function withLock(owner, fn) {
   let lock;
   try { lock = await open(LOCK, 'wx', 0o600); }
-  catch (e) { if (e.code === 'EEXIST') throw new Error(`Another runner holds ${LOCK}. If no fm process is running, delete it.`); throw e; }
+  catch (e) {
+    if (e.code !== 'EEXIST') throw e;
+    // A runner that was stopped (SIGINT/kill) leaves its lock: take it over when its process is gone
+    // (2033-05-28: the cycle refused to start after the January run was stopped).
+    if (!staleLock()) throw new Error(`Another runner holds ${LOCK}. If no fm process is running, delete it.`);
+    await unlink(LOCK).catch(() => {});
+    lock = await open(LOCK, 'wx', 0o600);
+  }
   try { await lock.writeFile(JSON.stringify({pid: process.pid, owner, startedAt: new Date().toISOString()})); return await fn(); }
   finally { await lock.close(); await unlink(LOCK); }
 }

@@ -42,3 +42,13 @@ test('in-flight action from another invocation cannot be repeated',async()=>{
   const f=fixture([state('CanContinue',{actionInFlight:true})]);const r=await control({durationMs:1000},f.io);
   assert.equal(r.reason,'time-limit');assert.deepEqual(f.actions,[]);
 });
+
+test('a lock left by a stopped runner (its process is gone) is stale; a live one is not (2033-05-28)', async () => {
+  const {staleLock} = await import('./continue.mjs');
+  const {mkdtempSync, writeFileSync} = await import('node:fs');
+  const dir = mkdtempSync(`${(await import('node:os')).tmpdir()}/lock-`);
+  writeFileSync(`${dir}/dead`, JSON.stringify({pid: 999999, owner: 'autopilot'}));
+  writeFileSync(`${dir}/live`, JSON.stringify({pid: process.pid, owner: 'autopilot'}));
+  assert.equal(staleLock(`${dir}/dead`), true);
+  assert.equal(staleLock(`${dir}/live`), false);
+});
