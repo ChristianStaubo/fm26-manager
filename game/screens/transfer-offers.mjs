@@ -232,7 +232,8 @@ export const loanOffer = {
     // A youth player's loan approach (Wellington for Sullivan, 2030-07-21): the youth rule, not the
     // first-team plain-loan escalation.
     const sell = loadRules().selling;
-    if (loan.age <= sell.youth_max_age) {
+    const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
+    if (loan.age <= sell.youth_max_age || loanListed(loan.player)) {   // or listed for loan (fm loanlist)
       const share = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
       return youthDecision({kind: 'loan-offer', date: isoDate(s.date()), club: loan.club, player: loan.player, wageShare: share, loan}, {dryRun});
     }
