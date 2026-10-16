@@ -61,7 +61,20 @@ test('cycle: drives the window with the autopilot, holidays outside it (user, 20
     away: async until => { legs.push(['holiday', until]); today = until; return {reason: 'returned'}; },
   };
   // The checkpoint itself is faked too: a test must never save or click in the live game.
-  const r = await cycle({}, {...fake, check: async name => ({checkpoint: name})});
+  const r = await cycle({}, {...fake, check: async name => ({checkpoint: name}), done: () => []});
   assert.deepEqual(legs, [['drive', '2031-09-02'], ['holiday', '2032-01-01'], ['drive', '2032-01-02']]);
   assert.equal(r.checkpoint, 'january');
+});
+
+test('cycle: a checkpoint already run today is skipped (newgen twice on 2032-05-01)', async () => {
+  const {cycle} = await import('./checkpoint.mjs');
+  const {inWindow, nextWindowOpen, windowEnd} = await import('./season.mjs');
+  let today = '2032-05-01';
+  const legs = [];
+  const r = await cycle({}, {date: async () => today, inWindow, nextOpen: nextWindowOpen, closeOf: windowEnd,
+    drive: async u => { legs.push(['drive', u]); today = u; return {reason: 'until'}; },
+    away: async u => { legs.push(['holiday', u]); today = u; return {reason: 'returned'}; },
+    check: async name => ({checkpoint: name}), done: () => [{name: 'newgen', date: '2032-05-01'}]});
+  assert.equal(r.checkpoint, 'season_end');
+  assert.deepEqual(legs, [['holiday', '2032-05-28']]);
 });

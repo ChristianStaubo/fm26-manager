@@ -113,13 +113,15 @@ export function reports(dir = REPORTS) {
  *  game ourselves with the autopilot (bids, loan offers, deadline deals; match days are a one-day
  *  holiday): user, 2031-08-08, after late loan offers were missed on holiday. Outside the windows:
  *  holiday to the next window or checkpoint, whichever comes first. */
-export async function cycle(opts = {}, {date = gameDate, inWindow: inWin, nextOpen, closeOf, drive, away, check = runCheckpoint} = {}) {
+export async function cycle(opts = {}, {date = gameDate, inWindow: inWin, nextOpen, closeOf, drive, away, check = runCheckpoint, done = reports} = {}) {
   const season = await import('./season.mjs');
   inWin ??= season.inWindow; nextOpen ??= season.nextWindowOpen; closeOf ??= season.windowEnd;
   drive ??= async until => (await import('./autopilot.mjs')).run({until});
   away ??= async until => (await import('./holiday.mjs')).holidaySeason({until});
   const iso = d => d.toISOString().slice(0, 10), day = x => new Date(x + 'T00:00:00Z');
-  const next = nextCheckpoint(await date());
+  // Today's checkpoint already ran (its report exists): the next one (newgen ran twice, 2032-05-01).
+  const start = await date(), ran = done().some(r => r.date === start);
+  const next = nextCheckpoint(ran ? iso(new Date(day(start).getTime() + 864e5)) : start);
   const legs = [];
   for (let i = 0; i < 12; i++) {
     const today = await date();
