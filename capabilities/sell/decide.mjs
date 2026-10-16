@@ -41,15 +41,21 @@ export function decideSale(offer, policy = loadRules()) {
   // A reject only ends a deal whose counters are spent. Non-negotiable bids are countered too (the
   // handler falls back to Reject if the page won't take a fee).
   const counters = Number.isFinite(p.max_counters) ? p.max_counters : 3;
-  // Listed (price book): we want to sell; our asking price (target) and minimum decide.
+  // Listed (price book): we want to sell, but for the most we can get (user, 2032-01-04: "we could get
+  // more for Fresneda", sold at his minimum to the first non-negotiable bid). Accept outright only at
+  // the target; negotiable bids are countered from sell_ask x his value down to the target, then the
+  // minimum; a non-negotiable bid below the target waits for better ones until the window's last days
+  // (policy selling.late_window_days), then anything at the minimum is taken.
   if (o.priceBook && Number.isFinite(o.minimum)) {
-    if (o.guaranteed >= o.minimum) return {action: 'accept', reason: `>= our minimum ${o.minimum}`};
+    const target = Math.max(o.target ?? 0, o.minimum), late = Number.isFinite(o.daysToClose) && o.daysToClose <= (p.late_window_days ?? 7);
+    if (o.guaranteed >= target) return {action: 'accept', reason: `>= our target ${target}`};
+    if (late && o.guaranteed >= o.minimum) return {action: 'accept', reason: `>= our minimum ${o.minimum}, ${o.daysToClose} days to the deadline`};
+    if (!o.negotiable) return {action: 'reject', reason: late ? `non-negotiable, below our minimum ${o.minimum}` : `non-negotiable, below our target ${target}: wait for better bids (${o.daysToClose ?? '?'} days left)`};
     if (o.countersSoFar < counters) {
-      // First counter at the target; later ones step halfway towards the minimum.
-      const aim = o.countersSoFar === 0 ? o.target : Math.max(o.minimum, (o.target + o.minimum) / 2);
-      return {...counter(aim, p.min_raise_over_offer), reason: `below our minimum ${o.minimum}: counter ${o.countersSoFar + 1}`};
+      const aims = [Math.max(target, o.vHigh * p.sell_ask), target, Math.max(o.minimum, (target + o.minimum) / 2)];
+      return {...counter(aims[Math.min(o.countersSoFar, 2)], p.min_raise_over_offer), reason: `below our target ${target}: counter ${o.countersSoFar + 1}`};
     }
-    return {action: 'reject', reason: `below our minimum ${o.minimum}, counters spent`};
+    return o.guaranteed >= o.minimum ? {action: 'accept', reason: `counters spent, >= our minimum ${o.minimum}`} : {action: 'reject', reason: `below our minimum ${o.minimum}, counters spent`};
   }
   // Not listed: he's for sale only at our price: sell_ask x the top of his value (above our own
   // minimum, which counts what he's worth to us).

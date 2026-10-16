@@ -75,9 +75,12 @@ The rules behind them:
   no, it's the same as a rejection; if they say yes, we've made a profit, and we're good at
   replacing players. A player who isn't listed sells at 1.3x the top of his value (Kislyak, value
   £39M → ~£51M; Kayode, whom we want to keep → ~£97M); a counter or accept at that price is approved
-  by this rule. Listed players: accept at our minimum (add-ons included), else counter at the
-  target, then towards the minimum. Non-negotiable bids are countered too. Reject only once 3
-  counters are spent. Counters go through **Suggest Terms** (answered on the spot).
+  by this rule. **Listed players: get the most we can** (user, 2032-01-04, Fresneda went at his
+  minimum to the first bid): accept outright only at the target (top of his value, add-ons
+  included); counter negotiable bids at 1.3x his value, then the target, then towards the
+  minimum; turn down non-negotiable bids below the target (more come) until the window's last
+  week, then take anything at the minimum. Non-negotiable bids can't be countered (the fee box is
+  locked). Reject only once 3 counters are spent. Counters go through **Suggest Terms**.
 - A loan with an **obligation** to buy is a sale. A loan with an **option** to buy is a loan:
   accept it when he's surplus and the wage relief is real.
 - Never sell without knowing who replaces him (already in the squad, or a target we can afford).

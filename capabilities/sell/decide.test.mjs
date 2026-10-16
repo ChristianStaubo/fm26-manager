@@ -54,25 +54,28 @@ test('holiday return: next 28 May and day count (4 Aug 2025 → 297 days)', () =
 
 // Price book: listed with an Unspecified asking price; our minimum decides (user, 2026-10-08).
 const listed = o => decideSale({priceBook: true, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0, monthsLeft: 24, ...o});
-test('price book: a bid at or above our minimum is accepted, even for a £60M player (no escalation)', () => {
-  assert.equal(listed({guaranteed: 55e6, upfront: 55e6}).action, 'accept');
+test('price book: accept at the target; between minimum and target, counter, or accept in the last days', () => {
+  assert.equal(listed({guaranteed: 69e6, upfront: 69e6}).action, 'accept');
+  assert.equal(listed({guaranteed: 55e6, upfront: 55e6}).action, 'counter');
+  assert.equal(listed({guaranteed: 55e6, upfront: 55e6, daysToClose: 3}).action, 'accept');
 });
-test('price book: below the minimum → counter at the target first, then halfway, then reject', () => {
+test('price book: counters go 1.3 x value, then the target, then halfway to the minimum; then take the minimum', () => {
   const c1 = listed({guaranteed: 45e6, upfront: 45e6});
-  assert.equal(c1.action, 'counter'); assert.equal(c1.guaranteedAsk, 68.5e6);
-  const c2 = listed({guaranteed: 50e6, upfront: 50e6, countersSoFar: 1});
-  assert.equal(c2.action, 'counter'); assert.equal(c2.guaranteedAsk, 61.65e6);
+  assert.equal(c1.action, 'counter'); assert.equal(c1.guaranteedAsk, 78e6);
+  assert.equal(listed({guaranteed: 50e6, upfront: 50e6, countersSoFar: 1}).guaranteedAsk, 68.5e6);
+  assert.equal(listed({guaranteed: 50e6, upfront: 50e6, countersSoFar: 2}).guaranteedAsk, 61.65e6);
+  assert.equal(listed({guaranteed: 56e6, upfront: 56e6, countersSoFar: 3}).action, 'accept');
   assert.equal(listed({guaranteed: 52e6, upfront: 52e6, countersSoFar: 3}).action, 'reject');
 });
-test('price book: non-negotiable below the minimum is countered too, at the target', () => {
-  const c = listed({guaranteed: 50e6, upfront: 50e6, negotiable: false});
-  assert.equal(c.action, 'counter'); assert.equal(c.guaranteedAsk, 68.5e6);
+test('price book: a non-negotiable bid below the target waits for better bids, until the last days (Fresneda, 2032-01-04)', () => {
+  assert.equal(listed({guaranteed: 56e6, upfront: 56e6, negotiable: false, daysToClose: 28}).action, 'reject');
+  assert.equal(listed({guaranteed: 56e6, upfront: 56e6, negotiable: false, daysToClose: 5}).action, 'accept');
 });
 
 // Loans (user, 2026-10-08): an obligation to buy makes it a sale.
 test('loan with obligation to buy is decided as a sale of the summed fees', async () => {
   const {decideLoan} = await import('./decide.mjs');
-  const d = decideLoan({priceBook: true, loanFee: 2e6, monthlyFee: 100e3, months: 10, obligationFee: 54e6, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0});
+  const d = decideLoan({priceBook: true, daysToClose: 3, loanFee: 2e6, monthlyFee: 100e3, months: 10, obligationFee: 54e6, vLow: 49e6, vHigh: 60e6, minimum: 54.8e6, target: 68.5e6, negotiable: true, countersSoFar: 0});
   assert.equal(d.asSale, true); assert.equal(d.guaranteed, 57e6); assert.equal(d.action, 'accept');
 });
 test('loan with only an option to buy is a plain loan → escalate', async () => {
@@ -82,7 +85,7 @@ test('loan with only an option to buy is a plain loan → escalate', async () =>
 });
 
 test('add-ons count as fee: Newcastle for Yarmoliuk (35.75M guaranteed, 48.5M total) vs a price-book minimum of 46M', () => {
-  const o = {priceBook: true, minimum: 46e6, target: 49e6, negotiable: false, guaranteed: 35.75e6, upfront: 25.5e6, total: 48.5e6, vLow: 44e6, vHigh: 49e6, countersSoFar: 0, monthsLeft: 36};
+  const o = {priceBook: true, minimum: 46e6, target: 48e6, negotiable: false, guaranteed: 35.75e6, upfront: 25.5e6, total: 48.5e6, vLow: 44e6, vHigh: 49e6, countersSoFar: 0, monthsLeft: 36};
   assert.equal(decideSale(o).action, 'accept');
-  assert.equal(decideSale({...o, total: 35.75e6}).action, 'counter');
+  assert.equal(decideSale({...o, total: 35.75e6}).action, 'reject');
 });

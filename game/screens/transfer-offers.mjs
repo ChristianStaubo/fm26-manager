@@ -83,6 +83,8 @@ export const incomingOffer = {
       const p = pricebook.price(offer.player, [offer.vLow, offer.vHigh], isoDate(d.date()));
       Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep});
     }
+    // Days to the window's close: late in the window a listed player goes at his minimum.
+    { const {windowEnd} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = Math.round((windowEnd(day) - day) / 864e5); }
     const decision = decideSale(offer);
     // A chosen up-front ask (fm answer --upfront, to probe how far a buyer goes): a counter at that fee.
     // It's a counter even when the rule would accept (Hülsmann, 2032-01-01: --upfront 15m was ignored
