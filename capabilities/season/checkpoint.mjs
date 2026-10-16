@@ -46,7 +46,7 @@ export const STEPS = {
   },
   async free_agents(ctx) {
     const d = analysis('free_agents.py', ['--top', '25'], {date: ctx.date});
-    const md = d.players.map(c => `${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.name} (${c.age}, ${c.slot}, attrs ${c.attributes}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
+    const md = d.players.map(c => `${c.watch ? '**WATCH** ' : ''}${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.homegrown ? '**HG** ' : ''}${c.name} (${c.age}, ${c.slot}, attrs ${c.attributes}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
     return {data: d, md: md.length ? md : [`none worth ${money(5e6)}+ ending by ${d.free_by}`]};
   },
   async wonderkids(ctx) {
