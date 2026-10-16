@@ -8,14 +8,16 @@ import {recover, NeedsAnalyst} from './overlays.mjs';
 const RETRYABLE = /inspect again|Stale UI snapshot|UI content changed|occluded|another game operation|Not an actionable element|UI tree incomplete|timed out before running|Element changed/i;
 
 // Run fn(screen) with retries. An occluded target triggers one overlay recovery first.
-export async function act(fn, {attempts = 4, recoverOnOcclusion = true} = {}) {
+// The wait grows (250 ms → 2 s): a page that keeps rebuilding (the Portal's news and live scores,
+// 2033-01: the daily Transfer Activity read failed every day on "UI content changed") settles in seconds.
+export async function act(fn, {attempts = 6, recoverOnOcclusion = true} = {}) {
   let recovered = !recoverOnOcclusion;
   for (let i = 1; ; i++) {
     try { return await fn(await Screen.read()); }
     catch (e) {
       if (i >= attempts || !RETRYABLE.test(e.message)) throw e;
       if (/occluded|covers the element/.test(e.message) && !recovered) { recovered = true; await recover(); }
-      else await settle(250);
+      else await settle(Math.min(2000, 250 * 2 ** (i - 1)));
     }
   }
 }
