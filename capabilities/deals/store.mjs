@@ -23,9 +23,22 @@ export function events(entries, since, {fromDate} = {}) {
   return out.filter(e => e.player);
 }
 
+/** Our players (contract club = our club) from the save export: a deal for one of them is a sale. */
+export async function ourPlayers() {
+  try {
+    const {exportPath} = await import('../data.mjs'), club = JSON.parse(readFileSync(new URL('../../config/club.json', import.meta.url))).club;
+    const {execFileSync} = await import('node:child_process');
+    const code = 'import csv, json, sys\nprint(json.dumps([p["name"] for p in csv.DictReader(open(sys.argv[1], encoding="utf8")) if p["contract_club"] == sys.argv[2]]))';
+    return new Set(JSON.parse(execFileSync('python3', ['-c', code, exportPath(), club], {encoding: 'utf8'})));
+  } catch { return new Set(); }
+}
+
 /** One observation (date, Transfer Activity rows) → saved deals + alerts. */
 export async function observe(date, rows) {
-  const data = load(), entries = await history();
+  const data = load(), entries = await history(), ours = await ourPlayers();
+  // Direction from the facts (Ouazane's sale was agreed outside our handler: direction unknown, 2032-07-09).
+  rows = (rows || []).map(r => ({...r, dir: r.dir ?? (r.player && ours.has(r.player) ? 'out' : undefined)}));
+  for (const d of Object.values(data.deals)) if (!d.dir && ours.has(d.player)) d.dir = 'out';
   const fromDate = new Date(Date.parse(date) - 45 * 864e5).toISOString().slice(0, 10);
   const r = reduce(data.deals, {date, rows, events: events(entries, data.at, {fromDate})}, loadPolicy().deals || {});
   save({deals: r.deals, observed: date, at: new Date().toISOString()});

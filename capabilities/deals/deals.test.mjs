@@ -73,7 +73,7 @@ test('an acknowledged stuck deal raises no alert until its date (Didi, 2032-06-2
 });
 
 test('a slow sale at contract (the buyer talking to our player) is reported, not a stop', () => {
-  const deals = {k: {player: 'Matvey Kislyak', dir: 'out', state: 'contract', since: '2032-07-02', seen: '2032-07-02', history: []}};
+  const deals = {'matvey kislyak': {player: 'Matvey Kislyak', dir: 'out', state: 'contract', since: '2032-07-02', seen: '2032-07-02', history: []}};
   const r = reduce(deals, {date: '2032-07-09', rows: [{player: 'Matvey Kislyak', stage: 'Contract'}]});
   assert.ok(r.alerts.some(a => a.kind === 'stuck' && !a.stop));
 });
