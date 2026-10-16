@@ -58,11 +58,15 @@ function continueState() {
 }
 function status() {
   const s = continueState();
-  // The game can ignore a Continue (no Processing follows); release the latch after 8 s.
-  if (inFlight && !sawProcessing && Date.now() - inFlightAt > 8000 && s.canContinue) { inFlight = false; ignoredContinues++; }
-  // The Continue ended on something that needs us (NeedAction), not back at CanContinue: release the
-  // latch, or every UI action is refused as "in flight" and the autopilot hangs (2032-07-12, 4th time).
-  if (inFlight && s.requiresDecision && Date.now() - inFlightAt > 3000) inFlight = false;
+  // One release rule: the Continue is over once the game rests in any non-busy state after it
+  // processed, or after 8 s (it ignored the Continue). It can end anywhere, not only back at
+  // CanContinue: NeedAction (2032-07-12) or a match day's Tactics (2033-01-01, the 5th hang), and a
+  // latch left set refuses every UI action as "in flight" and stalls the autopilot.
+  const age = Date.now() - inFlightAt;
+  if (inFlight && s.available && !BUSY_STATES.includes(s.state) && age > 3000 && (sawProcessing || s.requiresDecision || age > 8000)) {
+    if (!sawProcessing && s.canContinue) ignoredContinues++;
+    inFlight = false;
+  }
   return {...s, actionReady: !!s.canContinue && pumpFound && manualTimer !== null && !inFlight,
     actionInFlight: inFlight, ignoredContinues, pumpFound, manualTimer};
 }
