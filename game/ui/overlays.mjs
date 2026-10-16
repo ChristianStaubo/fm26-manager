@@ -14,6 +14,11 @@ export const KNOWN_DIALOGS = {
   'Enter contract negotiations?': 'Yes',   // renewing ourselves without the agent chat first (Franculino, 2030-07-17)
   'Cancel Negotiations': 'Cancel',   // never drop a deal by accident: keep talking (2028-06-27, Tanaka)
 };
+// Titles that carry a name: [pattern, button].
+export const KNOWN_DIALOG_PATTERNS = [
+  [/^Cannot sign /, 'Ok'],   // "Cannot sign Zukic: on loan with a future fee clause in place" (2032-01-01): an info box
+];
+export const dialogAnswer = d => KNOWN_DIALOGS[d.title] ?? KNOWN_DIALOGS[d.description] ?? KNOWN_DIALOG_PATTERNS.find(([re]) => re.test(d.title || ''))?.[1];
 
 export function overlays(s) {
   const out = [], visible = n => n.visible && n.bounds[2] > 0;
@@ -51,7 +56,7 @@ export async function recover({attempts = 6} = {}) {
     if (open.every(o => o.kind === 'tooltip') && i > 0) return {clean: true, steps: i, tooltip: open[0].text};
     const has = k => open.find(o => o.kind === k);
     if (has('dialog')) {
-      const d = has('dialog'), answer = KNOWN_DIALOGS[d.title] ?? KNOWN_DIALOGS[d.description];
+      const d = has('dialog'), answer = dialogAnswer(d);
       if (!answer) throw new NeedsAnalyst(`Unknown dialog: ${d.title}`, d);
       await click(answer, {recoverOnOcclusion: false});
     } else if (has('popup')?.menu) {
