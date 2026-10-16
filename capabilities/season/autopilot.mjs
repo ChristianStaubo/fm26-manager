@@ -5,6 +5,7 @@
 // handler escalated), 'unfamiliar-state', 'decision-limit', 'error' (do not retry blindly).
 import {getState} from '../../game/bridge/client.mjs';
 import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../game/ui/index.mjs';
+import {samePlayer} from '../../game/ui/navigate.mjs';
 import {control, withLock} from './continue.mjs';
 import {loadRules} from '../sell/decide.mjs';
 import {windowEnd, inWindow} from './season.mjs';
@@ -30,6 +31,15 @@ export function summarize(s) {
 export const firstContinue = (st, label) => st.stateName === 'CanContinue' && !st.actionReady && /^Continue$/.test(label || '');
 
 /** The game stops for a match (Continue slot "Go To Match" / "Review Team Selection" (2032-01-01), a match/team-talk state …). */
+/** A sale agreed (we accepted, or they accepted our counter) that needs a buy now: a core player
+ *  (replacement needed), or one with a planned follow-up (policy selling.follow_up, user 2032-07-02:
+ *  Muharemović → Natali, Savinho → a winger). Depth sold above value just carries on (Lawrence to
+ *  Stuttgart, 2032-08-31: the run stopped for nothing). */
+export function saleNeedsBuy(done, policy = loadRules()) {
+  if (done?.action !== 'incoming-offer' || !(done.decision?.action === 'accept' || done.accepted)) return false;
+  const plans = policy.selling?.follow_up || {};
+  return !!done.decision?.replace || Object.keys(plans).some(n => !n.startsWith('_') && samePlayer(n, done.offer?.player));
+}
 export const isMatchDay = (st, label) => /match|team selection/i.test(label || '') || /match|teamtalk/i.test(st?.stateName || '');
 
 export function run({until, maxDecisions = 30, dryRun = false} = {}) {
@@ -149,9 +159,8 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
       lastAction = key;
       try {
         const done = await handler.run(screen, {dryRun}); decisions.push(done); await settle(1000);
-        // A sale agreed (we accepted, or they accepted our counter): stop so the replacement or the
-        // planned follow-up buy happens now (user, 2032-07-02: Muharemović → Natali, Savinho → a winger).
-        if (!dryRun && done?.action === 'incoming-offer' && (done.decision?.action === 'accept' || done.accepted))
+        // A sale agreed that needs a buy now: stop so the replacement happens in this window.
+        if (!dryRun && saleNeedsBuy(done))
           return stop('needs-analyst', {handler: handler.name, why: `sold ${done.offer?.player} to ${done.offer?.club} (${done.offer?.total ?? done.offer?.guaranteed}): follow-up buy?`, sale: done});
       }
       catch (e) {

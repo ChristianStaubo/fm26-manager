@@ -18,3 +18,13 @@ test('fresh load: CanContinue with actionReady=false and a plain Continue slot â
   assert.equal(firstContinue({stateName: 'CanContinue', actionReady: true}, 'Continue'), false);
   assert.equal(firstContinue({stateName: 'NeedAction', actionReady: false}, 'Negotiate Contract'), false);
 });
+
+test('after a sale: stop only for a core player or a planned follow-up buy (Lawrence, depth, 2032-08-31: carry on)', async () => {
+  const {saleNeedsBuy} = await import('../capabilities/season/autopilot.mjs');
+  const sale = (player, decision) => ({action: 'incoming-offer', offer: {player}, decision});
+  const policy = {selling: {follow_up: {'Tarik MuharemoviÄ‡': 'Natali'}}};
+  assert.equal(saleNeedsBuy(sale('Jamie Lawrence', {action: 'accept', need: 'depth', replace: false}), policy), false);
+  assert.equal(saleNeedsBuy(sale('Kellen Fisher', {action: 'accept', need: 'core', replace: true}), policy), true);
+  assert.equal(saleNeedsBuy(sale('Tarik Muharemovic', {action: 'accept'}), policy), true);
+  assert.equal(saleNeedsBuy(sale('Jamie Lawrence', {action: 'counter'}), policy), false);
+});
