@@ -132,3 +132,14 @@ test('a rising player we would keep is not sold at his value (Gallardo, 21: £56
   assert.equal(sale({...g, age: 27}).sellAt, 67.2e6, 'not rising: 56 x 1.2');
   assert.equal(sale({...g, age: 27, importance: 'fringe'}).sellAt, 64.4e6, 'keep: our minimum x 1.1 floors even a fringe player');
 });
+
+test('a sell-on we owe is priced in: ask gross so we keep our price net (Ortega, 40% to Lecce over £61M, Man City £73.75M)', () => {
+  const owedSellOn = {pct: 0.4, to: 'U.S. Lecce', signedFor: 61e6};
+  const city = {guaranteed: 56.25e6, upfront: 56.25e6, total: 73.75e6, vLow: 58e6, vHigh: 69e6, importance: 'key starter', age: 23, paid: 61e6, monthsLeft: 24, negotiable: true};
+  const plain = sale(city), owed = sale({...city, owedSellOn});
+  assert.equal(plain.sellAt, 113.85e6);
+  assert.equal(owed.sellAt, 149.1e6, '(113.85 - 0.4 x 61) / 0.6: Lecce takes 40% of the profit, we keep £113.85M');
+  assert.equal(owed.action, 'counter');
+  assert.equal(sale({...city, guaranteed: 140e6, total: 140e6}).action, 'accept', 'without the owed cut £140M clears the price');
+  assert.equal(sale({...city, owedSellOn, guaranteed: 140e6, total: 140e6}).action, 'counter', 'with it, £140M nets only ~£108.4M');
+});

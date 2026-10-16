@@ -79,6 +79,8 @@
   },
   "buying": {
     "_section": "5",
+    "max_sell_on_pct": 0,
+    "_max_sell_on": "User, 2033-07-09: never sign a sell-on. Ortega (bought 2030 by accepting Lecce's counter) owes Lecce 40% of the profit on his next sale. fm buy removes a sell-on from a counter twice; if the club keeps it, it stops for the user instead of accepting.",
     "open_at": 1.0,
     "open_at_if_club_keen_to_sell": 0.85,
     "_open": "x FM's value (middle of the range), up-front. Was 0.9 x v_low until 2026-10-10: clubs flatly reject bids far below value (Maza, ~70M value, opened at ~45M), and a flat rejection ends the deal.",

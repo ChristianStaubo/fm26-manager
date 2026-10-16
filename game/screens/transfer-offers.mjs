@@ -35,6 +35,10 @@ export const negotiable = d => {
 export const verdict = s => { const line = gmLine(s); return line && classify(line) !== 'notes' ? line.replace(/^.*?General Manager /, '') : null; };
 
 // Read an offer's detail page ("View Offer").
+export function owedSellOn(d) {
+  const m = d.texts().map(t => /^(\d+)% of the profit made on the player's next transfer will be owed to (.+) \(Signed for (£[\d.,]+[MK]?)\)/.exec(t)).find(Boolean);
+  return m ? {pct: Number(m[1]) / 100, to: m[2], signedFor: parseMoney(m[3])} : null;
+}
 export function readOffer(d, {headClub, shortName, coach}) {
   const player = d.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean) || shortName;
   const club = headClub || d.after('To', i => i.kind === 'text')?.label;
@@ -42,6 +46,9 @@ export function readOffer(d, {headClub, shortName, coach}) {
     club, player, coach,
     negotiable: negotiable(d),
     guaranteed: parseMoney(d.after('Fee:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),
+    // A sell-on we owe: "40% of the profit made on the player's next transfer will be owed to U.S. Lecce
+    // (Signed for £61M)" (Ortega, 2033-07-09). Prices are then asked gross, so we keep our price net.
+    owedSellOn: owedSellOn(d),
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
     // Everything incl. instalments and add-ons; add-ons count as fee (policy.json addon_weight).
     total: parseMoney(d.after('Future & Potential Total Cost with Additional Fees:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),

@@ -28,3 +28,11 @@ test('loan back: kept for portfolio buys, removed otherwise; the row label is re
   const labels = clauseRows(s).map(b => rowLabel(s, b));
   assert.deepEqual(labels, ['Per League Appearance', 'Loan Back Length', 'Percentage Of Profit From Next Sale']);
 });
+
+test('we never sign a sell-on: any percentage above policy buying.max_sell_on_pct (0) blocks Accept Demands (Ortega, 40% to Lecce)', async () => {
+  const {sellOnBlocks} = await import('../capabilities/buy/buy.mjs');
+  assert.equal(sellOnBlocks('40%'), true);
+  assert.equal(sellOnBlocks('10%'), true);
+  assert.equal(sellOnBlocks('0%'), false);
+  assert.equal(sellOnBlocks('15%', {buying: {max_sell_on_pct: 20}}), false);
+});

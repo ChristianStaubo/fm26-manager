@@ -56,6 +56,8 @@ export function offerState(s) {
 // The counter's clause rows (Racing Santander for Gaitán, 2030-07-14): "Additional Clauses" + Add,
 // then per row a label ("Percentage Of Profit From Next Sale"), its value dropdown ("40%") and a
 // remove button (buttons-controls-pc-default) on the same line. Also seen: "Loan Back Length".
+/** A sell-on clause we won't sign: above policy buying.max_sell_on_pct (0: none at all). */
+export const sellOnBlocks = (pct, policy = loadRules()) => (parseFloat(String(pct)) || 0) > (policy.buying?.max_sell_on_pct ?? 0);
 export function sellOnRow(s) {
   const t = s.items.find(i => i.kind === 'text' && SELL_ON.test(i.label));
   if (!t) return null;
@@ -200,6 +202,14 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
       await setFee('Fee', fee);
       await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms'});
       continue;
+    }
+    // Never sign a sell-on (user, 2033-07-09: Ortega came with 40% of the profit on his next sale owed
+    // to Lecce, accepted in their counter in 2030; Man City's £73.75M bid then nets ~£68.6M). Still
+    // there after our removals: stop for the user, never Accept Demands with it.
+    const kept = sellOnRow(await Screen.read());
+    if (kept && sellOnBlocks(kept.pct)) {
+      history.at(-1).sellOnKept = kept.pct;
+      throw new NeedsAnalyst(`They insist on a ${kept.pct} sell-on clause (removed ${sellOnTries}x): we don't sign sell-ons; walk away or decide`, {history});
     }
     if (dealValue(reply) <= max) {
       // Accept Demands submits the offer directly ("An offer has been made" → Exit Talks).

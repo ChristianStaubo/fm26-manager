@@ -27,6 +27,9 @@ export function decideSale(offer, policy = loadRules()) {
   const expiring = Number.isFinite(o.monthsLeft) && o.monthsLeft < 12;
   // Prices are TOTALS, add-ons included (user, 2032-02-02: Güreler "£30M total comp"): a counter at
   // `target` asks for target minus the add-ons they already offer, as fee + instalments.
+  // A sell-on we owe takes pct of the profit over what we paid: ask gross so we keep our price net
+  // (Ortega: 40% to Lecce over £61M; £113.85M net needs a £149.1M fee).
+  const owed = o.owedSellOn, gross = x => owed?.pct > 0 && x > owed.signedFor ? (x - owed.pct * owed.signedFor) / (1 - owed.pct) : x;
   const raw = offer.guaranteed, instalments = Math.max(0, raw - (o.upfront ?? raw)), addOns = o.guaranteed - raw;
   const counter = (target, minRaise = 1) => {
     const ask = tidy(Math.max(target - addOns, raw * minRaise));
@@ -45,15 +48,15 @@ export function decideSale(offer, policy = loadRules()) {
   // minimum; a non-negotiable bid below the target waits for better ones until the window's last days
   // (policy selling.late_window_days), then anything at the minimum is taken.
   if (o.priceBook && Number.isFinite(o.minimum)) {
-    const target = Math.max(o.target ?? 0, o.minimum), late = Number.isFinite(o.daysToClose) && o.daysToClose <= (p.late_window_days ?? 7);
+    const target = gross(Math.max(o.target ?? 0, o.minimum)), minimum = gross(o.minimum), late = Number.isFinite(o.daysToClose) && o.daysToClose <= (p.late_window_days ?? 7);
     if (o.guaranteed >= target) return {action: 'accept', reason: `>= our target ${target}`};
-    if (late && o.guaranteed >= o.minimum) return {action: 'accept', reason: `>= our minimum ${o.minimum}, ${o.daysToClose} days to the deadline`};
-    if (!o.negotiable) return {action: 'reject', reason: late ? `non-negotiable, below our minimum ${o.minimum}` : `non-negotiable, below our target ${target}: wait for better bids (${o.daysToClose ?? '?'} days left)`};
+    if (late && o.guaranteed >= minimum) return {action: 'accept', reason: `>= our minimum ${minimum}, ${o.daysToClose} days to the deadline`};
+    if (!o.negotiable) return {action: 'reject', reason: late ? `non-negotiable, below our minimum ${minimum}` : `non-negotiable, below our target ${target}: wait for better bids (${o.daysToClose ?? '?'} days left)`};
     if (o.countersSoFar < counters) {
-      const aims = [Math.max(target, o.vHigh * p.sell_ask), target, Math.max(o.minimum, (target + o.minimum) / 2)];
+      const aims = [Math.max(target, o.vHigh * p.sell_ask), target, Math.max(minimum, (target + minimum) / 2)];
       return {...counter(aims[Math.min(o.countersSoFar, 2)], p.min_raise_over_offer), reason: `below our target ${target}: counter ${o.countersSoFar + 1}`};
     }
-    return o.guaranteed >= o.minimum ? {action: 'accept', reason: `counters spent, >= our minimum ${o.minimum}`} : {action: 'reject', reason: `below our minimum ${o.minimum}, counters spent`};
+    return o.guaranteed >= minimum ? {action: 'accept', reason: `counters spent, >= our minimum ${minimum}`} : {action: 'reject', reason: `below our minimum ${minimum}, counters spent`};
   }
   // Not listed: our sell price depends on how much we need him (user, 2032-02-02, Güreler: depth,
   // how good he is, what we paid). policy selling.sell_ask_by_need x the top of his value:
@@ -71,7 +74,7 @@ export function decideSale(offer, policy = loadRules()) {
   const mult = ((p.sell_ask_by_need || {})[need] ?? p.sell_ask) * (rising ? p.sell_rising.factor : 1);
   const paidFloor = Number.isFinite(o.paid) && !(o.age >= 30) && !expiring ? o.paid * (p.paid_floor ?? 1) : 0;
   const ourFloor = (need === 'core' || o.keep) && Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0;
-  const sellAt = tidy(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor));
+  const sellAt = tidy(gross(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor)));
   const tag = {sellAt, need, rising, replace: need === 'core'};
   if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt} (${need})${need === 'core' ? ': replacement needed' : ''}`, ...tag};
   if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
