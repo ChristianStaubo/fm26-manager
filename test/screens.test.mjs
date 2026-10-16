@@ -96,3 +96,8 @@ test('Squad hierarchy (Dynamics): sections read from the raw tree, below the fol
   assert.equal(h.highly_influential.length, 10);
   assert.ok(h.influential.includes('Félix Correia'));
 });
+
+test('"Arsenal offer job interview": Decline Interview, always (2033-06-22)', async () => {
+  const s = loadScreen('job-interview-arsenal');
+  assert.deepEqual(handlerFor(s), ['decline-job-interview']);
+});

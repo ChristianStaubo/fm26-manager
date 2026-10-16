@@ -173,6 +173,10 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
       await log(entry);
       return entry;
     }},
+  // "<Club> offer job interview" (Arsenal, 2033-06-22; Brighton 2033-01): we manage Brentford, so
+  // Decline Interview, always.
+  {...delegate('decline-job-interview', /^Decline Interview$/, 'declined a job interview (we stay)'),
+    match: s => s.hasText(/ offer job interview$/) && s.buttons('Decline Interview').length === 1},
   // "Confirm Transfer" after a signing is agreed: hand finalizing to the General Manager.
   delegate('delegate-finalizing', /^Delegate 'Finalizing player signings/, 'GM finalizes signings'),
   // Squad code of conduct (fines): let the assistant choose.
