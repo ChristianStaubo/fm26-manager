@@ -31,7 +31,9 @@ export async function pendingOffer(name, club) {
 }
 
 // ---- Reading the offer screen ----------------------------------------------------------
-const gmLine = s => s.buttons(/General Manager/)[0]?.label || '';
+// The GM's line starts with his name ("Phil Giles General Manager …"); a news story that mentions
+// another club's general manager ("…Man Utd General Manager Jason Wilcox…", 2032-01-04) is not it.
+export const gmLine = s => s.buttons(/^\S+(?: \S+){0,3} General Manager /)[0]?.label || '';
 export function offerState(s) {
   const gm = gmLine(s);
   const money = label => parseMoney(s.after(label, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
