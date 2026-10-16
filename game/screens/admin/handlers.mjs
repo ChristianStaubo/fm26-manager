@@ -62,7 +62,8 @@ const outgoingConfirm = {
   async run(s, {dryRun = false} = {}) {
     const headline = s.texts().find(t => OUTGOING.test(t)) || '';
     const player = OUTGOING.exec(headline)?.[1]?.trim();
-    const agreed = player && (await history()).some(e => /accept/i.test(JSON.stringify([e.decision, e.label, e.action])) && JSON.stringify(e).includes(player));
+    // Agreed = we accepted their bid, or they accepted our counter on the spot (Güreler, 2032-02-02).
+    const agreed = player && (await history()).some(e => (e.accepted === true || /accept/i.test(JSON.stringify([e.decision, e.label, e.action]))) && JSON.stringify(e).includes(player));
     const entry = {action: 'confirm-outgoing', date: isoDate(s.date()), headline, player, agreed: !!agreed};
     if (!agreed) throw new NeedsAnalyst(`Confirm Transfer for ${player || 'unknown player'}: no record of us agreeing this deal. Read it (fm deal "${player}") and decide: fm click Accept / Cancel`, entry);
     if (dryRun) return {...entry, dryRun: true};
