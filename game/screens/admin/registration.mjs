@@ -63,7 +63,22 @@ export const registrationHandler = {
   name: 'squad-registration',
   match: s => onRegistration(s) || squadMessage(s),
   async run(s, {dryRun = false} = {}) {
-    if (!onRegistration(s)) { const {click, waitFor} = await import('../../ui/index.mjs'); await click('Respond'); await waitFor(onRegistration, {what: 'squad registration list'}); }
+    const {click, waitFor, Screen, recover} = await import('../../ui/index.mjs');
+    if (!onRegistration(s)) {
+      await click('Respond');
+      // Already submitted (2032-07-30, done by hand with the scroll): Respond no longer opens the list.
+      if (!await waitFor(onRegistration, {what: 'squad registration list', timeout: 8000}).catch(() => null))
+        return {action: 'squad-registration', date: isoDate(s.date()), detail: 'already submitted'};
+    }
+    // A compliant list is submitted as it stands: registering every 21+ player would re-add players
+    // who are leaving or on loan (Kislyak, Bouhoudane, Backhaus).
+    const now = await Screen.read();
+    if (now.hasText('Squad selection is fully compliant')) {
+      if (dryRun) return {action: 'squad-registration', detail: 'compliant: would submit', dryRun: true};
+      await click('Confirm', {name: 'button-primary-label'});
+      await recover();   // "Submit completed squad list?" → Confirm (KNOWN_DIALOGS)
+      return {action: 'squad-registration', date: isoDate(now.date()), detail: 'submitted the compliant list as it stands'};
+    }
     return register(undefined, {dryRun});
   },
 };

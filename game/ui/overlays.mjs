@@ -59,7 +59,12 @@ export async function recover({attempts = 6} = {}) {
     if (has('dialog')) {
       const d = has('dialog'), answer = dialogAnswer(d);
       if (!answer) throw new NeedsAnalyst(`Unknown dialog: ${d.title}`, d);
-      await click(answer, {recoverOnOcclusion: false});
+      // The dialog's own button: the page under it can have one with the same label (registration's
+      // Confirm under "Submit completed squad list?", 2032-07-30).
+      const inDialog = x => x.buttons(answer).filter(b => x.within(b.id, 'GenericModalDialog'));
+      const {clickWhere} = await import('./controls.mjs');
+      if (inDialog(await Screen.read()).length === 1) await clickWhere(x => inDialog(x)[0], `dialog ${answer}`, {recoverOnOcclusion: false});
+      else await click(answer, {recoverOnOcclusion: false});
     } else if (has('popup')?.menu) {
       // Escape does not close FM context menus; selecting the header entry (top-left) does.
       await act(x => {
