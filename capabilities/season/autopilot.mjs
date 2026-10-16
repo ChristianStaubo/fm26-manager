@@ -34,7 +34,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null;
+    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     for (;;) {
       const r = await control({maxSteps: stopAt ? 3 : 10});
@@ -69,10 +69,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
         }
         // A match day (user, 2031-08-08): never play or sim it ourselves; holiday one day and let the
         // assistant take the match, then carry on handling the window. Logged so new labels show up.
-        if (isMatchDay(st, label) && !dryRun && lastMatchDay !== isoDate(today)) {
-          lastMatchDay = isoDate(today);   // a second match-day stop on the same date: no progress, stop
+        // Team Selection has no date on screen (FA Cup at Arsenal, 2032-01-09): key the no-progress
+        // guard on the screen date when there is one, else on the last holiday's return date.
+        const matchKey = today ? isoDate(today) : `after ${lastReturn}`;
+        if (isMatchDay(st, label) && !dryRun && lastMatchDay !== matchKey) {
+          lastMatchDay = matchKey;   // a second match-day stop at the same point: no progress, stop
           const {matchDay} = await import('./holiday.mjs');
-          try { decisions.push({...await matchDay(), state: st.stateName, continueLabel: label}); } catch (e) { return stop('error', {handler: 'match-day', error: e.message, doNotRetryAutomatically: true}); }
+          try { const h = await matchDay(); lastReturn = h.returns; decisions.push({...h, state: st.stateName, continueLabel: label}); } catch (e) { return stop('error', {handler: 'match-day', error: e.message, doNotRetryAutomatically: true}); }
           handoffs = 0; continue;
         }
         return stop('unfamiliar-state', {state: st.stateName, automation: st.automationState, actionReady: st.actionReady, continueLabel: label,
