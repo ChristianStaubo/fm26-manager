@@ -33,3 +33,11 @@ test('loan-back request (Nürnberg for Miceli): matched and accepted by policy',
   const r = await loanBackRequest.run(s, {dryRun: true});
   assert.deepEqual([r.club, r.player, r.decision], ['1. FC Nürnberg', 'Miceli', 'accept']);
 });
+
+test('"Wolves want to extend Torrente loan": a loan approach (31, listed, 80%) → accepted (2033-01-17)', async () => {
+  const {loanOffer, readLoan} = await import('../game/screens/transfer-offers.mjs');
+  const s = loadScreen('loan-extend-torrente');
+  const l = readLoan(s);
+  assert.equal(l.club, 'Wolves'); assert.equal(l.player, 'Torrente'); assert.equal(l.salaryPct, '80%');
+  assert.equal(loanOffer.match(s), true);
+});

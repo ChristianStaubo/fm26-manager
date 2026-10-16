@@ -207,7 +207,8 @@ export const bidResponse = {
 // Obligation to buy → a sale (decideLoan, user rule); plain loans and options stop for a decision
 // with the parsed numbers (seen: Milambo, Norwich and Leicester, 2026-06/07, no buy clause).
 export function readLoan(s) {
-  const head = s.texts().map(t => /^(.+) make loan approach for (.+)$/.exec(t)).find(Boolean);
+  // "<Club> make loan approach for X", or a loan already running: "Wolves want to extend Torrente loan" (2033-01-17).
+  const head = s.texts().map(t => /^(.+) make loan approach for (.+)$/.exec(t) || /^(.+) want to extend (.+) loan$/.exec(t)).find(Boolean);
   if (!head) return null;
   const money = label => parseMoney(s.after(label, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const clause = re => { const t = s.texts().find(x => re.test(x)); return t ? (parseMoney(t) ?? money(t)) : undefined; };
