@@ -48,6 +48,9 @@ test('judge: an always-buy free agent needs an answer', () => {
   // Answered: an agent chat / pre-contract in the decision log, or a recorded pass.
   assert.ok(!checkCheckpoints({today: '2031-01-20', cycle, reports, decisions: [{action: 'precontract', name: 'Ethan Mbappe'}]}).decide.some(x => /Mbapp/.test(x)));
   assert.ok(!checkCheckpoints({today: '2031-01-20', cycle, reports, interventions: [{capability: 'free_agents', proposed: 'Ethan Mbappé (RW)'}]}).decide.some(x => /Mbapp/.test(x)));
+  // Renewed since the report (Odobert, 2033-01): not on today's list, no question.
+  assert.ok(!checkCheckpoints({today: '2031-01-20', cycle, reports, stillFree: ['Someone Else']}).decide.some(x => /Mbapp/.test(x)));
+  assert.ok(checkCheckpoints({today: '2031-01-20', cycle, reports, stillFree: ['Ethan Mbappe']}).decide.some(x => /Mbapp/.test(x)));
 });
 
 test('cycle: drives the window with the autopilot, holidays outside it (user, 2031-08-08)', async () => {

@@ -40,6 +40,7 @@ def scan(rows, tactic, date=None):
               and pol.get('replacement_min_value', 1e6) <= float(p['value'] or 0) < 1e9]
     ca, pa = (lambda x: m.intval(x, 'ca')), (lambda x: m.intval(x, 'pa'))
     stars = {x['name'] for x in sorted(ours, key=lambda x: -ca(x))[:pol.get('stars_top', 3)]}
+    our_slots = [x['slot'] for x in tactic['slots'] if x['slot'] in m.SLOT_POSITIONS]
     out = []
     for p in ours:
         exp = (p.get('contract_expires') or '')[:10]
@@ -52,7 +53,11 @@ def scan(rows, tactic, date=None):
             # Quality is FM's CA (position-weighted over every attribute; user, 2032-07-02: our role
             # average flattered Marco Company, CA 139 vs Kislyak's 145). The role score only checks fit.
             my = ca(p)
+            # A replacement must play where he plays in OUR shape (rated 15+ there): Juninho (MC 20, DM 1)
+            # was offered for Kislyak's DM slot through the DM/CM group and never played (2033-01).
+            slots = [s for s in our_slots if m.fits(p, s, natural=False)]
             cands = [q for q in market if set((q['positions'] or '').replace('/', ' ').split()) & pos
+                     and (not slots or any(m.fits(q, s, natural=False) for s in slots))
                      and ca(q) >= my - pol.get('similar_ca', 3) and score(q, role) >= g[2] - pol.get('fit_within', 1.0)
                      and float(q['value']) <= pol.get('replace_value_ratio', 0.75) * max(value, 1)]
             if cands:

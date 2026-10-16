@@ -56,7 +56,7 @@ export const STEPS = {
     return {data: {positions: sq.positions, needs: sq.needs, sell_candidates: sq.sell_candidates, homegrown: sq.homegrown}, md};
   },
   async free_agents(ctx) {
-    const d = analysis('free_agents.py', ['--top', '25'], {date: ctx.date});
+    const d = ctx.freeAgents = analysis('free_agents.py', ['--top', '25'], {date: ctx.date});
     const md = d.players.map(c => `${c.watch ? '**WATCH** ' : ''}${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.homegrown ? '**HG** ' : ''}${c.name} (${c.age}, ${c.slot}, attrs ${c.attributes}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
     return {data: d, md: md.length ? md : [`none worth ${money(5e6)}+ ending by ${d.free_by}`]};
   },
@@ -81,7 +81,7 @@ export const STEPS = {
   async audit(ctx) {
     const {audit} = await import('../audit/audit.mjs');
     const sq = ctx.squad ?? (() => { try { return analysis('manager.py', ['squad'], {date: ctx.date}); } catch { return {}; } })();
-    const r = await audit({alerts: sq.alerts || [], since: `${seasonOf(ctx.date).slice(0, 4)}-07-01`});   // this season's deals, as fm audit
+    const r = await audit({alerts: sq.alerts || [], stillFree: ctx.freeAgents?.players?.map(p => p.name), since: `${seasonOf(ctx.date).slice(0, 4)}-07-01`});   // this season's deals, as fm audit
     return {data: r, md: [`ok ${r.ok} · net transfer profit ${money(r.score?.netTransferProfit)}`, ...r.fail.map(x => `FAIL ${x}`), ...r.decide.map(x => `DECIDE ${x}`), ...r.warn.map(x => `warn ${x}`)]};
   },
 };

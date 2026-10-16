@@ -95,7 +95,9 @@ function lastPosition() {
 // and every "always buy" free agent in a report got an answer: a pre-contract/bid/ask in the decision
 // log, or a recorded pass (fm intervene free_agents rejected --proposed "<name>"). Ethan Mbappé
 // (2031) and Jesús Fortea were free, worth £30M+, and nobody looked: no report, no question.
-export function checkCheckpoints({today, cycle, reports = [], decisions = [], interventions = []}) {
+// `stillFree`: today's free-agent list, when known. A player who has since renewed (Odobert, Villa to
+// 2036, still flagged in 2033-01 from the summer report) needs no answer.
+export function checkCheckpoints({today, cycle, reports = [], decisions = [], interventions = [], stillFree = null}) {
   const decide = [], warn = [];
   if (!today || !cycle) return {fail: [], decide, warn};
   const season = (d => { const y = Number(d.slice(0, 4)); return d.slice(5) >= '07-01' ? y : y - 1; })(today);
@@ -113,12 +115,12 @@ export function checkCheckpoints({today, cycle, reports = [], decisions = [], in
     || interventions.some(i => i.capability === 'free_agents' && norm(i.proposed).includes(norm(name)));
   const latest = reports.filter(r => r.report?.steps?.free_agents?.ok).at(-1);
   for (const p of latest?.report.steps.free_agents.data.players || [])
-    if (p.always_buy && !answered(p.name))
+    if (p.always_buy && !answered(p.name) && (!stillFree || stillFree.some(n => norm(n) === norm(p.name))))
       decide.push(`free agent ${p.name} (${p.age}, ${p.slot}) worth ${m(p.worth)}, ${p.contract_club || 'free'} to ${p.contract_until || '-'} (${latest.name} ${latest.date}): fm precontract / fm buy, or record a pass (fm intervene free_agents rejected --proposed "${p.name}" --decided "why")`);
   return {fail: [], decide, warn};
 }
 
-export async function audit({alerts, position, since} = {}) {
+export async function audit({alerts, position, since, stillFree} = {}) {
   const policy = loadPolicy(), rules = policy.scoreboard;
   const tactic = JSON.parse(readFileSync(`${ROOT}config/tactic.json`, 'utf8'));
   // Undated entries are kept: the judge never drops evidence silently (Gaitán's resumed buy had no date).
@@ -127,12 +129,12 @@ export async function audit({alerts, position, since} = {}) {
   const median = decisions.filter(d => d.firstTeamMedian).at(-1)?.firstTeamMedian;
   const cap = median ? median * policy.contracts.max_salary_vs_first_team_median : null;
   const parts = [checkSquad({alerts, tactic, released: loadApprovals().released || []}), checkDeals({decisions, approvals: loadApprovals().approvals, cap, rules}),
-    checkMoney({club: clubRow(), ledger, position: position ?? lastPosition(), rules}), await cycleCheck(decisions)];
+    checkMoney({club: clubRow(), ledger, position: position ?? lastPosition(), rules}), await cycleCheck(decisions, stillFree)];
   const fail = parts.flatMap(p => p.fail), warn = parts.flatMap(p => p.warn), decide = parts.flatMap(p => p.decide || []);
   return {ok: fail.length === 0, score: parts[2].score, fail, decide, warn, since: since || null};
 }
 
-async function cycleCheck(decisions) {
+async function cycleCheck(decisions, stillFree) {
   const [{gameDate}, cp, iv] = await Promise.all([import('../data.mjs'), import('../season/checkpoint.mjs'), import('../interventions.mjs')]);
-  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports: cp.reports(), decisions, interventions: iv.all()});
+  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports: cp.reports(), decisions, interventions: iv.all(), stillFree});
 }
