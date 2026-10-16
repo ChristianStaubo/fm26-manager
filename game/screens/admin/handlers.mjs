@@ -187,6 +187,10 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   // 6-7 weeks) beats the club doctor (7-8) and the physio (7-9): a few thousand for weeks back.
   {...delegate('injury-specialist', /^Send To Specialist/, 'sent the injured player to a specialist'),
     match: s => s.hasText(/ injured$/) && s.buttons(/^Send To Specialist/).length === 1},
+  // No specialist offered (McAidoo, bruised toe, 2032-08-08: Give Injection / Leave To Physio): the
+  // physio. Never an injection: he plays once, then is out longer.
+  {...delegate('injury-physio', /^Leave To Physio/, 'left the injury to the physio'),
+    match: s => s.hasText(/ injured$/) && !s.buttons(/^Send To Specialist/).length && s.buttons(/^Leave To Physio/).length === 1},
   // "Choose <Club> captain for the season" (2031-08-04): keep the current captain and vice-captain
   // (Confirm Captains). Changing them upsets the dressing room; not our decision to make.
   {...delegate('confirm-captains', /^Confirm Captains$/, 'kept the captain and vice-captain'),

@@ -59,3 +59,12 @@ test("several bids at once ('Offers made for Brentford's Gallardo') → the offe
   const s = {texts: () => texts, hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)), buttons: () => [], items: []};
   assert.equal(ALL.find(h => { try { return h.match(s); } catch { return false; } })?.name, 'offers-summary');
 });
+
+test('injury without a specialist: the physio, never an injection (McAidoo)', async () => {
+  const texts = ['James Haycock', 'Ryan McAidoo injured'];
+  const buttons = ['Give Injection (£525) Available for next match', 'Leave To Physio (Free) Out for 6 to 9 days'].map(label => ({label}));
+  const s = {texts: () => texts, date: () => new Date(Date.UTC(2032, 7, 8)),
+    hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)),
+    buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
+  assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['injury-physio']);
+});
