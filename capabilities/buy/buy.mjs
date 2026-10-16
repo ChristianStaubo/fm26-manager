@@ -241,7 +241,16 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   // screen comes back PRE-FILLED with that offer (fee, instalments, add-ons) and only Make Offer
   // (Ribeiro, 2026-07-13: £18.25M + £14.5M instalments + £155K/appearance); editing a field
   // brings Suggest Terms back.
-  const s = await waitFor(x => x.buttons('Suggest Terms').length === 1 || x.buttons('Make Offer').length === 1, {what: 'offer screen'});
+  // "Cannot sign <name>: on loan with a future fee clause in place" (Zukic, Schreiber, 2032-01): no bid possible.
+  const cannot = x => overlays(x).find(o => o.kind === 'dialog' && /^Cannot sign /.test(o.title || ''));
+  const s = await waitFor(x => x.buttons('Suggest Terms').length === 1 || x.buttons('Make Offer').length === 1 || cannot(x), {what: 'offer screen'});
+  if (cannot(s)) {
+    const why = cannot(s).description;
+    await recover();
+    const r = {action: 'buy', name, club, date: isoDate(s.date() || new Date()), outcome: 'cannot-sign', why};
+    await log(r);
+    return r;
+  }
   // Leave without bidding: Cancel where the screen has one, else navigate away (the pre-filled
   // page has no Cancel; leaving it registered no bid, 2026-07-13).
   const leave = async () => { if ((await Screen.read()).buttons('Cancel').some(b => b.name === 'StandardButton')) await click('Cancel', {name: 'StandardButton'}); else await recover().then(() => click('Portal')); };
