@@ -43,3 +43,12 @@ test('injury: send him to a specialist (quickest return)', async () => {
     buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
   assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['injury-specialist']);
 });
+
+test('a player asking for a new contract is a player issue: the assistant handles it (Miretti)', async () => {
+  const texts = ['Paul Hodges', 'Miretti asks to discuss future'];
+  const buttons = ['Discuss New Contract with Miretti', 'Decline', 'Ask Agent to Resolve Issue', 'Ask Savinho to Resolve Issue'].map(label => ({label}));
+  const s = {texts: () => texts, date: () => new Date(Date.UTC(2032, 6, 4)),
+    hasText: m => texts.some(t => (m instanceof RegExp ? m.test(t) : t === m)),
+    buttons: m => buttons.filter(b => m === undefined || (m instanceof RegExp ? m.test(b.label) : b.label === m))};
+  assert.deepEqual(HANDLERS.filter(x => x.match(s)).map(x => x.name), ['player-issue']);
+});

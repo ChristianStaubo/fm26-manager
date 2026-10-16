@@ -202,7 +202,9 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   // "Ask <leader> to Resolve Issue" had no effect when clicked (31 tries).
   {name: 'player-issue',
     // Titles vary ("wants to discuss personal matters", "asks to discuss future"); the buttons don't.
-    match: s => s.buttons(/^Discuss Issue with /).length === 1 && s.buttons('Decline').length === 1,
+    // Also "<Player> asks to discuss future … feels underpaid" (Miretti, 2032-07-04): "Discuss New
+    // Contract with <Player>" / Decline / Ask Agent / Ask <captain>: the assistant handles it too.
+    match: s => s.buttons(/^Discuss (Issue|New Contract) with /).length === 1 && s.buttons('Decline').length === 1,
     async run(s, {dryRun = false} = {}) {
       const entry = {action: 'player-issue', date: isoDate(s.date()), detail: 'holiday 1 day: assistant handles the conversation', headline: s.texts().find(t => / wants to | asks to /.test(t))};
       if (dryRun) return {...entry, dryRun: true};
