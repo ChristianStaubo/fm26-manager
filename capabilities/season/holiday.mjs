@@ -19,7 +19,15 @@ export async function holiday({days, until, dryRun = false} = {}) {
     // Team Selection can open with a notice on a darkened background ("Gallardo has been loaned out…
     // Miretti is suspended…", Ok; 2032-01-07): dismiss it first, it covers the Back button.
     if ((await Screen.read()).buttons('Ok').length === 1) { await click('Ok'); await waitFor(x => !x.buttons('Ok').length, {what: 'notice closed', timeout: 5000}).catch(() => null); }
-    await clickWhere(x => x.items.find(b => b.kind === 'button' && b.name === 'BackButton'), 'Back button');
+    // A popup we can't read (its contents missing from the tree) blocks clicks with a darkened
+    // background; Enter dismisses it (FA Cup at Arsenal, 2032-01-09).
+    try { await clickWhere(x => x.items.find(b => b.kind === 'button' && b.name === 'BackButton'), 'Back button', {recoverOnOcclusion: false, attempts: 1}); }
+    catch (e) {
+      if (!/occluded|covers the element/.test(e.message)) throw e;
+      const {key} = await import('../../game/ui/controls.mjs');
+      await key('Enter'); await new Promise(r => setTimeout(r, 2500));
+      continue;
+    }
     await waitFor(x => !!x.date(), {what: 'the Portal (date button)', timeout: 8000}).catch(() => null);
   }
   const today = (await Screen.read()).date();
