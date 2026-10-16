@@ -28,14 +28,14 @@ async function cancel() {
 
 // Already listed: still record our --min in the price book, or the bid handler has no floor
 // (Correia, 2028-06-27: three fm sell --min calls returned alreadyListed and recorded nothing).
-function bookAlreadyListed(name, club, facts, min, date, result) {
+function bookAlreadyListed(name, club, facts, min, date, result, wanted) {
   if (min === undefined) return result;
-  const target = Math.max(min, facts.valueRange?.[1] ?? min);
+  const target = Math.max(min, wanted ?? facts.valueRange?.[1] ?? min);   // --target: the user's (Kayode £85M, 2032-01-16)
   pricebook.record({name, club, range: facts.valueRange ?? null, minimum: min, target, why: 'set with --min (already listed)', listed: date});
   return {...result, minimum: min, target, recorded: true};
 }
 
-export async function listPlayer(name, club, {price, deter = false, min, force = false, dryRun = false} = {}) {
+export async function listPlayer(name, club, {price, deter = false, min, target, force = false, dryRun = false} = {}) {
   if (!loadRules().selling.list_players && !force)
     throw new NeedsAnalyst(`We don't transfer-list players (user policy, policy.json selling.list_players): bids are judged as they come. Pass --force only if the user asked to list ${name}.`);
   // Listing needs the user's approval while autonomy.sell is 'approve'; the approved minimum is
@@ -50,7 +50,7 @@ export async function listPlayer(name, club, {price, deter = false, min, force =
     // whose options are greyed out — their status is locked (e.g. already listed, Ajer 2026-06).
     // The profile header then shows the current asking price.
     if (e instanceof NeedsAnalyst && e.details?.available?.includes('Transfer Status') && facts.askingPrice)
-      return bookAlreadyListed(name, club, facts, min, isoDate(profile.date()), {action: 'list-player', name, club, alreadyListed: true, locked: true, askingSet: facts.askingPrice});
+      return bookAlreadyListed(name, club, facts, min, isoDate(profile.date()), {action: 'list-player', name, club, alreadyListed: true, locked: true, askingSet: facts.askingPrice}, target);
     throw e;
   }
   const status = x => x.items.find(i => i.kind === 'dropdown' && ['No status set', 'Transfer listed', 'Listed for loan', 'Unavailable'].includes(i.label));
@@ -60,7 +60,7 @@ export async function listPlayer(name, club, {price, deter = false, min, force =
   const askingBox = x => x.after('Asking Price', i => i.kind === 'button')?.label;
   if (!price && !facts.valueRange) {
     const current = parseMoney(askingBox(dialog));
-    if (status(dialog).label === 'Transfer listed') { await cancel(); return bookAlreadyListed(name, club, facts, min, isoDate(profile.date()), {action: 'list-player', name, club, alreadyListed: true, askingSet: current}); }
+    if (status(dialog).label === 'Transfer listed') { await cancel(); return bookAlreadyListed(name, club, facts, min, isoDate(profile.date()), {action: 'list-player', name, club, alreadyListed: true, askingSet: current}, target); }
     if (!facts.askingPrice) { await cancel(); throw new NeedsAnalyst(`No valuation shown for ${name}; pass --price`, facts); }
     // Not listed, yet the box holds an amount: a stored asking price from an earlier listing
     // (sticky), not his value. Only an Unspecified box means the header amount is an exact value.

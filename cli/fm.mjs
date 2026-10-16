@@ -84,7 +84,7 @@ Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after sa
   note ["lesson"]                append a lesson to the notebook, or print it (§9)
 
 Transfers
-  sell "<name>" --club <club> [--min N] [--force] [--dry-run]
+  sell "<name>" --club <club> [--min N] [--target N] [--force] [--dry-run]
                                  transfer-list, asking price Unspecified; records our minimum/target
                                  (price book) for the bid handler. --min overrides the minimum.
        [--price N | --deter]     set an asking price instead (re-pricing a player listed before)
@@ -242,10 +242,10 @@ try {
     case 'note': out(note(pos.slice(1).join(' '))); break;
     case 'press': out(await pressConference({dryRun})); break;
     case 'sell': {
-      const r = await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), force: !!flags.force, dryRun});
+      const r = await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), target: num(flags.target), force: !!flags.force, dryRun});
       // A re-price (--price) used to skip the price book: the bid handler then had no floor (Brown,
       // Ørjasæter, 2030-07-31). Record --min whenever it is given.
-      if (flags.min && !dryRun && !r.recorded && r.minimum == null) { pricebook.record({name: a1, club: flags.club, range: null, minimum: num(flags.min), target: Math.max(num(flags.min), r.askingSet || 0), why: 'set with --min', listed: r.date || null}); r.minimum = num(flags.min); r.recorded = true; }
+      if (flags.min && !dryRun && !r.recorded && r.minimum == null) { pricebook.record({name: a1, club: flags.club, range: null, minimum: num(flags.min), target: Math.max(num(flags.min), num(flags.target) || 0, r.askingSet || 0), why: 'set with --min', listed: r.date || null}); r.minimum = num(flags.min); r.recorded = true; }
       out(r); break;
     }
     case 'buy': {
