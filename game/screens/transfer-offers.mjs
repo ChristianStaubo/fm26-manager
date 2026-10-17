@@ -367,14 +367,22 @@ export const youthLoanOffer = {
     return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
   },
 };
+/** Youth loan rule (pure): accept at youth_loan_min_wage_share, or at the lower starting share when the
+ *  loan promises real minutes (user, 2033-08-17: Đukić, Important Player at 50%). */
+export function youthLoanAccept({wageShare, playingTime}, sell = loadRules().selling) {
+  const starting = (sell.youth_loan_starting_roles || []).some(r => (playingTime || '').startsWith(r));
+  const min = starting ? (sell.youth_loan_starting_min_wage_share ?? sell.youth_loan_min_wage_share) : sell.youth_loan_min_wage_share;
+  return {accept: wageShare >= min, why: `${Math.round(wageShare * 100)}% of his wage vs ${Math.round(min * 100)}%${starting ? ` (promised ${playingTime})` : ''}`};
+}
 // The youth loan rule, shared by both message layouts ("<Club> loan offer for X", "<Club> make loan
 // approach for X"): accept at youth_loan_min_wage_share of his wage or more, else reject.
 async function youthDecision({kind, date, club, player, wageShare, loan}, {dryRun}) {
   const sell = loadRules().selling;
   const entry = {action: kind, date, loan, youth: true};
   if (!Number.isFinite(wageShare)) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Youth loan for ${player}: wage share unreadable`, entry); }
-  entry.decision = wageShare >= sell.youth_loan_min_wage_share ? 'accept' : 'reject';
-  entry.why = `${Math.round(wageShare * 100)}% of his wage vs ${Math.round(sell.youth_loan_min_wage_share * 100)}% (supervisor rule)`;
+  const rule = youthLoanAccept({wageShare, playingTime: loan?.playingTime}, sell);
+  entry.decision = rule.accept ? 'accept' : 'reject';
+  entry.why = `${rule.why} (youth loan rule)`;
   if (dryRun) return {...entry, dryRun: true};
   await click(entry.decision === 'accept' ? 'Accept' : 'Reject');
   await log({...entry, executed: true});
@@ -436,8 +444,8 @@ export const plainLoanPage = {
     const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
     let decision, why;
     if (l.age <= sell.youth_max_age || loanListed(l.player)) {
-      decision = l.wageShare >= sell.youth_loan_min_wage_share ? 'accept' : 'reject';
-      why = `${Math.round(l.wageShare * 100)}% of his wage vs ${Math.round(sell.youth_loan_min_wage_share * 100)}% (youth loan rule), ${l.playingTime || '?'}`;
+      const rule = youthLoanAccept(l, sell);
+      decision = rule.accept ? 'accept' : 'reject'; why = `${rule.why} (youth loan rule)`;
     } else {
       const months = l.duration === 'End of season' ? 9 : 0;
       const d = decideLoan({loanFee: 0, monthlyFee: l.monthlyFee, months, wageShare: l.wageShare, ...await loanContext(l.player, date, l.duration)});

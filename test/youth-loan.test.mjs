@@ -42,7 +42,7 @@ test('"Wolves want to extend Torrente loan": a loan approach (31, listed, 80%) �
   assert.equal(loanOffer.match(s), true);
 });
 
-test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain loan page (Köln, 50%) → youth rule rejects (2033-08-15)', async () => {
+test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain loan page (Köln, 50%, Important Player) → accepted: minutes promised (user, 2033-08-17)', async () => {
   const {plainLoanPage, readPlainLoanPage} = await import('../game/screens/transfer-offers.mjs');
   const {offersSummary} = await import('../game/screens/transfer-activity.mjs');
   assert.equal(offersSummary.match(loadScreen('loan-offers-summary-dukic')), true);
@@ -51,5 +51,8 @@ test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain 
   assert.equal(l.player, 'Petar Đukić'); assert.equal(l.club, '1. FC Köln'); assert.equal(l.age, 20);
   assert.equal(l.wageShare, 0.5); assert.equal(l.playingTime, 'Important Player');
   assert.equal(plainLoanPage.match(s), true);
-  assert.equal((await plainLoanPage.run(s, {dryRun: true})).decision, 'reject');
+  assert.equal((await plainLoanPage.run(s, {dryRun: true})).decision, 'accept');
+  const {youthLoanAccept} = await import('../game/screens/transfer-offers.mjs');
+  assert.equal(youthLoanAccept({wageShare: 0.5, playingTime: 'Squad Player'}).accept, false, 'no minutes promised: 75% needed');
+  assert.equal(youthLoanAccept({wageShare: 0.8}).accept, true);
 });
