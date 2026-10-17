@@ -92,6 +92,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
         left[pos] = [x for x in v['players'][:v['slots']] if x['name'] in leaving]
     rows_now = [r for r in rows if r['name'] not in leaving]
     chart = depth.chart(rows_now, tactic)
+    _, assigned = depth.roles(rows_now, tactic)
     slot_of = {}
     for s in tactic['slots']:
         slot_of.setdefault(m.GROUP.get(s['slot'], s['slot']), s['slot'])
@@ -149,7 +150,14 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
             left_money -= c['value']; taken.add(r['position'])
     for r in out:
         r.pop('weakest', None)
-    return {'wonderkids': wonderkids(rows_now) if window == 'summer' else [], 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
+    # The portfolio (user, 2034-09): at most portfolio_max prospects (<= 23, outside the depth chart) at once.
+    held = sum(1 for p in rows_now if p['contract_club'] == m.CLUB and m.intval(p, 'age') <= 23 and m.intval(p, 'pa') >= R['wonderkid_min_pa']
+               and assigned.get(p['name'], (None, 'surplus'))[1] == 'surplus')
+    room = max(0, m.POLICY.get('wonderkids', {}).get('portfolio_max', 10) - held)
+    # On arrival (user, 2034-09): one at our backup level joins the squad; the rest go on the loan list
+    # (fm approve buy … --note "wonderkid": the autopilot loan-lists him when he signs).
+    kids = [{**c, 'on_arrival': 'squad' if c['ca'] >= squad_avg - R['backup_within'] else 'loan'} for c in wonderkids(rows_now)[:room]]
+    return {'wonderkids': kids if window == 'summer' else [], 'portfolio': {'held': held, 'room': room}, 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
 
 
 if __name__ == '__main__':

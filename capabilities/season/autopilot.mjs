@@ -94,6 +94,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
               if (ours) { x.stop = false; x.resolved = 'completed'; }
             } catch { /* keep the stop: look by hand */ }
           }
+          // Arrivals today (completed, or vanished and found on our books): a wonderkid goes on the loan list.
+          const arrived = [...Object.values(r.deals || {}).filter(d => d.dir === 'in' && d.state === 'completed' && d.since === dealsDay).map(d => d.player),
+            ...vanished.filter(x => x.resolved === 'completed').map(x => x.player)];
+          if (arrived.length) {
+            const {onArrivals} = await import('../sell/arrival.mjs');
+            decisions.push(...await onArrivals([...new Set(arrived)], club || (await import('../data.mjs')).club().club));
+          }
           const stops = r.alerts.filter(x => x.stop);
           if (stops.length) return stop('needs-analyst', {handler: 'deals', why: stops.map(x => `${x.kind}: ${x.player || x.stage}${x.from ? ' from ' + x.from : ''}${x.state ? ' (' + x.state + ', ' + x.days + ' days)' : ''}`).join('; '), alerts: r.alerts});
         } catch (e) { decisions.push({action: 'deals-observe', error: e.message}); }

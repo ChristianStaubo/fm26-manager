@@ -40,3 +40,14 @@ for k, pa, nat in [(0, 186, 'Republic of Ireland'), (1, 180, 'Germany'), (2, 185
 print(json.dumps([c['name'] for c in bt.table(ours + market + kids, tactic, season_surplus=0, window='summer')['wonderkids']]))`);
   assert.deepEqual(d, ['Pepper', 'Awudu'], 'foreign 16-year-old and the £44M one excluded');
 });
+
+test('wonderkid portfolio (user, 2034-09): the summer list fills only the room left under portfolio_max; on_arrival loan vs squad', () => {
+  const d = run(setup + `held = [p(f'Kid{i}', C, 100, age=19) for i in range(9)]
+for k in held: k['pa'] = '180'
+kids = [p('Awudu', 'Hoff', 95, age=18, value=0.4e6), p('Ready', 'Gent', 140, age=19, value=5e6)]
+for k, pa in zip(kids, (181, 180)): k['pa'] = str(pa); k['nation'] = 'Germany'
+t = bt.table(ours + market + held + kids, tactic, season_surplus=0, window='summer')
+print(json.dumps({'portfolio': t['portfolio'], 'kids': [(c['name'], c['on_arrival']) for c in t['wonderkids']]}))`);
+  assert.deepEqual(d.portfolio, {held: 9, room: 1});
+  assert.deepEqual(d.kids, [['Awudu', 'loan']], 'one slot left: the best PA; CA 95 is below the backup level');
+});

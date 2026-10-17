@@ -119,6 +119,17 @@ The rules behind them:
   A flat "the offer is unacceptable" means walk away.
 - Wages are **not a filter** for quality signings (user, 2026-10-10): pay what a better player costs, within the club's **wage budget** (`fm offers`: payroll available). Personal terms stop only above 2.5× our first-team median (a runaway demand). A swap that lowers the bill is always fine.
 
+### Wonderkids (user, 2034-09)
+A cycle, not a one-off: buy cheap, develop away, then play or sell.
+1. **Buy** (summer buy table): PA >= 175, aged 16-20 (18+ unless British/Irish), <= £15M, up to 4 a
+   window, and at most **10 in the portfolio** (prospects <= 23 outside the depth chart).
+2. **On arrival:** one at our backup level (squad average - 25 CA) joins the squad; the rest go
+   straight on the loan list (approve with `--note "wonderkid"`; the autopilot lists him when he signs).
+3. **On loan** while he is a prospect (<= 21, or <= 23 with PA >= 160) and outside the depth chart:
+   the loan table decides offers (he must start; never an option to buy).
+4. **Promoted** when his CA reaches our backup level: the depth chart takes him as a backup/starter.
+5. **Over 23:** a normal player. Not starting → surplus → the sell table sells him.
+
 ## 6. Contracts
 - The **Director of Football negotiates**. We decide who and for how long.
 - Length:
