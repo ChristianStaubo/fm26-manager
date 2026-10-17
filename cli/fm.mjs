@@ -97,6 +97,7 @@ Transfers
                                  --wage-max: a swap may pay up to the outgoing player's wage above the cap
                                  negotiate in one sitting (Suggest Terms) up to --max, then Make Offer
   move "<name>" --club <club> [--to senior|u18] [--dry-run]   move one of ours between squads (U21 → senior)
+  train-position "<name>" --club <club> --pos DM [--dry-run]   train him in a new position (the user's calls: config/tactic.json plays)
   renew "<name>" --club <club> [--preview] [--dof] [--dry-run]   we negotiate (--preview: stop before Suggest Terms); a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
@@ -295,6 +296,7 @@ try {
     case 'loanlist': out(await loanListPlayer(a1, flags.club, {why: flags.why || '', dryRun})); break;
     case 'unlist': { const r = await unlistPlayer(a1, flags.club, {dryRun}); if (r.changed) approvals.revoke('sell', a1); out(r); break; }
     case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;
+    case 'train-position': out(await (await import('../capabilities/squad/train-position.mjs')).trainPosition(a1, flags.club, flags.pos, {dryRun})); break;
     case 'watch': out(await watch({seconds: Number(flags.seconds || 300), interval: Number(flags.interval || 1000), out: flags.out})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
     case 'input-reset': out(await ui.removeVirtual()); break;

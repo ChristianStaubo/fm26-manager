@@ -12,3 +12,4 @@ Implements playbook §2. Numbers: `playbook/policy.json` → `squad`.
 
 **Move between squads:** `fm move "<name>" --club <club> [--to senior|u18]` (`move.mjs`): a league
 regular registered in our U21s can't be picked (Eyestone, 2030-07); `fm squad`/`fm audit` flag them.
+- **train-position** (`fm train-position`): Profile → Training → Position/Role → <position> → <role>; no dialog (Rosete → DM, 2035-01-20).
