@@ -102,7 +102,9 @@ export const workPermitRejected = {
     const {loadPolicy} = await import('../../../capabilities/sell/decide.mjs');
     const player = s.texts().map(t => /^(.+)'s work permit application rejected$/.exec(t)?.[1]).find(Boolean) || '?';
     const cost = parseMoney(/cost of (£[\d,.]+[KM]?)/.exec(s.texts().find(t => /work permit appeal/.test(t)) || '')?.[1] ?? '');
-    const rule = loadPolicy().buying.work_permit_appeal || 'ask';
+    const b = loadPolicy().buying;
+    // Never stops for the user (2034-07-03): appeal when cheap, else don't; the player goes on loan either way.
+    const rule = b.work_permit_appeal === 'appeal' && Number.isFinite(cost) && cost > (b.work_permit_appeal_max ?? Infinity) ? 'dont' : (b.work_permit_appeal || 'ask');
     const entry = {action: 'work-permit', date: isoDate(s.date()), player, cost, rule};
     if (rule === 'ask' || dryRun) { if (!dryRun) await log({...entry, executed: false}); throw new NeedsAnalyst(`${player}: work permit rejected; appeal (${cost ? '£' + cost : 'cost unknown'}) or not? (policy buying.work_permit_appeal = ask)`, entry); }
     await click(rule === 'appeal' ? 'Appeal' : "Don't Appeal");
