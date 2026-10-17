@@ -44,21 +44,44 @@ def depth_ok(players, slots):
     return len(players) >= slots + 2 and players[slots]['natural']
 
 
+def roles(rows, tactic):
+    """Everyone's role, assigned across all positions at once (user, 2034-01-01: Burton and McAidoo came
+    out as surplus): starters first; then backups and thirds from players who don't start elsewhere,
+    each used once. Ties on CA go to the player who plays more (minutes)."""
+    c = chart(rows, tactic)
+    mins = {p['name']: m.intval(p, 'mins', 0) for p in rows}
+    for v in c.values():
+        v['players'].sort(key=lambda x: (not x['natural'], -x['ca'], -mins.get(x['name'], 0)))
+    out, used = {}, set()
+    for pos, v in c.items():
+        for x in v['players'][:v['slots']]:
+            if x['name'] not in out:
+                out[x['name']] = (pos, 'starter')
+    starters = set(out)
+    for depth_role in ('backup', 'third'):
+        for pos, v in c.items():
+            x = next((x for x in v['players'][v['slots']:] if x['name'] not in starters and x['name'] not in used
+                      and (x['natural'] or depth_role == 'third')), None)
+            if x:
+                used.add(x['name'])
+                out.setdefault(x['name'], (pos, depth_role))
+    return c, out
+
+
 def role(rows, tactic, name):
-    best = None
-    for pos, v in chart(rows, tactic).items():
-        names = [x['name'] for x in v['players']]
-        if name not in names:
-            continue
-        i, n = names.index(name), v['slots']
-        r = 'starter' if i < n else 'backup' if i == n else 'third' if i == n + 1 else 'surplus'
-        rest = [x for x in v['players'] if x['name'] != name]
-        me = v['players'][i]
-        cand = {'name': name, 'age': me['age'], 'ca': me['ca'], 'pa': me.get('pa'), 'position': pos, 'role': r, 'rank': i + 1, 'slots': n,
-                'depth_ok_without': depth_ok(rest, n), 'position_players': names[:n + 3]}
-        if best is None or ROLES.index(r) < ROLES.index(best['role']):
-            best = cand
-    return best or {'name': name, 'position': None, 'role': 'surplus', 'depth_ok_without': True}
+    c, assigned = roles(rows, tactic)
+    pos, r = assigned.get(name, (None, 'surplus'))
+    me = next((x for v in c.values() for x in v['players'] if x['name'] == name), None)
+    if pos is None and me is None:
+        return {'name': name, 'position': None, 'role': 'surplus', 'depth_ok_without': True}
+    if pos is None:   # surplus: his best position is where he ranks highest
+        pos = min((k for k, v in c.items() if any(x['name'] == name for x in v['players'])),
+                  key=lambda k: [x['name'] for x in c[k]['players']].index(name))
+    v = c[pos]
+    rest = [x for x in v['players'] if x['name'] != name]
+    return {'name': name, 'age': me['age'], 'ca': me['ca'], 'pa': me.get('pa'), 'position': pos, 'role': r,
+            'slots': v['slots'], 'depth_ok_without': depth_ok(rest, v['slots']),
+            'position_players': [x['name'] for x in v['players'][:v['slots'] + 3]]}
 
 
 if __name__ == '__main__':
