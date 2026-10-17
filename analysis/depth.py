@@ -32,10 +32,12 @@ def chart(rows, tactic):
     out = {}
     for pos, slots in positions.items():
         slot = slots[0]
-        able = [p for p in ours if best_rating(p, slot) >= 15]
-        ranked = sorted(able, key=lambda p: (best_rating(p, slot) < 18, -m.intval(p, 'ca')))
+        # The user's calls (config/tactic.json "plays"): he is a natural there whatever FM rates him.
+        rate = lambda p: 20 if tactic.get('plays', {}).get(p['name']) == pos else best_rating(p, slot)
+        able = [p for p in ours if rate(p) >= 15]
+        ranked = sorted(able, key=lambda p: (rate(p) < 18, -m.intval(p, 'ca')))
         out[pos] = {'slots': len(slots), 'players': [
-            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': best_rating(p, slot) >= 18} for p in ranked]}
+            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': rate(p) >= 18} for p in ranked]}
     return out
 
 
