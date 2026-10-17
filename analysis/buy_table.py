@@ -84,17 +84,20 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
         starters = players[:n]
         weakest = min((x['ca'] for x in starters), default=0)
         bar = min(weakest, squad_avg) - R['backup_within']
-        backup = next((x for x in players[n:] if x['name'] not in starters_all and x['name'] not in used and x['ca'] >= bar), None)
-        if backup:
-            used.add(backup['name'])
+        found = []
+        for _ in range(depth.backups(n)):   # three CBs → two backups (user, 2034-01-01)
+            b = next((x for x in players[n:] if x['name'] not in starters_all and x['name'] not in used and x['ca'] >= bar), None)
+            if b:
+                used.add(b['name']); found.append(b)
+        missing = depth.backups(n) - len(found)
         row = {'position': pos, 'weakest': weakest, 'starters': [f"{x['name']} {x['ca']}" for x in starters],
-               'backup': f"{backup['name']} {backup['ca']}{'' if backup['natural'] else ' (cover)'}" if backup else None, 'needs': []}
+               'backup': ', '.join(f"{b['name']} {b['ca']}{'' if b['natural'] else ' (cover)'}" for b in found) or None, 'needs': []}
         for x in left.get(pos, []):
             rb = x['ca'] - R['replace_within']
             row['needs'].append({'kind': 'replace', 'for': x['name'], 'min_ca': rb, 'candidates': candidates(rows_now, slot, rb)})
         if len(starters) < n or any(not x['natural'] for x in starters):
             row['needs'].append({'kind': 'starter', 'min_ca': weakest, 'candidates': candidates(rows_now, slot, weakest)})
-        if not backup:   # summer, and January too: a missing backup is a hole (user, 2033-09-01)
+        for _ in range(missing):   # summer, and January too: a missing backup is a hole (user, 2033-09-01)
             cheap = candidates(rows_now, slot, bar, R['backup_aim_fee'], max_wage=R['backup_max_wage'], best=True)
             row['needs'].append({'kind': 'backup', 'min_ca': bar, 'candidates': cheap or candidates(rows_now, slot, bar, R['backup_max_fee'], max_wage=R['backup_max_wage'], best=True),
                                  'within_aim': bool(cheap)})

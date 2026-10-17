@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Our depth chart by CA for our formation, and one player's role in it (JSON on stdout).
 
-The user's depth standard (2033-08-17): per position one starter (per slot), one natural backup, and a
-third player who can cover. U21 players count; players out on loan don't. Naturals (rated 18+ there)
+The user's depth standard (2033-08-17, 2034-01-01): per position one starter per slot, max(1, slots - 1)
+natural backups (three CBs → two backups), and a third player who can cover. U21 players count; players out on loan don't. Naturals (rated 18+ there)
 rank first for starter/backup; cover players (15-17) only count towards the third.
 
 role: starter | backup | third | surplus, at his most important position; depth_ok_without: does the
@@ -40,18 +40,17 @@ def chart(rows, tactic):
 
 
 def depth_ok(players, slots):
-    """Starters for every slot + a natural backup + a third who can cover."""
-    return len(players) >= slots + 2 and players[slots]['natural']
+    """Starters for every slot + max(1, slots - 1) natural backups + a third who can cover."""
+    b = max(1, slots - 1)
+    return len(players) >= slots + b + 1 and all(x['natural'] for x in players[slots:slots + b])
 
 
 def roles(rows, tactic):
     """Everyone's role, assigned across all positions at once (user, 2034-01-01: Burton and McAidoo came
     out as surplus): starters first; then backups and thirds from players who don't start elsewhere,
-    each used once. Ties on CA go to the player who plays more (minutes)."""
+    each used once. A position with several starters has several backups (user, 2034-01-01: three CBs
+    → two backups): backups = max(1, slots - 1), then one third who can cover."""
     c = chart(rows, tactic)
-    mins = {p['name']: m.intval(p, 'mins', 0) for p in rows}
-    for v in c.values():
-        v['players'].sort(key=lambda x: (not x['natural'], -x['ca'], -mins.get(x['name'], 0)))
     out, used = {}, set()
     for pos, v in c.items():
         for x in v['players'][:v['slots']]:
@@ -60,12 +59,17 @@ def roles(rows, tactic):
     starters = set(out)
     for depth_role in ('backup', 'third'):
         for pos, v in c.items():
-            x = next((x for x in v['players'][v['slots']:] if x['name'] not in starters and x['name'] not in used
-                      and (x['natural'] or depth_role == 'third')), None)
-            if x:
-                used.add(x['name'])
-                out.setdefault(x['name'], (pos, depth_role))
+            for _ in range(backups(v['slots']) if depth_role == 'backup' else 1):
+                x = next((x for x in v['players'][v['slots']:] if x['name'] not in starters and x['name'] not in used
+                          and (x['natural'] or depth_role == 'third')), None)
+                if x:
+                    used.add(x['name'])
+                    out.setdefault(x['name'], (pos, depth_role))
     return c, out
+
+
+def backups(slots):
+    return max(1, slots - 1)
 
 
 def role(rows, tactic, name):
