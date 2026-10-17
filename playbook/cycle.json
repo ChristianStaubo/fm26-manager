@@ -14,6 +14,7 @@
     "wonderkids",
     "squad",
     "buys",
+    "bargains",
     "audit"
    ]
   },
@@ -49,6 +50,7 @@
     "squad",
     "sells",
     "buys",
+    "bargains",
     "free_agents",
     "plan",
     "audit"

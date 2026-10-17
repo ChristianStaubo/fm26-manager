@@ -53,6 +53,14 @@ export const STEPS = {
       `loan: ${by('loan').map(x => `${x.name} (${x.age}, PA ${x.pa})`).join(' · ') || '-'}`,
       `let go (not listed): ${by('let-go').map(x => x.name).join(' · ') || '-'}`]};
   },
+  // Bargains (analysis/bargains.py): undervalued players and buried talent, position-free resale buys.
+  async bargains(ctx) {
+    const d = analysis('bargains.py', [], {date: ctx.date});
+    const name = c => `${c.name} (${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}) ${money(c.value)}`;
+    return {data: d, md: [`caps: ${d.caps.per_window} buys, ${money(d.caps.max_spend)} a window · backup level CA ${d.backup_level}`,
+      ...d.undervalued.slice(0, 5).map(c => `undervalued ${c.ratio}x (typical ${money(c.typical)}): ${name(c)}`),
+      ...d.buried.slice(0, 5).map(c => `buried talent: ${name(c)}`)]};
+  },
   async results(ctx) {
     const d = analysis('results.py', ['--date', ctx.date, '--label', `${ctx.name} ${ctx.date}`], {date: ctx.date});
     return {data: d, md: [`position ${d.position ?? '-'} · balance ${money(d.club_balance)} · income-exp 12m ${money(d.income_12m - d.expenditure_12m)} · first-team value ${money(d.first_team_value)} · wages £${Math.round(d.wage_bill_pw / 1e3)}K/wk`]};
