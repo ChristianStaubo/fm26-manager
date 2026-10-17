@@ -235,6 +235,18 @@ export function readLoan(s) {
     obligationFee: clause(/[Oo]bligat|[Mm]andatory/), optionFee: clause(/[Oo]ption(al)? to buy|[Oo]ptional .*fee|^(?!.*[Mm]andatory).*[Ff]uture [Ff]ee/)};
 }
 
+/** Click Accept/Reject on a loan offer message, if it is still the same player's offer: deciding
+ *  runs the analysis (a fresh export can take minutes) and the page can change meanwhile (Meïté at
+ *  Angers, 2035-01-11: "Expected one button Reject, found 0"). Not there → false: the offer stays in
+ *  the inbox and comes back through Review Transfer Offer. */
+async function answerLoan(player, label, read = readLoan) {
+  try {
+    await waitFor(x => x.buttons(label).length === 1 && samePlayer(read(x)?.player || '', player), {what: `${label} for ${player}`, timeout: 10000});
+  } catch { return false; }
+  await click(label);
+  return true;
+}
+
 export const loanOffer = {
   name: 'loan-offer',
   match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readLoan(s),
@@ -248,7 +260,8 @@ export const loanOffer = {
       const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration, optionFee: loan.optionFee});
       const entry = {action: 'loan-offer', date, loan, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
       if (dryRun) return {...entry, dryRun: true};
-      await click(v.action === 'accept' ? 'Accept' : 'Reject'); await log({...entry, executed: true}); return entry;
+      if (!await answerLoan(loan.player, v.action === 'accept' ? 'Accept' : 'Reject')) return {...entry, executed: false, skipped: 'offer no longer on screen'};
+      await log({...entry, executed: true}); return entry;
     }
     const o = {...loan, ...(book ? {priceBook: true, minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
     o.wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
@@ -353,7 +366,9 @@ export function readYouthLoan(s) {
   const val = label => s.after(label, i => i.kind === 'text')?.label;
   const age = Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN);
   return {club: head[1], player: head[2], age, fee: parseMoney(val('Fee') ?? '') ?? 0,
-    wageShare: Number(/(\d+)%/.exec(val('Playing Salary Percentage') || '')?.[1] ?? NaN) / 100, duration: val('Duration')};
+    wageShare: Number(/(\d+)%/.exec(val('Playing Salary Percentage') || '')?.[1] ?? NaN) / 100, duration: val('Duration'),
+    // Read like a loan approach's (Awudu at Empoli, 2035-01-12: unread, so "no start promised (?)").
+    playingTime: val('Agreed Playing Time')};
 }
 export const youthLoanOffer = {
   name: 'youth-loan-offer',
@@ -368,7 +383,8 @@ export const youthLoanOffer = {
     const answer = async (decision, why) => {
       Object.assign(entry, {decision, why});
       if (dryRun) return {...entry, dryRun: true};
-      await click(decision === 'accept' ? 'Accept' : 'Reject'); await log({...entry, executed: true}); return entry;
+      if (!await answerLoan(l.player, decision === 'accept' ? 'Accept' : 'Reject', readYouthLoan)) return {...entry, executed: false, skipped: 'offer no longer on screen'};
+      await log({...entry, executed: true}); return entry;
     };
     const {load} = await import('../../capabilities/deals/store.mjs');
     const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state) && samePlayer(d.player, l.player));

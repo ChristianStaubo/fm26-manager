@@ -6,7 +6,7 @@ import {youthLoanOffer, readYouthLoan} from '../game/screens/transfer-offers.mjs
 
 test('youth loan offer: read, and rejected under 75% of his wage (Adelaide 70%)', async () => {
   const s = loadScreen('youth-loan-offer-adelaide');
-  assert.deepEqual(readYouthLoan(s), {club: 'Adelaide', player: 'Sullivan', age: 19, fee: 20000, wageShare: 0.7, duration: 'End of season'});
+  assert.deepEqual(readYouthLoan(s), {club: 'Adelaide', player: 'Sullivan', age: 19, fee: 20000, wageShare: 0.7, duration: 'End of season', playingTime: 'First-Choice Goalkeeper'});
   assert.equal(youthLoanOffer.match(s), true);
   const r = await youthLoanOffer.run(s, {dryRun: true});
   assert.equal(r.decision, 'reject');
