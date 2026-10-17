@@ -43,6 +43,15 @@ export const STEPS = {
     }
     return {data: d, md};
   },
+  // The sell (listing) table (analysis/sell_table.py): who to list for sale or loan, and at what price.
+  async sells(ctx) {
+    const d = analysis('sell_table.py', [], {date: ctx.date});
+    const by = a => d.filter(x => x.action === a);
+    return {data: d, md: [
+      `sell: ${by('sell').map(x => `${x.name} (${x.age}, ${x.role}) ${money(x.ask)}`).join(' · ') || '-'}`,
+      `loan: ${by('loan').map(x => `${x.name} (${x.age}, PA ${x.pa})`).join(' · ') || '-'}`,
+      `let go (not listed): ${by('let-go').map(x => x.name).join(' · ') || '-'}`]};
+  },
   async results(ctx) {
     const d = analysis('results.py', ['--date', ctx.date, '--label', `${ctx.name} ${ctx.date}`], {date: ctx.date});
     return {data: d, md: [`position ${d.position ?? '-'} · balance ${money(d.club_balance)} · income-exp 12m ${money(d.income_12m - d.expenditure_12m)} · first-team value ${money(d.first_team_value)} · wages £${Math.round(d.wage_bill_pw / 1e3)}K/wk`]};
