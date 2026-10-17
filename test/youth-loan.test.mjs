@@ -57,3 +57,13 @@ test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain 
   // Not listed: a prospect needs a start AND >= 75% (user's loan table, 2033-09-01): Köln's 50% is rejected.
   assert.equal((await plainLoanPage.run(s, {dryRun: true})).decision, 'reject');
 });
+
+test('"<Player> transfer battle intensifies" (Lawrence, 2035-01-30): open the highest transfer bid with a View button', async () => {
+  const {offersBattle, bestBattleOffer, incomingOffer} = await import('../game/screens/transfer-offers.mjs');
+  for (const name of ['offers-battle-lawrence', 'offers-battle-lawrence-collapsed']) {
+    const s = loadScreen(name);
+    assert.equal(offersBattle.match(s), true, name);
+    assert.equal(incomingOffer.match(s), false);
+    assert.deepEqual(bestBattleOffer(s), {club: 'Udinese', fee: 10500000}, 'Udinese £10.5M+ beats Lincoln £10.25M+; Las Palmas has no View button');
+  }
+});

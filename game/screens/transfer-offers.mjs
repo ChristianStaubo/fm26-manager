@@ -454,4 +454,27 @@ export const plainLoanPage = {
   },
 };
 
-export const HANDLERS = [plainLoanPage, loanOfferPage, loanBackRequest, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
+// "<Player> transfer battle intensifies" (Lawrence, 2035-01-30): several clubs bid; the message has
+// View All Offers + "View <Club> Offer" per open bid and a table (club, "Transfer £10.5M+" / "Loan").
+// Open the highest transfer bid among those with a View button; its offer page is incomingOffer's
+// (priced by the sell matrix). The others come back through Review Transfer Offer.
+export function bestBattleOffer(s) {
+  const clubs = s.items.filter(i => i.name === 'CellButton').map(i => i.label);
+  const fees = s.items.filter(i => i.kind === 'row' && /\b(Transfer|Loan)\b/.test(i.label) && !/Instalments|profit/.test(i.label))
+    .map(r => /Transfer (£[\d.,]+[KM]?)/.exec(r.label)?.[1]).map(f => (f ? parseMoney(f) : 0));
+  const views = s.buttons(/^View (.+) Offer$/).map(b => /^View (.+) Offer$/.exec(b.label)[1]).filter(c => c !== 'All');
+  return views.map(club => ({club, fee: fees[clubs.indexOf(club)] ?? 0})).sort((a, b) => b.fee - a.fee)[0] || null;
+}
+export const offersBattle = {
+  name: 'offers-battle',
+  match: s => s.hasText(/ transfer battle intensifies$/) && s.buttons('View All Offers').length === 1 && !!bestBattleOffer(s),
+  async run(s, {dryRun = false} = {}) {
+    const best = bestBattleOffer(s), entry = {action: 'offers-battle', date: isoDate(s.date()), open: best};
+    if (dryRun) return {...entry, dryRun: true};
+    await click(`View ${best.club} Offer`);
+    await waitFor(x => x.buttons('Reject Offer').length === 1 && x.hasText('Fee:'), {what: `${best.club} offer page`, timeout: 15000});
+    return entry;
+  },
+};
+
+export const HANDLERS = [plainLoanPage, loanOfferPage, loanBackRequest, youthLoanOffer, incomingOffer, offersBattle, agentPayoff, bidResponse, loanOffer];
