@@ -54,7 +54,11 @@ const amountAfter = (s, label) => s.after(label, i => i.kind === 'button' && par
 const suggestEnabled = s => s.items.some(i => i.kind === 'button' && i.label === 'Suggest Terms' && i.enabled);
 // The agent's speech bubble ("<Name> Agent …" or "<Name> Player …" when the player talks), never an
 // inbox item ("Paul Hodges 14:00 Player Targets and Promises Updates" was read as his reply, 2031-01-01).
-const agentLine = s => s.buttons(/ Agent | Player /).find(b => b.name !== 'NewsItemButton' && !/^\S+ \S+ \d{1,2}:\d{2} /.test(b.label))?.label || '';
+// The agent's message panel (an SIButton on the right). Not a page tile: "TRENDING … the best player …"
+// was read as his reply (2034-06, Froholdt/Espino), and the promise step waited on a headline.
+const agentLine = s => s.buttons(/ Agent | Player /).find(b => b.name === 'SIButton' && !/^\S+ \S+ \d{1,2}:\d{2} /.test(b.label))?.label || '';
+// The agent has accepted the promises as they stand ("happy to move on"): finalize, change nothing.
+const promisesAccepted = s => /happy to move on/i.test(agentLine(s));
 // "…already provisionally agreed terms. I will once again state what is acceptable…" (Lemaitre, after a
 // second suggestion overrode an accepted one, 2030-07-14) is agreement too, with Finalize Deal.
 // A counter: the agent writes his latest demands into the form and FM shows Finalize Deal (= accept
@@ -237,7 +241,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     // A promise to play him in a set position/role we can't keep (user, 2033-07-04: Germany, "play as an
     // overlapping centre-back"; he becomes unhappy when it's broken): never finalize it. Removing a
     // promise isn't mapped yet (to record with the user), so stop for them.
-    if (promiseRemoveButtons(s).length) {
+    if (promiseRemoveButtons(s).length && !promisesAccepted(s)) {
       const pr = await removeAdditionalPromises();
       // Put back a promise to play him in a set position or role: we walk away (nothing stops for the user).
       if (pr.back.some(t => POSITION_PROMISE.test(t))) {
@@ -251,7 +255,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     }
     // Lower his playing time once, on the first look only: after we've suggested promises and the agent
     // is happy to move on, changing anything again reopens the talks (user, 2034-06-16, Froholdt).
-    if (!promiseNote) promise = await lowerPlayingTime().catch(e => ({error: e.message}));
+    if (!promiseNote && !promisesAccepted(s)) promise = await lowerPlayingTime().catch(e => ({error: e.message}));
     await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'});
   }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }

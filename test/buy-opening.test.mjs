@@ -21,7 +21,7 @@ test('club replies are read from the General Manager line', () => {
 });
 
 import {termsAccepted} from '../capabilities/contracts/personal-terms.mjs';
-const said = line => ({buttons: () => [{label: line}]});
+const said = line => ({buttons: () => [{label: line, name: 'SIButton'}]});   // the agent's message panel
 test('a pending-decision reply counts as accepted terms (no more raises)', () => {
   assert.ok(termsAccepted(said('Momoka Hamaya Agent Suggest Terms My client is pleased with the negotiations and what appears to be a solution everyone agrees with, but would like to go away and think things over')));
   assert.ok(termsAccepted(said('Matt Grimes Player Suggest Terms These terms are acceptable but I wish to evaluate all my options')));
