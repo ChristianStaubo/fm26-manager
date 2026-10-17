@@ -160,3 +160,11 @@ test('keepers age later: a 30-year-old GK starter is prime, not senior (user, 20
   assert.equal(brady.band, 'prime'); assert.equal(brady.sellAt, 54e6, '1.5 x £36M');
   assert.equal(sale({guaranteed: 30e6, upfront: 30e6, vLow: 33e6, vHigh: 36e6, age: 33, monthsLeft: 24, negotiable: true, depth: {role: 'starter', depth_ok_without: true, position: 'GK'}}).band, 'senior');
 });
+
+test('a release clause caps our price: counter at the clause, not above (Stringfellow £82M, Bayern 2034-08-22)', () => {
+  const bayern = {guaranteed: 55e6, upfront: 43e6, total: 63.25e6, vLow: 68e6, vHigh: 82e6, age: 23, monthsLeft: 40, negotiable: true, countersSoFar: 0, depth: {role: 'starter', depth_ok_without: true}, releaseClause: 82e6};
+  const r = sale(bayern);
+  assert.equal(r.sellAt, 82e6, 'not 1.5 x £82M = £123M');
+  assert.equal(r.action, 'counter'); assert.equal(r.totalAsk, 82e6);
+  assert.equal(sale({...bayern, guaranteed: 82e6, total: 82e6}).action, 'accept', 'a bid at the clause is accepted');
+});

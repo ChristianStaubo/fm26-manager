@@ -49,6 +49,9 @@ export function readOffer(d, {headClub, shortName, coach}) {
     // A sell-on we owe: "40% of the profit made on the player's next transfer will be owed to U.S. Lecce
     // (Signed for £61M)" (Ortega, 2033-07-09). Prices are then asked gross, so we keep our price net.
     owedSellOn: owedSellOn(d),
+    // "Stringfellow has a minimum fee release clause of £82,000,000." Any club can pay it: our price never
+    // goes above it (user, 2034-08-22: we countered Bayern towards £120M).
+    releaseClause: parseMoney(/minimum fee release clause of (£[\d,.]+[KM]?)/.exec(d.texts().find(t => /minimum fee release clause of/.test(t)) || '')?.[1] ?? '') ?? null,
     upfront: parseMoney(d.after('Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label),
     // Everything incl. instalments and add-ons; add-ons count as fee (policy.json addon_weight).
     total: parseMoney(d.after('Future & Potential Total Cost with Additional Fees:', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label),

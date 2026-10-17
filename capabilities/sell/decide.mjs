@@ -48,7 +48,8 @@ export function decideSale(offer, policy = loadRules()) {
   // minimum; a non-negotiable bid below the target waits for better ones until the window's last days
   // (policy selling.late_window_days), then anything at the minimum is taken.
   if (o.priceBook && Number.isFinite(o.minimum)) {
-    const target = gross(Math.max(o.target ?? 0, o.minimum)), minimum = gross(o.minimum), late = Number.isFinite(o.daysToClose) && o.daysToClose <= (p.late_window_days ?? 7);
+    const clauseCap = Number.isFinite(o.releaseClause) && o.releaseClause > 0 ? o.releaseClause : Infinity;
+    const target = Math.min(gross(Math.max(o.target ?? 0, o.minimum)), clauseCap), minimum = Math.min(gross(o.minimum), clauseCap), late = Number.isFinite(o.daysToClose) && o.daysToClose <= (p.late_window_days ?? 7);
     if (o.guaranteed >= target) return {action: 'accept', reason: `>= our target ${target}`};
     if (late && o.guaranteed >= minimum) return {action: 'accept', reason: `>= our minimum ${minimum}, ${o.daysToClose} days to the deadline`};
     if (!o.negotiable) return {action: 'reject', reason: late ? `non-negotiable, below our minimum ${minimum}` : `non-negotiable, below our target ${target}: wait for better bids (${o.daysToClose ?? '?'} days left)`};
@@ -82,7 +83,9 @@ export function decideSale(offer, policy = loadRules()) {
   const mult = byRole ?? ((p.sell_ask_by_need || {})[need] ?? p.sell_ask) * (rising ? p.sell_rising.factor : 1);
   const paidFloor = Number.isFinite(o.paid) && !(o.age >= 30) && !expiring ? o.paid * (p.paid_floor ?? 1) : 0;
   const ourFloor = (need === 'core' || o.keep) && Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0;
-  const sellAt = tidy(gross(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor)));
+  // A release clause caps our price: the buyer can pay it any time (Stringfellow £82M, Bayern 2034-08-22).
+  const clause = Number.isFinite(o.releaseClause) && o.releaseClause > 0 ? o.releaseClause : Infinity;
+  const sellAt = Math.min(tidy(gross(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor))), clause);
   const tag = {sellAt, need, rising, ...(role ? {role, band} : {}), replace: need === 'core'};
   if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt} (${need})${need === 'core' ? ': replacement needed' : ''}`, ...tag};
   if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
