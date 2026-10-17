@@ -142,7 +142,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
                                  'within_aim': bool(cheap)})
         # Upgrades: an option; a buy only when young, at value and within the wage ceiling (the season's
         # net spend staying positive is checked by the caller). User, 2033-09-01.
-        up = candidates(rows_now, slot, weakest + R['upgrade_by'], max_wage=wage_cap)
+        up = candidates(rows_now, slot, weakest + R['upgrade_by'], max_wage=wage_cap, n=8)   # more than the cheapest 3: Boem (CA 184) was cut at £91.6M
         if up:
             for c in up:
                 c['buy'] = c['age'] <= R['upgrade_max_age'] and window != 'january'
