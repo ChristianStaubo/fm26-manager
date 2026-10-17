@@ -65,17 +65,23 @@ export function decideSale(offer, policy = loadRules()) {
   //   surplus = fringe: a little under it
   // Never below what we paid, unless he's 30+ or in his last year; a last-year contract sells at the
   // bottom of his range. Selling a core player needs a replacement (flagged).
-  const need = o.blockers?.length ? 'core'
+  let need = o.blockers?.length ? 'core'
     : ['strong rotation', 'rotation', 'weak starter'].includes(o.importance) ? 'depth' : o.importance === 'fringe' ? 'surplus' : 'core';
   // A rising player (age <= sell_rising.max_age) is worth more next year: sell_rising.factor on top.
   // Our minimum (from the analysis) floors the price for a core player, and for anyone we'd keep
   // (Gallardo, 2032-08: keep, minimum £58.5M, sold at £56M as depth; £121.5M a year later).
   const rising = Number.isFinite(o.age) && o.age <= (p.sell_rising?.max_age ?? -1);
-  const mult = ((p.sell_ask_by_need || {})[need] ?? p.sell_ask) * (rising ? p.sell_rising.factor : 1);
+  // The role x age table (user, 2033-09-01) when we know his role in our depth chart; else the old need
+  // multiplier. A player whose position falls below the depth standard without him is a starter.
+  const table = p.sell_by_role_age, role = o.depth?.role && (o.depth.depth_ok_without === false ? 'starter' : o.depth.role);
+  const band = rising ? 'rising' : Number.isFinite(o.age) && o.age >= (table?.senior_from_age ?? 30) ? 'senior' : 'prime';
+  const byRole = table && role ? table[role]?.[band] : undefined;
+  if (role) need = role === 'starter' ? 'core' : role === 'backup' ? 'depth' : 'surplus';
+  const mult = byRole ?? ((p.sell_ask_by_need || {})[need] ?? p.sell_ask) * (rising ? p.sell_rising.factor : 1);
   const paidFloor = Number.isFinite(o.paid) && !(o.age >= 30) && !expiring ? o.paid * (p.paid_floor ?? 1) : 0;
   const ourFloor = (need === 'core' || o.keep) && Number.isFinite(o.minimum) ? o.minimum * p.min_raise_over_offer : 0;
   const sellAt = tidy(gross(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor)));
-  const tag = {sellAt, need, rising, replace: need === 'core'};
+  const tag = {sellAt, need, rising, ...(role ? {role, band} : {}), replace: need === 'core'};
   if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt} (${need})${need === 'core' ? ': replacement needed' : ''}`, ...tag};
   if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
   return {action: 'reject', reason: `below our sell price ${sellAt} (${need}), counters spent`, ...tag};

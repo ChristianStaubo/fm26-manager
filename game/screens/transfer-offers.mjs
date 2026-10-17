@@ -92,7 +92,7 @@ export const incomingOffer = {
     else if (Number.isFinite(offer.vLow) && Number.isFinite(offer.vHigh)) {
       const p = pricebook.price(offer.player, [offer.vLow, offer.vHigh], isoDate(d.date()));
       Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep,
-        importance: p.importance, blockers: p.blockers, age: p.age, paid: paidFor(offer.player, await history())});
+        importance: p.importance, blockers: p.blockers, age: p.age, depth: p.depth, paid: paidFor(offer.player, await history())});
     }
     // Days to the window's close: late in the window a listed player goes at his minimum.
     { const {windowEnd, daysBetween} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = daysBetween(day, windowEnd(day)); }

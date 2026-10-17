@@ -58,5 +58,11 @@ export function price(name, range, date, {min} = {}) {
   // Our floor above the top of the market range: nobody will pay it, and he is worth more to us.
   const keep = min === undefined && minimum > vHigh * rules.keep_if_minimum_over;
   return {minimum, target, why, keep, blockers: analysis?.blockers || [], importance: analysis?.importance ?? null,
-    age: analysis?.player?.age ?? null};
+    age: analysis?.player?.age ?? null, depth: depthRole(name)};
+}
+
+/** His role in our depth chart (analysis/depth.py): starter/backup/third/surplus + depth_ok_without. */
+export function depthRole(name) {
+  try { return JSON.parse(execFileSync('python3', ['analysis/depth.py', '--player', name], {cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000})); }
+  catch { return null; }
 }

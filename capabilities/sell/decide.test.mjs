@@ -143,3 +143,14 @@ test('a sell-on we owe is priced in: ask gross so we keep our price net (Ortega,
   assert.equal(sale({...city, guaranteed: 140e6, total: 140e6}).action, 'accept', 'without the owed cut £140M clears the price');
   assert.equal(sale({...city, owedSellOn, guaranteed: 140e6, total: 140e6}).action, 'counter', 'with it, £140M nets only ~£108.4M');
 });
+
+test('sell price by depth role x age (user, 2033-09-01): Truffert accepted, Newton/Didi/Brown countered', () => {
+  const role = (r, ok = true) => ({role: r, depth_ok_without: ok});
+  const truffert = sale({guaranteed: 27.25e6, upfront: 22e6, total: 35e6, vLow: 27e6, vHigh: 32e6, age: 31, paid: 0, monthsLeft: 22, negotiable: false, depth: role('backup')});
+  assert.equal(truffert.sellAt, 27.2e6, 'backup, 30+: 0.85 x £32M');
+  assert.equal(truffert.action, 'accept');
+  assert.equal(sale({guaranteed: 30e6, upfront: 30e6, vLow: 26e6, vHigh: 32e6, age: 22, monthsLeft: 40, negotiable: true, depth: role('starter')}).sellAt, 48e6, 'starter, rising: 1.5x (not 1.65)');
+  assert.equal(sale({guaranteed: 60e6, upfront: 50e6, total: 65e6, vLow: 52e6, vHigh: 64e6, age: 23, paid: 14e6, monthsLeft: 40, negotiable: true, depth: role('starter')}).sellAt, 96e6, 'Didi: 1.5 x £64M');
+  assert.equal(sale({guaranteed: 50e6, upfront: 50e6, vLow: 55e6, vHigh: 66e6, age: 30, monthsLeft: 24, negotiable: false, depth: role('starter')}).sellAt, 79.2e6, 'starter, 30+: 1.2x');
+  assert.equal(sale({guaranteed: 30e6, upfront: 30e6, vLow: 27e6, vHigh: 32e6, age: 31, monthsLeft: 22, negotiable: true, depth: role('backup', false)}).role, 'starter', 'depth falls below standard without him: priced as a starter');
+});
