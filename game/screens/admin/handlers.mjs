@@ -113,6 +113,31 @@ export const workPermitRejected = {
   },
 };
 
+// "We have one ESC work permit slot available…" after a failed appeal (Ahmed Mohammed, 19, CB, PA 139, a
+// staff signing, 2035-01-30): Allocate ESC Place / Don't Allocate ESC Place. The slot is scarce: give it
+// to a player in our depth chart or a wonderkid (PA >= the buy table's wonderkid_min_pa), else keep it.
+export function escDecision({role, pa}, minPa = 175) {
+  return (role && role !== 'surplus') || (pa ?? 0) >= minPa ? 'allocate' : 'keep';
+}
+export const escPlace = {
+  name: 'esc-place',
+  match: s => s.buttons('Allocate ESC Place').length === 1 && s.buttons("Don't Allocate ESC Place").length === 1,
+  async run(s, {dryRun = false} = {}) {
+    const text = s.texts().find(t => /ESC work permit slot/.test(t)) || '';
+    const player = /^Unfortunately, (.+?)'s appeal/.exec(text)?.[1] || /^(.+)'s work permit application rejected$/.exec(s.texts().find(t => /work permit application rejected$/.test(t)) || '')?.[1] || '?';
+    const {analysis} = await import('../../../capabilities/data.mjs');
+    const {loadPolicy} = await import('../../../capabilities/sell/decide.mjs');
+    let depth = {};
+    try { depth = analysis('depth.py', ['--player', player]); } catch { /* unknown: keep the slot */ }
+    const choice = escDecision(depth, loadPolicy().buying?.table?.wonderkid_min_pa);
+    const entry = {action: 'esc-place', date: isoDate(s.date()), player, role: depth.role ?? null, pa: depth.pa ?? null, choice};
+    if (dryRun) return {...entry, dryRun: true};
+    await click(choice === 'allocate' ? 'Allocate ESC Place' : "Don't Allocate ESC Place");
+    await log({...entry, executed: true});
+    return entry;
+  },
+};
+
 // A signing refuses to complete without a work permit ("Ablaß unwilling to join without work permit",
 // 2030-07-28): Persuade <X> to Complete Transfer (a chat) / Cancel Transfer; it blocks Continue.
 // Supervisor rule (logged for the user's review): one honest persuasion ("…a good chance of getting a
@@ -147,7 +172,7 @@ export const unwillingWithoutPermit = {
   },
 };
 
-export const HANDLERS = [unwillingWithoutPermit, workPermitRejected, 
+export const HANDLERS = [unwillingWithoutPermit, workPermitRejected, escPlace, escPlace, 
   squadNumbers,
   // "<Club> squad to be decided": register every eligible 21+ player, then submit (registration.mjs).
   registrationHandler,
