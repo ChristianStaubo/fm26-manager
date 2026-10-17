@@ -104,12 +104,20 @@ export async function actionPath(path) {
   await waitFor(x => x.items.some(i => i.kind === 'menu' && i.label === 'Actions') && !blocking(x).length, {what: 'Actions menu button'});
   await openMenu('Actions');
   let s = await waitFor(x => entries(x).length > 0, {what: 'Actions menu'});
+  // Each step looks only in the newest submenu (entries right of the last parent): a parent and its
+  // child can share a label (Transfer → Transfer Status → "Transfer Status", 2034-01-01).
+  const {clickWhere, hoverWhere} = await import('./controls.mjs');
+  const at = (x, label, minX) => x.items.filter(i => i.kind === 'button' && i.label === label && x.node(i.id).type === 'EntryElement' && i.bounds[0] >= minX)
+    .sort((a, b) => b.bounds[0] - a.bounds[0])[0];
+  let minX = -Infinity;
   for (let k = 0; k < path.length; k++) {
-    const label = path[k], entry = entries(s).find(e => e.label === label);
-    if (!entry) { const available = entries(s).map(e => e.label); await recover(); throw new NeedsAnalyst(`Menu entry "${label}" not available`, {path, available}); }
-    if (k === path.length - 1) { await click(label); break; }
-    await hover(label);
+    const label = path[k], entry = entries(s).filter(e => e.x >= minX).find(e => e.label === label);
+    if (!entry) { const available = entries(s).filter(e => e.x >= minX).map(e => e.label); await recover(); throw new NeedsAnalyst(`Menu entry "${label}" not available`, {path, available}); }
+    const lo = minX;
+    if (k === path.length - 1) { await clickWhere(x => at(x, label, lo), `menu entry ${label}`); break; }
+    await hoverWhere(x => at(x, label, lo), `menu entry ${label}`);
     s = await waitFor(x => entries(x).some(e => e.x > entry.x + 50), {what: `${label} submenu`});
+    minX = entry.x + 50;
   }
   await settle(400);
 }

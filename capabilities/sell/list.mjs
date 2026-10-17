@@ -37,6 +37,27 @@ function bookAlreadyListed(name, club, facts, min, date, result, wanted) {
   return {...result, minimum: min, target, recorded: true};
 }
 
+/** Would listing him upset him? (user, 2034-01-01: Casadó.) Profile → Actions → Transfer → Transfer Status →
+ *  "Transfer Status" asks "Are you sure you want to change the transfer status of <name>?" and, for a
+ *  player who'd mind (long-serving, influential), adds "<name> is likely to become unhappy upon hearing
+ *  that he has been transfer-listed". We read it and always answer No: nothing changes. (The Set
+ *  Transfer Status card, our listing route, never shows this warning.) */
+export async function listingUpsets(name, club) {
+  await openPlayer(name, club);
+  await actionPath(['Transfer', 'Transfer Status', 'Transfer Status']);
+  const ask = x => x.hasText(/^Are you sure you want to change the transfer status of /) && x.buttons('No').length > 0;
+  const s = await waitFor(ask, {what: 'transfer status confirmation', timeout: 8000}).catch(() => null);
+  if (!s) {
+    // No confirmation: the click may have listed him. Put it back and say so.
+    const r = await unlistPlayer(name, club);
+    return {upset: null, noConfirmation: true, undone: r.changed};
+  }
+  const warning = s.texts().find(t => /likely to become unhappy/i.test(t)) || null;
+  await click('No');
+  await waitFor(x => !ask(x), {what: 'confirmation closed'});
+  return {upset: !!warning, warning};
+}
+
 export async function listPlayer(name, club, {price, deter = false, min, target, force = false, dryRun = false} = {}) {
   if (!loadRules().selling.list_players && !force)
     throw new NeedsAnalyst(`We don't transfer-list players (user policy, policy.json selling.list_players): bids are judged as they come. Pass --force only if the user asked to list ${name}.`);
@@ -44,6 +65,15 @@ export async function listPlayer(name, club, {price, deter = false, min, target,
   // the price book floor unless --min asks for more.
   const approved = dryRun ? null : gate('sell', 'sell', name, {price: min, what: `list ${name} for sale`});
   if (approved && min === undefined) min = approved.limit;
+  // Never list a player it would upset: wait for bids instead (user, 2034-01-01).
+  if (!force) {
+    const check = await listingUpsets(name, club);
+    if (check.upset) {
+      const entry = {action: 'list-player', name, club, listed: false, waitForBids: true, why: 'listing would upset him', warning: check.warning};
+      await log(entry);
+      return entry;
+    }
+  }
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   try { await actionPath(['Transfer', 'Set Transfer Status']); }

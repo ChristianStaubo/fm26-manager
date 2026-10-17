@@ -46,6 +46,9 @@ export const click = (label, {name, recoverOnOcclusion} = {}) =>
 export const clickWhere = (select, what = 'control', opts) =>
   act(s => { const b = select(s); if (!b) throw missing(what); return b.kind === 'menu' ? ui.menu(s.tree, s.node(b.id)) : ui.click(s.tree, s.node(b.id)); }, opts);
 export const openMenu = label => act(s => ui.menu(s.tree, s.node(one(s.items.filter(i => i.kind === 'menu' && i.label === label), `menu "${label}"`).id)));
+// Hover whatever select(screen) returns (a menu entry), e.g. one of two entries with the same label.
+export const hoverWhere = (select, what = 'menu entry') =>
+  act(s => { const b = select(s); if (!b) throw missing(what); return ui.hover(s.tree, s.node(b.id)); });
 export const hover = label => act(s => ui.hover(s.tree, s.node(one(s.items.filter(i => i.kind === 'button' && s.node(i.id).type === 'EntryElement' && i.label === label), `menu entry "${label}"`).id)));
 // Type into the global search box if open, else the only text field on screen.
 export const type = text => act(s => {
