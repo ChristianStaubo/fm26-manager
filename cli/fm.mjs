@@ -300,7 +300,16 @@ try {
     case 'input-reset': out(await ui.removeVirtual()); break;
     case 'record':
       if (a1 === 'start') out(await ui.recordStart());
-      else { const r = await ui.recordStop(); if (a2) await writeFile(a2, JSON.stringify(r.events, null, 1)); out({events: r.events.length, saved: a2 || null}); }
+      else {
+        // The bridge hands the events over once: always keep them (2034-01-01, a missing folder lost a
+        // recording of the user). A default file under local/runs/recordings, plus the one asked for.
+        const r = await ui.recordStop(), {mkdirSync, writeFileSync} = await import('node:fs');
+        const dir = 'local/runs/recordings', file = `${dir}/recording-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        mkdirSync(dir, {recursive: true});
+        writeFileSync(file, JSON.stringify(r.events, null, 1));
+        if (a2) { const {dirname} = await import('node:path'); mkdirSync(dirname(a2), {recursive: true}); writeFileSync(a2, JSON.stringify(r.events, null, 1)); }
+        out({events: r.events.length, saved: [file, a2].filter(Boolean)});
+      }
       break;
     default: console.log(HELP); if (cmd && cmd !== 'help') process.exitCode = 1;
   }
