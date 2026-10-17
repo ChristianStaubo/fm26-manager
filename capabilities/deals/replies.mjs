@@ -9,7 +9,7 @@ export const REPLIES = [
   ['made', /An offer has been made/i],
   ['agreement', /An agreement has been reached/i],
   ['rejected', /is unacceptable|have rejected|bid rejected/i],
-  ['final', /have submitted a non-negotiable offer/i],
+  ['final', /have (submitted|proposed) a non-negotiable offer/i],
   ['accepted', /prepared to accept the latest offer|feel the (offer|negotiation) for .+ is acceptable|(?<!un)acceptable/i],
   ['countered', /negotiated the offer|responded to the latest offer/i],
   ['more', /can get more|improved offer will need/i],

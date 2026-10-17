@@ -211,11 +211,14 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
       if (await nextStep() === 'make') return makeOffer(history);
       continue;
     }
-    if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
+    // A non-negotiable counter ("have proposed a non-negotiable offer", Leverkusen for Dinger, 2034-08-19):
+    // take it if it's within our max (Accept Demands, below), else walk away: no counter rounds.
+    if (reply.state === 'final') finalOffer = true;
+    else if (reply.state !== 'countered') throw new NeedsAnalyst(`Unexpected offer state: ${reply.state}`, reply);
     // A sell-on clause in their counter costs us resale profit, the point of buying young (user,
     // 2026-10-14): remove it and offer their up-front fee without it (within max). If they put it
     // back, it can't be removed: negotiate on as usual (the history records it).
-    if (sellOnRow(await Screen.read()) && sellOnTries < 2) {
+    if (reply.state !== 'final' && sellOnRow(await Screen.read()) && sellOnTries < 2) {
       sellOnTries++;
       history.at(-1).sellOnRemoved = sellOnRow(await Screen.read()).pct;
       await removeSellOn();
