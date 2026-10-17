@@ -14,6 +14,7 @@ test('wage ceiling for a signing: the lower of our peers x 1.15 and his current 
   const {wageCeiling} = await import('../capabilities/contracts/personal-terms.mjs');
   const wc = {peer_factor: 1.15, current_factor: 2.5};
   assert.equal(wageCeiling({peerMedian: 105250, currentWage: 42472}, wc), 106180, 'Ylla: 2.5 x £42.5K (he got £180K)');
+  assert.equal(wageCeiling({peerMedian: 135000, currentWage: 79000}, {peer_factor: 1.0, current_factor: 2.0}), 135000, 'Espino under the tightened ceiling (2034-06-11): walk away above £135K');
   assert.equal(wageCeiling({peerMedian: 81515, currentWage: 30312}, wc), 75780, 'Espino: 2.5 x £30.3K (he got £145K)');
   assert.equal(wageCeiling({peerMedian: 127750, currentWage: 68000}, wc), 146913, 'Mokio: peers x 1.15');
   assert.equal(wageCeiling({peerMedian: null, currentWage: null}, wc), null);
