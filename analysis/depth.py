@@ -38,7 +38,30 @@ def chart(rows, tactic):
         ranked = sorted(able, key=lambda p: (rate(p) < 18, -m.intval(p, 'ca')))
         out[pos] = {'slots': len(slots), 'players': [
             {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': rate(p) >= 18} for p in ranked]}
-    return out
+    return unique_starters(out)
+
+
+def unique_starters(c):
+    """A player starts in one slot only (2035-05-28: Harry Gray was the starter at both LW and ST, so ST
+    looked covered with Taylor 123 behind). Best players first; one natural at several positions takes
+    the one where he is most needed (the biggest drop to the next natural there). Each position's list
+    then puts its own starters first and players starting elsewhere last."""
+    open_slots = {pos: v['slots'] for pos, v in c.items()}
+    start = {}
+    for x in sorted({x['name']: x for v in c.values() for x in v['players'] if x['natural']}.values(), key=lambda x: -x['ca']):
+        def drop(pos):
+            nxt = next((y['ca'] for y in c[pos]['players'] if y['natural'] and y['name'] != x['name'] and y['name'] not in start), 0)
+            return x['ca'] - nxt
+        options = [pos for pos, v in c.items() if open_slots[pos] and any(y['name'] == x['name'] and y['natural'] for y in v['players'])]
+        if options:
+            pos = max(options, key=drop)
+            start[x['name']] = pos; open_slots[pos] -= 1
+    for pos, v in c.items():
+        v['players'] = sorted(v['players'], key=lambda y: (start.get(y['name'], pos) != pos, start.get(y['name']) != pos))
+        for y in v['players']:
+            if start.get(y['name']) not in (None, pos):
+                y['starts_at'] = start[y['name']]
+    return c
 
 
 def depth_ok(players, slots):
