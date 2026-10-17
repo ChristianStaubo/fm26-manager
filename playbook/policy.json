@@ -85,6 +85,8 @@
   "buying": {
     "_section": "5",
     "max_sell_on_pct": 0,
+    "table": {"replace_within": 3, "upgrade_by": 8, "upgrade_max_age": 25, "backup_within": 25, "squad_size": 22, "backup_ca_spread": 10, "backup_aim_fee": 10000000, "backup_max_fee": 20000000, "backup_max_wage": 80000, "old_from_age": 29, "min_age": 18},
+    "_table": "The buy decision table (user, 2033-09-01; analysis/buy_table.py): per position from the depth chart. replace: like-for-like (CA >= his - replace_within). backup: none within backup_within of min(weakest starter, squad average of the top squad_size): the cheapest within backup_ca_spread of the best affordable (aim backup_aim_fee, max backup_max_fee, wage <= backup_max_wage); cover players count; a starter elsewhere is not a backup. upgrade (summer only): CA >= starter + upgrade_by, age <= upgrade_max_age, wage within the hard cap, paid from the season surplus (fees out - in), best CA per £ first. January: replacements and missing backups only (clubs ask more). 29+ only as free agents.",
     "_max_sell_on": "User, 2033-07-09: never sign a sell-on. Ortega (bought 2030 by accepting Lecce's counter) owes Lecce 40% of the profit on his next sale. fm buy removes a sell-on from a counter twice; if the club keeps it, it stops for the user instead of accepting.",
     "open_at": 0.85,
     "open_at_if_club_keen_to_sell": 0.75,
