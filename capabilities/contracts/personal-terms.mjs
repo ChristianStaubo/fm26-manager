@@ -171,7 +171,29 @@ export function additionalPromises(s) {
   const reset = s.buttons('Reset').find(b => b.name === 'button-secondary-label');
   if (!head) return [];
   const [x0] = head.bounds, top = head.bounds[1] + head.bounds[3], bottom = reset ? reset.bounds[1] : Infinity;
-  return s.items.filter(i => ['text', 'dropdown', 'button'].includes(i.kind) && i.label && i.bounds[1] > top && i.bounds[1] < bottom && i.bounds[0] >= x0 - 10 && i.bounds[0] < x0 + 700).map(i => i.label);
+  // Texts only: the page's tiles behind the talks (calendar, matches) are buttons in the same area.
+  return s.items.filter(i => i.kind === 'text' && i.label && i.bounds[1] > top && i.bounds[1] < bottom && i.bounds[0] >= x0 - 10 && i.bounds[0] < x0 + 700).map(i => i.label);
+}
+// The remove control on each additional promise's row (buttons-controls-pc-default, at the row's right end;
+// the same control removes a sell-on clause in a transfer offer). Froholdt, 2034-06-16.
+export function promiseRemoveButtons(s) {
+  const head = s.items.find(i => i.kind === 'text' && i.label === 'Additional Promises');
+  const reset = s.buttons('Reset').find(b => b.name === 'button-secondary-label');
+  if (!head) return [];
+  return s.buttons().filter(b => b.name === 'buttons-controls-pc-default' && b.bounds[1] > head.bounds[1] && (!reset || b.bounds[1] < reset.bounds[1]));
+}
+// Remove every additional promise and put the rest to the agent (user, 2033-07-04 / 2034-06-16: a promise
+// to play him in a role we don't have hurts; "improve the coaching staff" is removed once, fine if re-added).
+async function removeAdditionalPromises() {
+  const removed = additionalPromises(await Screen.read());
+  for (let n = promiseRemoveButtons(await Screen.read()).length; n > 0; n--) {
+    await clickWhere(x => promiseRemoveButtons(x)[0], 'promise remove button');
+    await waitFor(x => promiseRemoveButtons(x).length < n, {what: 'promise removed'});
+  }
+  const before = agentLine(await Screen.read());
+  await click('Suggest Promises', {name: 'StandardButton'});
+  const r = await waitFor(x => agentLine(x) !== before && x.buttons('Finalize Promises').length > 0, {what: 'agent reply on promises', timeout: 15000});
+  return {removed, reply: agentLine(r).slice(0, 200), back: additionalPromises(r)};
 }
 // "Play as an overlapping centre-back", "Play in his preferred position", "Use him as a …": a role we may not have.
 export const POSITION_PROMISE = /\b(play(ed|ing)? (as|in|at)|position|role|use (him )?as|deploy)\b/i;
@@ -210,17 +232,26 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'handed-over'});
     return {action: 'personal-terms', player, outcome: 'handed-over', to: handOver.label.replace(/^Hand Over to /, '')};
   }
-  let promise = null;   // logged once the entry exists
+  let promise = null, promiseNote = null;   // logged once the entry exists
   if (s.buttons('Finalize Promises').length) {
     // A promise to play him in a set position/role we can't keep (user, 2033-07-04: Germany, "play as an
     // overlapping centre-back"; he becomes unhappy when it's broken): never finalize it. Removing a
     // promise isn't mapped yet (to record with the user), so stop for them.
-    const extra = additionalPromises(s), binding = extra.filter(t => POSITION_PROMISE.test(t));
-    if (binding.length) {
-      await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'stopped-promise', promises: extra});
-      throw new NeedsAnalyst(`${player} wants a promise we can't keep (${binding.join('; ')}): remove it by hand or walk away`, {promises: extra});
+    if (promiseRemoveButtons(s).length) {
+      const pr = await removeAdditionalPromises();
+      // Put back a promise to play him in a set position or role: we walk away (nothing stops for the user).
+      if (pr.back.some(t => POSITION_PROMISE.test(t))) {
+        await click('Cancel Negotiations', {name: 'StandardButton'});
+        const e = {action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'walked-away-promise', promises: pr};
+        await log(e);
+        return e;
+      }
+      promiseNote = pr;
+      s = await Screen.read();
     }
-    promise = await lowerPlayingTime().catch(e => ({error: e.message}));
+    // Lower his playing time once, on the first look only: after we've suggested promises and the agent
+    // is happy to move on, changing anything again reopens the talks (user, 2034-06-16, Froholdt).
+    if (!promiseNote) promise = await lowerPlayingTime().catch(e => ({error: e.message}));
     await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'});
   }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
@@ -230,7 +261,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   if (s.buttons('Reset').some(b => b.name === 'button-secondary-label')) { await click('Reset', {name: 'button-secondary-label'}); await settle(800); s = await Screen.read(); }
   const demand = salaryOf(s);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
-  const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), ...(promise ? {promise} : {}), tries: []};
+  const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), ...(promise ? {promise} : {}), ...(promiseNote ? {promisesRemoved: promiseNote} : {}), tries: []};
   // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
   // with the form open for a decision (Cancel Negotiations asks to confirm; its Cancel keeps talks).
   const bands = firstTeamBands();
