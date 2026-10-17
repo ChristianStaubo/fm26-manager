@@ -40,6 +40,13 @@ export async function ourPlayers() {
   } catch { return new Set(); }
 }
 
+/** A player's contract club from the save export (to open his profile). */
+export async function clubOf(name) {
+  const {exportPath} = await import('../data.mjs'), {execFileSync} = await import('node:child_process');
+  const code = 'import csv, sys\nprint(next((p["contract_club"] or p["club"] for p in csv.DictReader(open(sys.argv[1], encoding="utf8")) if p["name"] == sys.argv[2]), ""))';
+  return execFileSync('python3', ['-c', code, exportPath(), name], {encoding: 'utf8'}).trim() || undefined;
+}
+
 /** One observation (date, Transfer Activity rows) → saved deals + alerts. */
 /** A save reloaded to an earlier date (user, 2033-08-05: back to the pre-buy save to redo three deals):
  *  forget what happened on or after `date` (the save's own day is ambiguous: it was saved mid-day), deal
@@ -65,7 +72,8 @@ export async function observe(date, rows) {
     if (reloaded && (!data.at || reloaded > data.at)) data.at = reloaded;
   }
   // Direction from the facts (Ouazane's sale was agreed outside our handler: direction unknown, 2032-07-09).
-  rows = (rows || []).map(r => ({...r, dir: r.dir ?? (r.player && ours.has(r.player) ? 'out' : undefined)}));
+  // Not on our books → a signing (Koumeyi, 2035-01: a staff bid with dir null couldn't be classified).
+  rows = (rows || []).map(r => ({...r, dir: r.dir ?? (r.player && ours.size ? (ours.has(r.player) ? 'out' : 'in') : undefined)}));
   for (const d of Object.values(data.deals)) if (!d.dir && ours.has(d.player)) d.dir = 'out';
   const fromDate = addDays(date, -45);
   const r = reduce(data.deals, {date, rows, events: events(entries, data.at, {fromDate})}, loadPolicy().deals || {});

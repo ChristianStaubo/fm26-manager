@@ -101,6 +101,8 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
             const {onArrivals} = await import('../sell/arrival.mjs');
             decisions.push(...await onArrivals([...new Set(arrived)], club || (await import('../data.mjs')).club().club));
           }
+          // A signing nobody approved (a staff bid): withdraw it, don't stop (capabilities/buy/unapproved.mjs).
+          decisions.push(...await (await import('../buy/unapproved.mjs')).handleUnapproved(r.alerts.filter(x => x.stop)));
           const stops = r.alerts.filter(x => x.stop);
           if (stops.length) return stop('needs-analyst', {handler: 'deals', why: stops.map(x => `${x.kind}: ${x.player || x.stage}${x.from ? ' from ' + x.from : ''}${x.state ? ' (' + x.state + ', ' + x.days + ' days)' : ''}`).join('; '), alerts: r.alerts});
         } catch (e) { decisions.push({action: 'deals-observe', error: e.message}); }

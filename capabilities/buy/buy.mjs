@@ -30,6 +30,19 @@ export async function pendingOffer(name, club) {
   return {pending: sub.includes('Withdraw Transfer Offer'), top, transfer: sub};
 }
 
+/** Withdraw our pending bid (Transfer → Withdraw Transfer Offer → "Are you sure…" Yes; Koumeyi 2035-01-11). */
+export async function withdrawOffer(name, club, {why = ''} = {}) {
+  const {pending} = await pendingOffer(name, club);
+  if (!pending) return {action: 'withdraw-offer', name, club, pending: false};
+  await actionPath(['Transfer', 'Withdraw Transfer Offer']);
+  await waitFor(x => x.hasText(/withdraw your transfer bid/) && x.buttons('Yes').length === 1, {what: 'Withdraw Transfer Offer dialog'});
+  await click('Yes');
+  await waitFor(x => !x.hasText(/withdraw your transfer bid/), {what: 'Withdraw dialog closed'});
+  const entry = {action: 'withdraw-offer', name, club, date: isoDate((await Screen.read()).date()), why};
+  await log(entry);
+  return entry;
+}
+
 // ---- Reading the offer screen ----------------------------------------------------------
 // The GM's line starts with his name ("Phil Giles General Manager …"); a news story that mentions
 // another club's general manager ("…Man Utd General Manager Jason Wilcox…", 2032-01-04) is not it.

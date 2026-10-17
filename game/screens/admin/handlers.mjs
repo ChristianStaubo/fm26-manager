@@ -197,6 +197,9 @@ export const HANDLERS = [unwillingWithoutPermit, workPermitRejected,
   // physio. Never an injection: he plays once, then is out longer.
   {...delegate('injury-physio', /^Leave To Physio/, 'left the injury to the physio'),
     match: s => s.hasText(/ injured$/) && !s.buttons(/^Send To Specialist/).length && s.buttons(/^Leave To Physio/).length === 1},
+  // "<Player> taken ill" (Ylla, Casadó, 2035-01-09): Treat At Club (Free), the routine option.
+  {...delegate('illness-treat-at-club', /^Treat At Club/, 'treated the ill player at the club'),
+    match: s => s.hasText(/ taken ill$/) && s.buttons(/^Treat At Club/).length === 1},
   // "Choose <Club> captain for the season" (2031-08-04): keep the current captain and vice-captain
   // (Confirm Captains). Changing them upsets the dressing room; not our decision to make.
   {...delegate('confirm-captains', /^Confirm Captains$/, 'kept the captain and vice-captain'),
