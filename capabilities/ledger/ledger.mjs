@@ -46,8 +46,12 @@ export async function readLedger() {
   const page = await waitFor(x => x.items.some(i => /^Transfer History £/.test(i.label || '')) && x.items.some(i => /^Finances £/.test(i.label || '')), {what: 'club page tiles', timeout: 15000});
   const labels = page.items.map(i => i.label || '');
   const r = readClubTiles(labels), date = isoDate(s.date?.() ?? (await Screen.read()).date());
+  // The standings show on the Portal's Stages tab (rows "2 Brentford 38 25 5 8 37 80", 2034-05-28).
   await goTo('Portal');
-  r.position = positionOf((await Screen.read()).items.map(i => i.label || ''), club);
+  const {click} = await import('../../game/ui/index.mjs');
+  await click('Stages', {name: 'SIButton'}).catch(() => null);
+  const table = await waitFor(x => positionOf(x.items.map(i => i.label || ''), club), {what: 'standings', timeout: 8000}).catch(() => Screen.read());
+  r.position = positionOf(table.items.map(i => i.label || ''), club);
   record(r, date);
   return {...r, date};
 }
