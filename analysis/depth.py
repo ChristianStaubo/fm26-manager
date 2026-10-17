@@ -35,7 +35,7 @@ def chart(rows, tactic):
         able = [p for p in ours if best_rating(p, slot) >= 15]
         ranked = sorted(able, key=lambda p: (best_rating(p, slot) < 18, -m.intval(p, 'ca')))
         out[pos] = {'slots': len(slots), 'players': [
-            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'age': m.intval(p, 'age'), 'natural': best_rating(p, slot) >= 18} for p in ranked]}
+            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': best_rating(p, slot) >= 18} for p in ranked]}
     return out
 
 
@@ -53,7 +53,8 @@ def role(rows, tactic, name):
         i, n = names.index(name), v['slots']
         r = 'starter' if i < n else 'backup' if i == n else 'third' if i == n + 1 else 'surplus'
         rest = [x for x in v['players'] if x['name'] != name]
-        cand = {'name': name, 'position': pos, 'role': r, 'rank': i + 1, 'slots': n,
+        me = v['players'][i]
+        cand = {'name': name, 'age': me['age'], 'ca': me['ca'], 'pa': me.get('pa'), 'position': pos, 'role': r, 'rank': i + 1, 'slots': n,
                 'depth_ok_without': depth_ok(rest, n), 'position_players': names[:n + 3]}
         if best is None or ROLES.index(r) < ROLES.index(best['role']):
             best = cand

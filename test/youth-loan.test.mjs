@@ -12,8 +12,9 @@ test('youth loan offer: read, and rejected under 75% of his wage (Adelaide 70%)'
   assert.equal(r.decision, 'reject');
 });
 
-test('youth loan approach (Wellington, 80%) → accept by the same rule (friction 2026-10-14T23-26-27)', async () => {
-  const {loanOffer, readLoan} = await import('../game/screens/transfer-offers.mjs');
+test('youth loan approach (Wellington, 80%, First-Choice Goalkeeper) → loan table: unlisted prospect, starts, >= 75% → accept', async () => {
+  const {loanOffer, readLoan, setDepthSource} = await import('../game/screens/transfer-offers.mjs');
+  setDepthSource(() => ({role: 'surplus', age: 19, pa: 134}));
   const s = loadScreen('youth-loan-approach-wellington');
   assert.equal(readLoan(s).age, 19);
   assert.equal(loanOffer.match(s), true);
@@ -42,7 +43,7 @@ test('"Wolves want to extend Torrente loan": a loan approach (31, listed, 80%) �
   assert.equal(loanOffer.match(s), true);
 });
 
-test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain loan page (Köln, 50%, Important Player) → accepted: minutes promised (user, 2033-08-17)', async () => {
+test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain loan page (Köln, 50%, Important Player, not listed) → rejected by the loan table', async () => {
   const {plainLoanPage, readPlainLoanPage} = await import('../game/screens/transfer-offers.mjs');
   const {offersSummary} = await import('../game/screens/transfer-activity.mjs');
   assert.equal(offersSummary.match(loadScreen('loan-offers-summary-dukic')), true);
@@ -51,8 +52,8 @@ test('"Loan offers made for Brentford\'s Đukić" → offers-summary; the plain 
   assert.equal(l.player, 'Petar Đukić'); assert.equal(l.club, '1. FC Köln'); assert.equal(l.age, 20);
   assert.equal(l.wageShare, 0.5); assert.equal(l.playingTime, 'Important Player');
   assert.equal(plainLoanPage.match(s), true);
-  assert.equal((await plainLoanPage.run(s, {dryRun: true})).decision, 'accept');
-  const {youthLoanAccept} = await import('../game/screens/transfer-offers.mjs');
-  assert.equal(youthLoanAccept({wageShare: 0.5, playingTime: 'Squad Player'}).accept, false, 'no minutes promised: 75% needed');
-  assert.equal(youthLoanAccept({wageShare: 0.8}).accept, true);
+  const {setDepthSource} = await import('../game/screens/transfer-offers.mjs');
+  setDepthSource(() => ({role: 'surplus', age: 20, pa: 172}));
+  // Not listed: a prospect needs a start AND >= 75% (user's loan table, 2033-09-01): Köln's 50% is rejected.
+  assert.equal((await plainLoanPage.run(s, {dryRun: true})).decision, 'reject');
 });

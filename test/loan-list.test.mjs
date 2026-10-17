@@ -10,12 +10,13 @@ const dir = mkdtempSync(`${tmpdir()}/loanlist-`);
 process.env.FM_LOAN_LIST = `${dir}/loan-list.json`;
 writeFileSync(process.env.FM_LOAN_LIST, JSON.stringify({players: [{name: 'Sullivan', club: 'Brentford'}]}));
 
-test('a loan-listed first-team player: the youth loan rule decides (75% of his wage)', async () => {
-  const {youthLoanOffer, readYouthLoan} = await import('../game/screens/transfer-offers.mjs');
+test('a loan-listed senior (22, backup): the loan table wants profit (fees + share >= 100% of his wage); Adelaide 70% → reject', async () => {
+  const {youthLoanOffer, readYouthLoan, setDepthSource} = await import('../game/screens/transfer-offers.mjs');
+  setDepthSource(() => ({role: 'backup', age: 22, pa: 134}));
   const s = loadScreen('youth-loan-offer-adelaide');
   for (const i of s.items) if (typeof i.label === 'string') i.label = i.label.replace(/^19 year-old/, '22 year-old');
   assert.equal(readYouthLoan(s).age, 22);
   const r = await youthLoanOffer.run(s, {dryRun: true});
-  assert.equal(r.decision, 'reject', '70% of his wage is under the 75% rule');
-  assert.equal(r.youth, true);
+  assert.equal(r.decision, 'reject');
+  assert.equal(r.type, 'senior'); assert.equal(r.listed, true);
 });

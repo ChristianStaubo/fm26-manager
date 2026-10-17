@@ -239,11 +239,13 @@ export const loanOffer = {
     const loan = readLoan(s), book = pricebook.lookup(loan.player);
     // A youth player's loan approach (Wellington for Sullivan, 2030-07-21): the youth rule, not the
     // first-team plain-loan escalation.
-    const sell = loadRules().selling;
-    const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
-    if (loan.age <= sell.youth_max_age || loanListed(loan.player)) {   // or listed for loan (fm loanlist)
-      const share = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
-      return youthDecision({kind: 'loan-offer', date: isoDate(s.date()), club: loan.club, player: loan.player, wageShare: share, loan}, {dryRun});
+    // No obligation to buy: the loan table decides (an option to buy is recorded only; user, 2033-09-01).
+    if (!loan.obligationFee) {
+      const date = isoDate(s.date()), wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
+      const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration});
+      const entry = {action: 'loan-offer', date, loan, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
+      if (dryRun) return {...entry, dryRun: true};
+      await click(v.action === 'accept' ? 'Accept' : 'Reject'); await log({...entry, executed: true}); return entry;
     }
     const o = {...loan, ...(book ? {priceBook: true, minimum: book.minimum, target: book.target, ...(book.range ? {vLow: book.range[0], vHigh: book.range[1]} : {})} : {}), negotiable: false, countersSoFar: 0};
     o.wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
@@ -288,6 +290,20 @@ export function readLoanPage(s) {
   const weeks = today && end ? Math.max(0, Math.round((end - today) / 6048e5)) : 0;
   return {player, club: s.after('To', i => i.kind === 'text')?.label, overall, range, wage, wageShare: pct, weeks,
     wageRelief: Math.round((wage || 0) * pct * weeks), mandatory: s.hasText('Mandatory Future Fee')};
+}
+
+// The loan decision table (capabilities/sell/loan-table.mjs) for one offer: player type from the depth
+// chart, listed = on our loan list or in the price book, wage cost to the loan's end. `depthOf` is the
+// depth lookup (a test hook: the live one reads the save export).
+let depthOf = name => pricebook.depthRole(name);
+export const setDepthSource = fn => { depthOf = fn; };
+async function loanVerdict({player, age, wageShare, playingTime, fees = 0, date, duration}) {
+  const {decideLoanOffer, playerType} = await import('../../capabilities/sell/loan-table.mjs');
+  const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
+  const depth = depthOf(player), type = playerType(depth, {age});
+  const listed = loanListed(player) || !!pricebook.lookup(player);
+  const {wageCost} = type === 'senior' && listed ? await loanContext(player, date, duration) : {};
+  return {...decideLoanOffer({type, listed, playingTime, wageShare, fees, wageCost}), type, listed, role: depth?.role ?? null};
 }
 
 // For a plain loan: is he in the suggested XI (analysis xi), and what does he cost us until the loan
@@ -340,7 +356,7 @@ export const youthLoanOffer = {
   name: 'youth-loan-offer',
   match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readYouthLoan(s),
   async run(s, {dryRun = false} = {}) {
-    const l = readYouthLoan(s), sell = loadRules().selling;
+    const l = readYouthLoan(s);
     const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l};
     // A first-team player we listed (surplus) on loan with most of his wage paid: accept (Backhaus at
     // Mainz, 90%, 2032-07-23). Other first-team loans: the user decides.
@@ -354,43 +370,11 @@ export const youthLoanOffer = {
     const {load} = await import('../../capabilities/deals/store.mjs');
     const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state) && samePlayer(d.player, l.player));
     if (going) return answer('reject', `already leaving (deal at ${going.state})`);
-    // Listed for loan to develop (fm loanlist, Juninho 2033-01): the youth loan rule decides.
-    const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
-    if (loanListed(l.player)) return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
-    if (!(l.age <= sell.youth_max_age)) {
-      if (pricebook.lookup(l.player) && l.wageShare >= (sell.listed_loan_min_wage_share ?? 0.8)) return answer('accept', `listed, ${Math.round(l.wageShare * 100)}% of his wage paid`);
-      // A plain loan outside our XI that covers most of his wage (fee included): accept (Sayman, 2033-01-12).
-      const plain = decideLoan({loanFee: l.fee, wageShare: l.wageShare, ...await loanContext(l.player, entry.date, l.duration)});
-      if (plain.action === 'accept') return answer('accept', plain.reason);
-      await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.age}, first team): the user decides`, entry);
-    }
-    return youthDecision({kind: 'youth-loan-offer', date: entry.date, club: l.club, player: l.player, wageShare: l.wageShare, loan: l}, {dryRun});
+    const v = await loanVerdict({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.fee, date: entry.date, duration: l.duration});
+    Object.assign(entry, {type: v.type, listed: v.listed});
+    return answer(v.action, v.reason);
   },
 };
-/** Youth loan rule (pure): accept at youth_loan_min_wage_share, or at the lower starting share when the
- *  loan promises real minutes (user, 2033-08-17: Đukić, Important Player at 50%). */
-export function youthLoanAccept({wageShare, playingTime}, sell = loadRules().selling) {
-  const starting = (sell.youth_loan_starting_roles || []).some(r => (playingTime || '').startsWith(r));
-  const min = starting ? (sell.youth_loan_starting_min_wage_share ?? sell.youth_loan_min_wage_share) : sell.youth_loan_min_wage_share;
-  return {accept: wageShare >= min, why: `${Math.round(wageShare * 100)}% of his wage vs ${Math.round(min * 100)}%${starting ? ` (promised ${playingTime})` : ''}`};
-}
-// The youth loan rule, shared by both message layouts ("<Club> loan offer for X", "<Club> make loan
-// approach for X"): accept at youth_loan_min_wage_share of his wage or more, else reject.
-async function youthDecision({kind, date, club, player, wageShare, loan}, {dryRun}) {
-  const sell = loadRules().selling;
-  const entry = {action: kind, date, loan, youth: true};
-  if (!Number.isFinite(wageShare)) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Youth loan for ${player}: wage share unreadable`, entry); }
-  const rule = youthLoanAccept({wageShare, playingTime: loan?.playingTime}, sell);
-  entry.decision = rule.accept ? 'accept' : 'reject';
-  entry.why = `${rule.why} (youth loan rule)`;
-  if (dryRun) return {...entry, dryRun: true};
-  await click(entry.decision === 'accept' ? 'Accept' : 'Reject');
-  await log({...entry, executed: true});
-  const {record} = await import('../../capabilities/interventions.mjs');
-  record({capability: 'sell', kind: 'supervisor-decision', date, decided: `${entry.decision} ${club} loan for ${player}: ${entry.why}`});
-  return entry;
-}
-
 /** Loan a signing back to his old club? Only when the buy was meant to develop away (approval note:
  *  portfolio / wonderkid / loan back), never a signing bought to play now. */
 export const loanBackWanted = (approval, buying = {}) =>
@@ -439,20 +423,11 @@ export const plainLoanPage = {
   name: 'plain-loan-page',
   match: s => s.buttons('Accept Offer').length === 1 && s.buttons('Reject Offer').length === 1 && !!readPlainLoanPage(s)?.player,
   async run(s, {dryRun = false} = {}) {
-    const l = readPlainLoanPage(s), sell = loadRules().selling, date = isoDate(s.date());
-    const entry = {action: 'plain-loan-page', date, loan: l};
-    const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
-    let decision, why;
-    if (l.age <= sell.youth_max_age || loanListed(l.player)) {
-      const rule = youthLoanAccept(l, sell);
-      decision = rule.accept ? 'accept' : 'reject'; why = `${rule.why} (youth loan rule)`;
-    } else {
-      const months = l.duration === 'End of season' ? 9 : 0;
-      const d = decideLoan({loanFee: 0, monthlyFee: l.monthlyFee, months, wageShare: l.wageShare, ...await loanContext(l.player, date, l.duration)});
-      if (d.action !== 'accept') { await log({...entry, executed: false, decision: d}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.club}): ${d.reason}`, entry); }
-      decision = 'accept'; why = d.reason;
-    }
-    Object.assign(entry, {decision, why});
+    const l = readPlainLoanPage(s), date = isoDate(s.date());
+    const months = l.duration === 'End of season' ? 9 : 0;
+    const v = await loanVerdict({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.monthlyFee * months, date, duration: l.duration});
+    const entry = {action: 'plain-loan-page', date, loan: l, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
+    const decision = v.action;
     if (dryRun) return {...entry, dryRun: true};
     await click(decision === 'accept' ? 'Accept Offer' : 'Reject Offer');
     await log({...entry, executed: true});

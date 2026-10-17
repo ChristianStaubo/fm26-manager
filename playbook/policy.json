@@ -39,6 +39,8 @@
     "overperformer_min_age": 26,
     "_overperformer": "Sell high: a 26+ attacker who scored >= this many goals above his xG had a lucky season; his value peaks now and finishing regresses (a FM Moneyball YouTuber sold a 19-goals-from-12-xG striker at 27 for 46M; our own Kofane/Risser regressed the other way).",
     "youth_max_age": 21,
+    "loan_table": {"start_roles": ["Star Player", "Important Player", "Regular Starter", "First-Choice Goalkeeper"], "listed": {"prospect": {"starting": 0.5, "otherwise": 0.75}, "senior": {"covered": 1.0}, "first-team": "reject"}, "unlisted": {"prospect": {"starting": 0.75, "otherwise": null}, "senior": "reject", "first-team": "reject"}},
+    "_loan_table": "User, 2033-08-17 and 2033-09-01 (capabilities/sell/loan-table.mjs): every loan offer for our players by listed (loan list or price book) x player type (first-team = a starter in the depth chart; prospect = <= 21 or <= 23 with PA >= 160; senior = the rest). Nothing stops for the user. Obligation to buy = a sale (sell matrix); an option to buy is recorded, the loan judged by the table. Replaces youth_loan_*, listed_loan_min_wage_share and the plain-loan rule.",
     "youth_loan_min_wage_share": 0.75,
     "youth_loan_starting_min_wage_share": 0.5,
     "youth_loan_starting_roles": ["Star Player", "Important Player", "Regular Starter"],
