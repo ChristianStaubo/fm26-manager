@@ -39,10 +39,12 @@ export function record(r, date) {
 /** Live: Club page → tiles → ledger; Portal standings → position. */
 export async function readLedger() {
   const {goTo} = await import('../../game/ui/navigate.mjs');
-  const {Screen, isoDate} = await import('../../game/ui/index.mjs');
+  const {Screen, isoDate, waitFor} = await import('../../game/ui/index.mjs');
   const {club} = (await import('../data.mjs')).club();
   const s = await goTo('Club');
-  const labels = (await Screen.read()).items.map(i => i.label || '');
+  // The tiles build after the page (2034-01-01: the checkpoint read it too early): wait for both.
+  const page = await waitFor(x => x.items.some(i => /^Transfer History £/.test(i.label || '')) && x.items.some(i => /^Finances £/.test(i.label || '')), {what: 'club page tiles', timeout: 15000});
+  const labels = page.items.map(i => i.label || '');
   const r = readClubTiles(labels), date = isoDate(s.date?.() ?? (await Screen.read()).date());
   await goTo('Portal');
   r.position = positionOf((await Screen.read()).items.map(i => i.label || ''), club);
