@@ -15,5 +15,12 @@
    the user), built in `playbook/loans/` as the first area done fully to the standard.
 5. **Haiku as the default player.** Two segments so far: clean stops on real gaps.
 
+6. **Direct game calls (mapping session, needs the live game to itself, 1-2 h).** Find the object behind
+   a menu entry and the method that runs it, and FM's screen navigator (what Back/Forward call); wrap
+   them as bridge tools (`menu.invoke(path)`, `nav.open('player', id)`), with clicking as the fallback.
+   Then time routine jobs (open a profile, list a player, read Transfer Activity) before and after.
+   Why: today we poll full UI snapshots and guess menu structure by position, which causes the
+   retries and resets.
+
 ## Audit items still to address
 See the audit's top 10; summarised in the conversation of 2026-10-17.

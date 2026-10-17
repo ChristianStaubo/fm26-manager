@@ -44,7 +44,11 @@ function bookAlreadyListed(name, club, facts, min, date, result, wanted) {
  *  Transfer Status card, our listing route, never shows this warning.) */
 export async function listingUpsets(name, club) {
   await openPlayer(name, club);
-  await actionPath(['Transfer', 'Transfer Status', 'Transfer Status']);
+  // The entry that lists him reads "Transfer listed" (McAidoo) or "Transfer Status" (Casadó), by player.
+  const {sub} = await peekActions(['Transfer', 'Transfer Status']);
+  const entry = ['Transfer listed', 'Transfer Status'].find(l => sub.includes(l));
+  if (!entry) return {upset: null, options: sub};
+  await actionPath(['Transfer', 'Transfer Status', entry]);
   const ask = x => x.hasText(/^Are you sure you want to change the transfer status of /) && x.buttons('No').length > 0;
   const s = await waitFor(ask, {what: 'transfer status confirmation', timeout: 8000}).catch(() => null);
   if (!s) {
