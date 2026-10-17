@@ -24,7 +24,7 @@ import depth
 
 RULES = m.POLICY.get('buying', {}).get('table', {})
 R = {'replace_within': 3, 'upgrade_by': 8, 'backup_within': 25, 'backup_aim_fee': 10e6, 'backup_max_fee': 20e6,
-     'old_from_age': 29, 'min_age': 18, 'top': 3, 'backup_max_wage': 80000, 'upgrade_max_age': 25, 'squad_size': 22, 'backup_ca_spread': 10, **RULES}
+     'old_from_age': 29, 'min_age': 18, 'top': 3, 'backup_max_wage': 80000, 'upgrade_max_age': 25, 'squad_size': 22, 'backup_ca_spread': 10, 'wonderkid_min_pa': 175, 'wonderkid_min_age': 16, 'wonderkid_max_age': 20, 'wonderkid_max_fee': 15e6, 'wonderkids_per_window': 4, **RULES}
 
 
 def candidates(rows, slot, min_ca, max_fee=None, n=R['top'], max_wage=None, best=False):
@@ -58,6 +58,31 @@ def candidates(rows, slot, min_ca, max_fee=None, n=R['top'], max_wage=None, best
     else:
         out.sort(key=lambda c: (round(c['value'] / 1e6), c['age'], -c['ca']))
     return out[:n]
+
+
+BRITISH_IRISH = {'England', 'Wales', 'Scotland', 'Northern Ireland', 'Republic of Ireland'}
+
+
+def wonderkids(rows):
+    """Summer only (user, 2034-07-03: "a good use of our funds"): prospects with PA >= wonderkid_min_pa,
+    aged wonderkid_min_age-wonderkid_max_age (18+ unless British/Irish: foreign under-18s can't join), at
+    most wonderkid_max_fee, wage <= backup_max_wage; the best PA first, cheaper on ties; up to
+    wonderkids_per_window. They go on the loan list when they join unless they'd start."""
+    out = []
+    for p in rows:
+        if p['contract_club'] in (m.CLUB, '') or (p['club'] or '').startswith('club#') or p.get('on_loan_at'):
+            continue
+        age, pa, value = m.intval(p, 'age'), m.intval(p, 'pa'), float(p['value'] or 0)
+        if pa < R['wonderkid_min_pa'] or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age']:
+            continue
+        if age < 18 and p.get('nation') not in BRITISH_IRISH:
+            continue
+        if not 0 < value <= R['wonderkid_max_fee'] or float(p['wage'] or 0) > R['backup_max_wage']:
+            continue
+        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p['positions'],
+                    'nation': p.get('nation'), 'value': int(value), 'wage': int(float(p['wage'] or 0))})
+    out.sort(key=lambda c: (-c['pa'], c['value']))
+    return out[:R['wonderkids_per_window']]
 
 
 def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
@@ -124,7 +149,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
             left_money -= c['value']; taken.add(r['position'])
     for r in out:
         r.pop('weakest', None)
-    return {'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
+    return {'wonderkids': wonderkids(rows_now) if window == 'summer' else [], 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
 
 
 if __name__ == '__main__':

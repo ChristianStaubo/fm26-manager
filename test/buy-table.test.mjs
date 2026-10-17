@@ -32,3 +32,11 @@ test('january: missing backups yes, upgrades no', () => {
   assert.deepEqual(r.GK.needs, [['backup', 'Hellstern']]);
   assert.deepEqual(r.LB.buy, []);
 });
+
+test('wonderkids (summer): PA >= 175, <= £15M, 18+ unless British/Irish, best PA first (user, 2034-07-03)', () => {
+  const d = run(setup + `kids = [p('Pepper', 'Forest', 93, lb=20, age=16, value=14.2e6), p('Awudu', 'Hoff', 124, age=18, value=0.4e6), p('YoungForeign', 'Gent', 104, age=16, value=15e6), p('Pricey', 'Porto', 107, age=18, value=44e6)]
+for k, pa, nat in [(0, 186, 'Republic of Ireland'), (1, 180, 'Germany'), (2, 185, 'Belgium'), (3, 187, 'Portugal')]:
+    kids[k]['pa'] = str(pa); kids[k]['nation'] = nat
+print(json.dumps([c['name'] for c in bt.table(ours + market + kids, tactic, season_surplus=0, window='summer')['wonderkids']]))`);
+  assert.deepEqual(d, ['Pepper', 'Awudu'], 'foreign 16-year-old and the £44M one excluded');
+});

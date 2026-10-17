@@ -41,6 +41,7 @@ export const STEPS = {
       for (const n of r.needs) md.push(`${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''} (CA ≥ ${n.min_ca}): ${n.candidates.slice(0, 2).map(name).join(' · ') || 'none in range'}`);
       for (const c of (r.upgrade_option?.candidates || []).filter(c => c.buy)) md.push(`${r.position} upgrade: ${name(c)}`);
     }
+    for (const c of d.wonderkids || []) md.push(`wonderkid (PA ${c.pa}, ${c.positions}): ${name(c)} → loan list unless he starts`);
     return {data: d, md};
   },
   // The sell (listing) table (analysis/sell_table.py): who to list for sale or loan, and at what price.
