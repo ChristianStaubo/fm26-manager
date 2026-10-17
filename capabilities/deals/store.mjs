@@ -18,6 +18,8 @@ export function events(entries, since, {fromDate} = {}) {
     // First observation: only this window's actions (game date), not the whole history.
     if (!since && fromDate && (e.date || '') < fromDate) continue;
     if (e.action === 'buy' && ['agreed', 'accepted-demands', 'release-clause'].includes(e.outcome)) out.push({player: e.name, dir: 'in', state: 'fee-agreed'});
+    // Personal terms agreed: the player is considering (Gray, 2035-01: 4 days at "Contract" read as stuck).
+    if (e.action === 'personal-terms' && e.outcome === 'agreed') out.push({player: e.player, termsAgreed: true});
     if (e.action === 'precontract' && e.outcome === 'agreed') out.push({player: e.name, dir: 'in', state: 'contract'});
     if (e.action === 'incoming-offer' && e.executed && (e.decision?.action === 'accept' || e.accepted)) out.push({player: e.offer?.player, dir: 'out', state: 'contract'});
   }

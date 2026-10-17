@@ -74,7 +74,11 @@ export function reduce(deals = {}, obs, policy = {}) {
     else { if (dir && !out[k].dir) out[k].dir = dir; move(k, out[k], state, why); }
     out[k].seen = date; seenNow.add(k);
   };
-  for (const e of obs.events || []) touch(e.player, e.dir, e.state, 'our action');
+  for (const e of obs.events || []) {
+    // Terms agreed only marks a deal we track (a renewal logs the same and has no deal).
+    if (e.termsAgreed) { const d = out[key(e.player)]; if (d && !['completed', 'collapsed'].includes(d.state)) d.termsAgreed = date; continue; }
+    touch(e.player, e.dir, e.state, 'our action');
+  }
   for (const r of obs.rows || []) {
     const state = stageState(r.stage);
     if (!r.player) { alerts.push({kind: 'unnamed-deal', stage: r.stage, stop: false}); continue; }
@@ -91,7 +95,10 @@ export function reduce(deals = {}, obs, policy = {}) {
     }
     // Checked by hand and left to run ("ack" until a date, fm deals ack): no stuck alert until then.
     if (d.ackUntil && date <= d.ackUntil) continue;
-    const age = days(d.since, date), limit = stuckDays[d.state];
+    // Terms agreed at 'contract': the player is considering; he gets longer (terms-agreed) from that day.
+    const considering = d.state === 'contract' && d.termsAgreed;
+    const age = days(considering && d.termsAgreed > d.since ? d.termsAgreed : d.since, date);
+    const limit = considering ? stuckDays['terms-agreed'] ?? 7 : stuckDays[d.state];
     // A slow sale at 'contract' is the buyer talking to our player (Ouazane, Kislyak, 2032-07-09): if
     // it falls through he simply stays. Only our signings (and any deal awaiting our confirmation) stop us.
     if (Number.isFinite(limit) && age > limit) alerts.push({kind: 'stuck', player: d.player, state: d.state, days: age, dir: d.dir,

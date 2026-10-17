@@ -109,3 +109,13 @@ test('a reloaded save rewinds the deals to its date (2033-08-05: redoing three b
   assert.equal(r['jorthy mokio'].state, 'offer'); assert.equal(r['jorthy mokio'].seen, '2033-08-05');
   assert.deepEqual(Object.keys(rewind(deals, '2033-08-05')), [], 'the save day itself is dropped: the next observation re-seeds it');
 });
+
+test('terms agreed at contract: the player is considering, 7 days before stuck (Gray, 2035-01)', () => {
+  let r = reduce({}, {date: '2035-01-01', rows: [{player: 'Harry Gray', stage: 'Contract', dir: 'in'}], events: [{player: 'Harry Gray', dir: 'in', state: 'fee-agreed'}]});
+  r = reduce(r.deals, {date: '2035-01-01', rows: [{player: 'Harry Gray', stage: 'Contract'}], events: [{player: 'Harry Gray', termsAgreed: true}, {player: 'Marc Casadó', termsAgreed: true}]});
+  assert.equal(r.deals['marc casado'], undefined, 'a renewal is not a deal');
+  r = reduce(r.deals, {date: '2035-01-05', rows: [{player: 'Harry Gray', stage: 'Contract'}]});
+  assert.equal(r.alerts.filter(a => a.kind === 'stuck').length, 0);
+  r = reduce(r.deals, {date: '2035-01-09', rows: [{player: 'Harry Gray', stage: 'Contract'}]});
+  assert.equal(r.alerts.find(a => a.kind === 'stuck')?.stop, true);
+});
