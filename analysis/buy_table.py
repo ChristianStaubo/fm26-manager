@@ -79,7 +79,7 @@ def wonderkids(rows):
             continue
         if not 0 < value <= R['wonderkid_max_fee'] or float(p['wage'] or 0) > R['backup_max_wage']:
             continue
-        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p['positions'],
+        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p.get('positions', ''),
                     'nation': p.get('nation'), 'value': int(value), 'wage': int(float(p['wage'] or 0))})
     out.sort(key=lambda c: (-c['pa'], c['value']))
     return out[:R['wonderkids_per_window']]
