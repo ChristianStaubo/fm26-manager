@@ -313,11 +313,14 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // A signing's own ceiling (policy contracts.wage_ceiling): what we pay players of his level, and a
   // multiple of what he earns now. Renewals keep the renewal test instead.
   const wc = rules.wage_ceiling;
-  const ceiling = !renewal && wc ? wageCeiling({peerMedian: peerBand(player, wc.peer_within_ca)?.peer_median, currentWage: current}, wc) : null;
+  const ceiling = !renewal && wc ? wageCeiling({peerMedian: peerBand(player, wc.peer_within_ca)?.peer_median, currentWage: wc.current_factor ? current : null}, wc) : null;
   const limit = Math.min(Number.isFinite(cap) ? cap : Infinity, ceiling ?? Infinity);
   if (ceiling) entry.ceiling = ceiling;
   const atMost = (salary, k) => Number.isFinite(limit) && salary - k * step > limit ? Math.ceil((salary - limit) / step) : k;
-  const useSplit = p.split && Number.isFinite(current) && current > 0 && current < demand;
+  // The split is for renewals (his wage is ours: the raise is what's negotiated). A signing's current wage
+  // comes from another league and anchors nothing (user, 2034-07-25: Rosete, from Mexico, was walked down
+  // from his £77K ask to under £45K): his demand is the reference, open open_pct under it.
+  const useSplit = p.split && !!renewal && Number.isFinite(current) && current > 0 && current < demand;
   const open = useSplit ? Math.max(1, splitTicks({demand, current, target: splitOpening({demand, current}, p), tick: step})) : openingTicks({demand, tick: step}, p);
   entry.method = useSplit ? `split from £${current}` : 'percent';
   const openTicks = Math.max(open, atMost(demand, open));
