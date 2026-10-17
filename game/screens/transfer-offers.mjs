@@ -472,7 +472,7 @@ export const offersBattle = {
     const best = bestBattleOffer(s), entry = {action: 'offers-battle', date: isoDate(s.date()), open: best};
     if (dryRun) return {...entry, dryRun: true};
     await click(`View ${best.club} Offer`);
-    await waitFor(x => x.buttons('Reject Offer').length === 1 && x.hasText('Fee:'), {what: `${best.club} offer page`, timeout: 15000});
+    await waitFor(x => x.buttons('Reject Offer').length === 1 && x.hasText('Fee:'), {what: `${best.club} offer page`, timeout: 45000});
     return entry;
   },
 };
