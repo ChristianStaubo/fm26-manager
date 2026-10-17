@@ -220,7 +220,18 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // A refusal ends the talks at once: "My client isn't currently interested in entering into contract
   // negotiations with your club. He is currently unhappy at the club." (Franculino, 2030-07-17).
   const refused = x => /isn't currently interested in entering into contract negotiations|not interested in (a new contract|negotiating)/i.test(agentLine(x));
-  let s = await waitFor(x => form(x) || steps(x) || !!link(x) || refused(x), {what: 'contract negotiation', timeout: 15000});
+  // "Cannot sign <name>: … has already accepted a contract offer" (Froholdt, 2034-06-24, gone elsewhere):
+  // the deal is over; close the box and say so, no timeout.
+  const {overlays, recover} = await import('../../game/ui/index.mjs');
+  const cannot = x => overlays(x).find(o => o.kind === 'dialog' && /^Cannot sign /.test(o.title || ''));
+  let s = await waitFor(x => form(x) || steps(x) || !!link(x) || refused(x) || !!cannot(x), {what: 'contract negotiation', timeout: 15000});
+  if (cannot(s)) {
+    const why = cannot(s).description;
+    await recover();
+    const e = {action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'cannot-sign', why};
+    await log(e);
+    return e;
+  }
   if (refused(s)) {
     const e = {action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'refused', reply: agentLine(s).slice(0, 240)};
     await log(e);
