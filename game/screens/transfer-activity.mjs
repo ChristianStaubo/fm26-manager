@@ -61,20 +61,21 @@ export async function answer(name, {club, upfront, dryRun = false} = {}) {
   if (!row(await Screen.read())) throw new Error(`No open offer for ${name}${club ? ' from ' + club : ''}: ${d.deal} (${d.stage || '-'})`);
   const {clickWhere} = await import('../ui/controls.mjs');
   // A loan offer opens its own page (Alavés for Ørjasæter, 2031-07-08): any offer handler that matches.
-  const {incomingOffer, loanOfferPage} = await import('./transfer-offers.mjs');
-  const handler = x => [loanOfferPage, incomingOffer].find(h => h.match(x));
+  const {incomingOffer, loanOfferPage, plainLoanPage} = await import('./transfer-offers.mjs');
+  const handler = x => [loanOfferPage, plainLoanPage, incomingOffer].find(h => h.match(x));
   await clickWhere(row, 'offer row');
   const s = await waitFor(x => handler(x), {what: 'offer details', timeout: 15000});
   return handler(s).run(s, {dryRun, upfront});
 }
 
-// "Offers made for Brentford's <Player>" (several clubs at once, 2032-08-05): answer every open bid for
-// him, one club at a time, with the usual pricing (incoming-offer handler).
+// "Offers made for Brentford's <Player>" (several clubs at once, 2032-08-05), or "Loan offers made for
+// Brentford's <Player>" (Köln and Werder for Đukić, 2033-08-15): answer every open offer for him, one
+// club at a time, with the usual pricing (incoming-offer / loan handlers).
 export const offersSummary = {
   name: 'offers-summary',
-  match: s => s.hasText(/^Offers made for .+'s .+$/),
+  match: s => s.hasText(/^(Loan offers|Offers) made for .+'s .+$/),
   async run(s, {dryRun = false} = {}) {
-    const surname = /^Offers made for .+'s (.+)$/.exec(s.texts().find(t => /^Offers made for .+'s .+$/.test(t)))[1];
+    const surname = /^(?:Loan offers|Offers) made for .+'s (.+)$/.exec(s.texts().find(t => /^(Loan offers|Offers) made for .+'s .+$/.test(t)))[1];
     const answered = [];
     for (let i = 0; i < 5; i++) {
       try { answered.push(await answer(surname, {dryRun})); }

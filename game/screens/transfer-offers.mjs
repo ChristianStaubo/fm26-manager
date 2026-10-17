@@ -412,4 +412,44 @@ export const loanBackRequest = {
   },
 };
 
-export const HANDLERS = [loanOfferPage, loanBackRequest, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
+// A plain loan offer's detail page (Köln for Đukić, 2033-08-15, opened from Transfer Activity): Playing
+// Monthly Fee, "Playing Salary Percentage" as a dropdown ("50% (£5,750 p/w)"), Agreed Playing Time,
+// Accept Offer / Reject Offer. A youth player (or one on our loan list) → the youth loan rule; else the
+// plain-loan rule (outside our XI, most of his wage covered); anything else stops for the user.
+export function readPlainLoanPage(s) {
+  if (!s.hasText('Playing Salary Percentage') || loanOfferPage.match(s)) return null;
+  const player = s.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean);
+  const club = s.after('To', i => i.kind === 'text')?.label;
+  const pct = s.after('Playing Salary Percentage', i => i.kind === 'dropdown' && /\d+%/.test(i.label || ''))?.label;
+  const age = Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN);
+  return {club, player, age, wageShare: pct ? Number(/(\d+)%/.exec(pct)[1]) / 100 : NaN,
+    monthlyFee: parseMoney(s.after('Playing Monthly Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label) ?? 0,
+    duration: s.after('Duration', i => i.kind === 'dropdown')?.label?.replace(/End Of Season/i, 'End of season'),
+    playingTime: s.after('Agreed Playing Time', i => i.kind === 'dropdown')?.label};
+}
+export const plainLoanPage = {
+  name: 'plain-loan-page',
+  match: s => s.buttons('Accept Offer').length === 1 && s.buttons('Reject Offer').length === 1 && !!readPlainLoanPage(s)?.player,
+  async run(s, {dryRun = false} = {}) {
+    const l = readPlainLoanPage(s), sell = loadRules().selling, date = isoDate(s.date());
+    const entry = {action: 'plain-loan-page', date, loan: l};
+    const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
+    let decision, why;
+    if (l.age <= sell.youth_max_age || loanListed(l.player)) {
+      decision = l.wageShare >= sell.youth_loan_min_wage_share ? 'accept' : 'reject';
+      why = `${Math.round(l.wageShare * 100)}% of his wage vs ${Math.round(sell.youth_loan_min_wage_share * 100)}% (youth loan rule), ${l.playingTime || '?'}`;
+    } else {
+      const months = l.duration === 'End of season' ? 9 : 0;
+      const d = decideLoan({loanFee: 0, monthlyFee: l.monthlyFee, months, wageShare: l.wageShare, ...await loanContext(l.player, date, l.duration)});
+      if (d.action !== 'accept') { await log({...entry, executed: false, decision: d}); throw new NeedsAnalyst(`Loan offer for ${l.player} (${l.club}): ${d.reason}`, entry); }
+      decision = 'accept'; why = d.reason;
+    }
+    Object.assign(entry, {decision, why});
+    if (dryRun) return {...entry, dryRun: true};
+    await click(decision === 'accept' ? 'Accept Offer' : 'Reject Offer');
+    await log({...entry, executed: true});
+    return entry;
+  },
+};
+
+export const HANDLERS = [plainLoanPage, loanOfferPage, loanBackRequest, youthLoanOffer, incomingOffer, agentPayoff, bidResponse, loanOffer];
