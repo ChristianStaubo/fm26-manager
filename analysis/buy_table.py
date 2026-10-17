@@ -30,6 +30,8 @@ R = {'replace_within': 3, 'upgrade_by': 8, 'backup_within': 25, 'backup_aim_fee'
 def candidates(rows, slot, min_ca, max_fee=None, n=R['top'], max_wage=None, best=False):
     out = []
     for p in rows:
+        if p.get('on_loan_at'):   # can't be bought mid-loan (Bouaskar: "on loan with a future fee clause", 2034-01-01)
+            continue
         free = p['club'] == 'Free agent'
         if p['contract_club'] == m.CLUB or (p['contract_club'] == '' and not free) or (p['club'] or '').startswith('club#'):
             continue
