@@ -25,6 +25,13 @@ const money = v => v == null ? '-' : `£${(v / 1e6).toFixed(1)}M`;
 
 // Each step: (ctx) → {data, md: [lines]}. ctx caches the squad call (contracts and squad share it).
 export const STEPS = {
+  // The scoreboard from the game itself (club page tiles + standings): transfer totals, balance, position.
+  async ledger(ctx) {
+    const {readLedger} = await import('../ledger/ledger.mjs');
+    const r = await readLedger();
+    ctx.position = r.position;
+    return {data: r, md: [`${r.season}: in ${money(r.in)} (${r.inPlayers}) · out ${money(r.out)} (${r.outPlayers}) · net ${money(r.out - r.in)} · balance ${money(r.balance)} · wages ${money(r.wages)}/${money(r.wageBudget)} · position ${r.position ?? '-'}`]};
+  },
   async results(ctx) {
     const d = analysis('results.py', ['--date', ctx.date, '--label', `${ctx.name} ${ctx.date}`], {date: ctx.date});
     return {data: d, md: [`position ${d.position ?? '-'} · balance ${money(d.club_balance)} · income-exp 12m ${money(d.income_12m - d.expenditure_12m)} · first-team value ${money(d.first_team_value)} · wages £${Math.round(d.wage_bill_pw / 1e3)}K/wk`]};
