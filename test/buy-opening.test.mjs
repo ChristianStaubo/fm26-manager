@@ -27,3 +27,12 @@ test('a pending-decision reply counts as accepted terms (no more raises)', () =>
   assert.ok(termsAccepted(said('Matt Grimes Player Suggest Terms These terms are acceptable but I wish to evaluate all my options')));
   assert.ok(!termsAccepted(said('Momoka Hamaya Agent There are several clubs taking a keen interest in my client')));
 });
+
+test('the GM line stops at another staff member\'s advice (Arnalot, 2034-08-19: "acceptable" in the assistant\'s wage advice)', async () => {
+  const {gmLine} = await import('../capabilities/buy/buy.mjs');
+  const {classify} = await import('../capabilities/deals/replies.mjs');
+  const label = 'Phil Giles General Manager Girona have negotiated the offer for Romàn Arnalot. Harry Kane Assistant Coach Advice I should point out that the club is currently spending over its wage budget. You should look to adjust the budgets accordingly to allow for the current wage total to be seen as acceptable.';
+  const line = gmLine({buttons: re => [{label}].filter(b => re.test(b.label))});
+  assert.equal(line, 'Phil Giles General Manager Girona have negotiated the offer for Romàn Arnalot.');
+  assert.equal(classify(line), 'countered');
+});

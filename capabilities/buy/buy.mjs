@@ -33,7 +33,11 @@ export async function pendingOffer(name, club) {
 // ---- Reading the offer screen ----------------------------------------------------------
 // The GM's line starts with his name ("Phil Giles General Manager …"); a news story that mentions
 // another club's general manager ("…Man Utd General Manager Jason Wilcox…", 2032-01-04) is not it.
-export const gmLine = s => s.buttons(/^\S+(?: \S+){0,3} General Manager /)[0]?.label || '';
+// The GM's own messages only: his panel's label runs on into other staff's advice ("… Harry Kane
+// Assistant Coach Advice … wage total to be seen as acceptable", 2034-08-19: Girona's counter for
+// Arnalot was read as accepted). Cut at the next staff role.
+export const gmLine = s => (s.buttons(/^\S+(?: \S+){0,3} General Manager /)[0]?.label || '')
+  .replace(/(?<=[.!?])\s+(?:\S+\s+){1,3}(?:Assistant Coach|Assistant Manager|Assistant|Head of [A-Z]\w+|Director of Football|Chief Scout|Head Coach)\b[\s\S]*$/, '');
 export function offerState(s) {
   const gm = gmLine(s);
   const money = label => parseMoney(s.after(label, i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
