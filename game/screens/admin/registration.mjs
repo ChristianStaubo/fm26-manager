@@ -75,8 +75,14 @@ export const registrationHandler = {
     const now = await Screen.read();
     if (now.hasText('Squad selection is fully compliant')) {
       if (dryRun) return {action: 'squad-registration', detail: 'compliant: would submit', dryRun: true};
-      await click('Confirm', {name: 'button-primary-label'});
-      await recover();   // "Submit completed squad list?" → Confirm (KNOWN_DIALOGS)
+      // The same two steps as a full registration: the page's Confirm, then the dialog's own Confirm
+      // ("Please Confirm: Submit completed squad list?"). Leaving the second to overlay recovery failed
+      // on 2034-07-28 ("Expected one button Confirm, found 0").
+      const {clickWhere} = await import('../../ui/index.mjs');
+      await clickWhere(x => x.buttons().find(b => b.label === 'Confirm' && b.name === 'button-primary-label'), 'Confirm squad list');
+      await waitFor(x => x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'submit squad list dialog'});
+      await clickWhere(x => x.buttons('Confirm').find(b => x.within(b.id, 'GenericModalDialog')), 'Submit completed squad list');
+      await waitFor(x => !x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'dialog closed'}).catch(() => null);
       return {action: 'squad-registration', date: isoDate(now.date()), detail: 'submitted the compliant list as it stands'};
     }
     return register(undefined, {dryRun});

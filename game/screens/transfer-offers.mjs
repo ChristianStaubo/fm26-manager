@@ -242,7 +242,7 @@ export const loanOffer = {
     // No obligation to buy: the loan table decides (an option to buy is recorded only; user, 2033-09-01).
     if (!loan.obligationFee) {
       const date = isoDate(s.date()), wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
-      const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration});
+      const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration, optionFee: loan.optionFee});
       const entry = {action: 'loan-offer', date, loan, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
       if (dryRun) return {...entry, dryRun: true};
       await click(v.action === 'accept' ? 'Accept' : 'Reject'); await log({...entry, executed: true}); return entry;
@@ -297,13 +297,13 @@ export function readLoanPage(s) {
 // depth lookup (a test hook: the live one reads the save export).
 let depthOf = name => pricebook.depthRole(name);
 export const setDepthSource = fn => { depthOf = fn; };
-async function loanVerdict({player, age, wageShare, playingTime, fees = 0, date, duration}) {
+async function loanVerdict({player, age, wageShare, playingTime, fees = 0, date, duration, optionFee}) {
   const {decideLoanOffer, playerType} = await import('../../capabilities/sell/loan-table.mjs');
   const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
   const depth = depthOf(player), type = playerType(depth, {age});
   const listed = loanListed(player) || !!pricebook.lookup(player);
   const {wageCost} = type === 'senior' && listed ? await loanContext(player, date, duration) : {};
-  return {...decideLoanOffer({type, listed, playingTime, wageShare, fees, wageCost}), type, listed, role: depth?.role ?? null};
+  return {...decideLoanOffer({type, listed, playingTime, wageShare, fees, wageCost, optionFee}), type, listed, role: depth?.role ?? null};
 }
 
 // For a plain loan: is he in the suggested XI (analysis xi), and what does he cost us until the loan

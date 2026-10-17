@@ -33,3 +33,8 @@ test('first-team: always reject', () => {
   assert.equal(d({type: 'first-team', listed: true, playingTime: 'Star Player', wageShare: 1}).action, 'reject');
   assert.equal(d({type: 'first-team', listed: false, wageShare: 1}).action, 'reject');
 });
+
+test('a prospect is never loaned with an option to buy (user, 2034-08)', () => {
+  assert.equal(d({type: 'prospect', listed: true, playingTime: 'Regular Starter', wageShare: 1, optionFee: 8e6}).action, 'reject');
+  assert.equal(d({type: 'prospect', listed: true, playingTime: 'Regular Starter', wageShare: 1}).action, 'accept');
+});

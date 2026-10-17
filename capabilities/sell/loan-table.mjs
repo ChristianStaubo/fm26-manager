@@ -19,8 +19,11 @@ export function playerType(depth, {age, pa} = {}, policy = loadRules()) {
 }
 
 /** {type, listed, playingTime, wageShare, fees, wageCost} → {action: 'accept'|'reject', reason}. */
-export function decideLoanOffer({type, listed, playingTime, wageShare, fees = 0, wageCost}, policy = loadRules()) {
+export function decideLoanOffer({type, listed, playingTime, wageShare, fees = 0, wageCost, optionFee}, policy = loadRules()) {
   const t = policy.selling.loan_table, who = `${listed ? 'listed' : 'not listed'} ${type}`;
+  // A prospect goes out to gain experience, not to be bought cheaply: no option to buy (user, 2034-08:
+  // the assistant had loaned our youngsters out with options).
+  if (type === 'prospect' && optionFee > 0) return {action: 'reject', reason: `${who}: an option to buy (£${Math.round(optionFee / 1e5) / 10}M) on a prospect`};
   const cell = t[listed ? 'listed' : 'unlisted'][type];
   if (!cell || cell === 'reject') return {action: 'reject', reason: `${who}: we don't loan him`};
   if (!Number.isFinite(wageShare)) return {action: 'reject', reason: `${who}: wage share unreadable`};
