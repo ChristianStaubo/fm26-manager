@@ -44,3 +44,11 @@ test('money: net transfer profit is cumulative; wages and the relegation floor',
   assert.ok(r.fail.some(f => /relegation/.test(f)));
   assert.equal(checkMoney({rules, ledger, position: 15}).warn.length, 1);
 });
+
+test('a U21 regular already moved to the senior squad (fm move) is not a failure (McFall, 2034-01)', async () => {
+  const {checkSquad} = await import('./audit.mjs');
+  const tactic = {slots: Array.from({length: 11}, (_, i) => ({slot: i ? 'X' + i : 'GK'}))};
+  const alerts = [{name: 'Tom McFall', positions: 'DR', minutes: 1967, issue: 'regular in Brentford U21'}];
+  assert.equal(checkSquad({alerts, tactic}).fail.length, 1);
+  assert.equal(checkSquad({alerts, tactic, moved: ['Tom McFall']}).fail.length, 0);
+});
