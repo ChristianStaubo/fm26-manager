@@ -34,7 +34,7 @@ export const STEPS = {
   },
   // The buy decision table (analysis/buy_table.py): which positions need a signing, best-value names.
   async buys(ctx) {
-    const d = analysis('buy_table.py', ['--window', ctx.name === 'january' ? 'january' : 'summer'], {date: ctx.date});
+    const d = analysis('buy_table.py', ['--record', '--window', ctx.name === 'january' ? 'january' : 'summer'], {date: ctx.date});
     const name = c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`;
     const md = [`${d.window} · squad avg CA ${d.squad_avg} · season surplus ${money(d.season_surplus)} → ${money(d.after_buys)} after these`];
     for (const r of d.positions) {

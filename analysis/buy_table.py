@@ -18,6 +18,7 @@ Usage: python3 analysis/buy_table.py [--leaving "Name,Name"]
 """
 import argparse
 import json
+import os
 
 import manager as m
 import depth
@@ -85,11 +86,18 @@ def wonderkids(rows):
     return out[:R['wonderkids_per_window']]
 
 
-def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
+def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=()):
+    """departed: starters at the last buy checkpoint ({name, position, ca}); one no longer ours is
+    replaced like one leaving now (user, 2035-01-01: Stringfellow left on deadline day and January
+    listed no striker)."""
     leaving = set(leaving)
     left = {}
     for pos, v in depth.chart(rows, tactic).items():
         left[pos] = [x for x in v['players'][:v['slots']] if x['name'] in leaving]
+    ours_now = {p['name'] for p in rows if p['contract_club'] == m.CLUB}
+    for x in departed:
+        if x['name'] not in ours_now and x['position'] in left:
+            left[x['position']].append(x)
     rows_now = [r for r in rows if r['name'] not in leaving]
     chart = depth.chart(rows_now, tactic)
     _, assigned = depth.roles(rows_now, tactic)
@@ -111,6 +119,8 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer'):
     for pos, v in chart.items():
         n, players, slot = v['slots'], v['players'], slot_of[pos]
         starters = players[:n]
+        # A departed starter is replaced already if someone now starts at his level (bought since).
+        left[pos] = [x for x in left.get(pos, []) if x['name'] in leaving or min((s['ca'] for s in starters), default=0) < x['ca'] - R['replace_within']]
         weakest = min((x['ca'] for x in starters), default=0)
         bar = min(weakest, squad_avg) - R['backup_within']
         found = []
@@ -165,6 +175,7 @@ if __name__ == '__main__':
     ap.add_argument('--csv')
     ap.add_argument('--leaving', default='')
     ap.add_argument('--window', choices=['summer', 'january'], default='summer', help='january: replacements and missing backups, no upgrades (user, 2033-09-01)')
+    ap.add_argument('--record', action='store_true', help='replace starters who left since the last record (local/runs/starters.json), then record today\'s')
     ap.add_argument('--surplus', type=float, help="this season's net transfer surplus (fees out - in); default: from the ledger")
     a = ap.parse_args()
     rows, tactic = m.load(a.csv)
@@ -175,4 +186,16 @@ if __name__ == '__main__':
             a.surplus = led['seasons'][season]['out'] - led['seasons'][season]['in']
         except Exception:
             a.surplus = 0
-    print(json.dumps(table(rows, tactic, [x.strip() for x in a.leaving.split(',') if x.strip()], a.surplus, a.window), default=str))
+    rec = m.ROOT / 'local' / 'runs' / 'starters.json'
+    departed = []
+    if a.record:
+        try:
+            departed = json.load(open(rec))['starters']
+        except Exception:
+            pass
+    out = table(rows, tactic, [x.strip() for x in a.leaving.split(',') if x.strip()], a.surplus, a.window, departed)
+    if a.record:
+        chart = depth.chart(rows, tactic)
+        rec.write_text(json.dumps({'date': os.environ.get('FM_GAME_DATE'), 'starters': [
+            {'name': x['name'], 'position': pos, 'ca': x['ca']} for pos, v in chart.items() for x in v['players'][:v['slots']]]}, indent=1))
+    print(json.dumps(out, default=str))

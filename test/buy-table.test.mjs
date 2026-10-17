@@ -51,3 +51,13 @@ print(json.dumps({'portfolio': t['portfolio'], 'kids': [(c['name'], c['on_arriva
   assert.deepEqual(d.portfolio, {held: 9, room: 1});
   assert.deepEqual(d.kids, [['Awudu', 'loan']], 'one slot left: the best PA; CA 95 is below the backup level');
 });
+
+test('a starter who left since the last buy checkpoint is replaced (user, 2035-01-01: Stringfellow), unless one at his level starts now', () => {
+  const d = run(setup + `gone = [{'name': 'Stringfellow', 'position': 'LB', 'ca': 170}]
+a = bt.table(ours + market, tactic, season_surplus=45e6, window='january', departed=gone)
+b = bt.table(ours + market, tactic, season_surplus=45e6, window='january', departed=[{'name': 'Stringfellow', 'position': 'LB', 'ca': 150}])
+c = bt.table(ours + market, tactic, season_surplus=45e6, window='january', departed=[{'name': 'Brown', 'position': 'LB', 'ca': 170}])
+k = lambda t: [n['kind'] for r in t['positions'] if r['position'] == 'LB' for n in r['needs']]
+print(json.dumps([k(a), k(b), k(c)]))`);
+  assert.deepEqual(d, [['replace'], [], []], 'Brown 154 < 167 → replace; a 150 leaver is covered by Brown; Brown still ours → nothing');
+});
