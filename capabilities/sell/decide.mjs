@@ -74,7 +74,9 @@ export function decideSale(offer, policy = loadRules()) {
   // The role x age table (user, 2033-09-01) when we know his role in our depth chart; else the old need
   // multiplier. A player whose position falls below the depth standard without him is a starter.
   const table = p.sell_by_role_age, role = o.depth?.role && (o.depth.depth_ok_without === false ? 'starter' : o.depth.role);
-  const band = rising ? 'rising' : Number.isFinite(o.age) && o.age >= (table?.senior_from_age ?? 30) ? 'senior' : 'prime';
+  // Keepers age later: senior from 33, not 30 (user, 2034-07-03, Brady).
+  const seniorAge = table?.senior_from_age_by_position?.[o.depth?.position] ?? table?.senior_from_age ?? 30;
+  const band = rising ? 'rising' : Number.isFinite(o.age) && o.age >= seniorAge ? 'senior' : 'prime';
   const byRole = table && role ? table[role]?.[band] : undefined;
   if (role) need = role === 'starter' ? 'core' : role === 'backup' ? 'depth' : 'surplus';
   const mult = byRole ?? ((p.sell_ask_by_need || {})[need] ?? p.sell_ask) * (rising ? p.sell_rising.factor : 1);

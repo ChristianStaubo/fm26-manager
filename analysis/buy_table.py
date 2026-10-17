@@ -38,7 +38,8 @@ def candidates(rows, slot, min_ca, max_fee=None, n=R['top'], max_wage=None, best
         age, ca, value = m.intval(p, 'age'), m.intval(p, 'ca'), float(p['value'] or 0)
         if ca < min_ca or age < R['min_age'] or depth.best_rating(p, slot) < 18 or not 0 < value < 1e9:
             continue
-        if age >= R['old_from_age'] and not free:   # 29+: only an outstanding free agent
+        old = R['old_from_age'] + (3 if slot == 'GK' else 0)   # keepers age later (user, 2034-07-03)
+        if age >= old and not free:   # 29+ (32+ for keepers): only an outstanding free agent
             continue
         if max_fee is not None and value > max_fee:
             continue

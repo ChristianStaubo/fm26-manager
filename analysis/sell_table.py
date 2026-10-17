@@ -29,8 +29,10 @@ T = S['sell_by_role_age']
 P = {'max_age': 21, 'older_max_age': 23, 'older_min_pa': 160, 'min_pa': 130, 'list_min_value': 1e6, **S.get('prospects', {})}
 
 
-def band(age):
-    return 'rising' if age <= S['sell_rising']['max_age'] else 'senior' if age >= T['senior_from_age'] else 'prime'
+def band(age, position=None):
+    # Keepers age later (user, 2034-07-03: 33 is a keeper's 30).
+    senior = T.get('senior_from_age_by_position', {}).get(position, T['senior_from_age'])
+    return 'rising' if age <= S['sell_rising']['max_age'] else 'senior' if age >= senior else 'prime'
 
 
 def table(rows, tactic, leaving=()):
@@ -43,7 +45,7 @@ def table(rows, tactic, leaving=()):
         age, value, wage = m.intval(p, 'age'), float(p['value'] or 0), float(p['wage'] or 0)
         d = depth.role(rows, tactic, p['name'])
         role, ok = d['role'], d['depth_ok_without']
-        b = band(age)
+        b = band(age, d.get('position'))
         price = lambda r: round(value * T[r][b] / 50000) * 50000
         pa = m.intval(p, 'pa')
         prospect = age <= P['max_age'] or (age <= P['older_max_age'] and pa >= P['older_min_pa'])

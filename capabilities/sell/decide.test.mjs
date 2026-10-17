@@ -154,3 +154,9 @@ test('sell price by depth role x age (user, 2033-09-01): Truffert accepted, Newt
   assert.equal(sale({guaranteed: 50e6, upfront: 50e6, vLow: 55e6, vHigh: 66e6, age: 30, monthsLeft: 24, negotiable: false, depth: role('starter')}).sellAt, 79.2e6, 'starter, 30+: 1.2x');
   assert.equal(sale({guaranteed: 30e6, upfront: 30e6, vLow: 27e6, vHigh: 32e6, age: 31, monthsLeft: 22, negotiable: true, depth: role('backup', false)}).role, 'starter', 'depth falls below standard without him: priced as a starter');
 });
+
+test('keepers age later: a 30-year-old GK starter is prime, not senior (user, 2034-07-03, Brady)', () => {
+  const brady = sale({guaranteed: 30e6, upfront: 30e6, vLow: 33e6, vHigh: 36e6, age: 30, monthsLeft: 24, negotiable: true, depth: {role: 'starter', depth_ok_without: true, position: 'GK'}});
+  assert.equal(brady.band, 'prime'); assert.equal(brady.sellAt, 54e6, '1.5 x £36M');
+  assert.equal(sale({guaranteed: 30e6, upfront: 30e6, vLow: 33e6, vHigh: 36e6, age: 33, monthsLeft: 24, negotiable: true, depth: {role: 'starter', depth_ok_without: true, position: 'GK'}}).band, 'senior');
+});
