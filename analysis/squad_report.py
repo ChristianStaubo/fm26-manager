@@ -62,6 +62,23 @@ def num(p, k):
     return float(v) if v not in (None, '') else 0.0
 
 
+def check_ages(rows, today):
+    """Stop when the export's ages don't fit the game date: FM26 Scout misread a save's date and every age
+    came out 19 years too old (2036-06-04: Wark, 24, read as 43; the sell table priced every starter as a
+    veteran and the free agents lost Alexandre Luiz to the age filter). Nothing built on it is usable."""
+    off = n = 0
+    for p in rows:
+        try:
+            dob, age = dt.date.fromisoformat(p['dob'][:10]), int(p['age'])
+        except (ValueError, TypeError, KeyError):
+            continue
+        n += 1
+        off += abs(age - (today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day)))) > 1
+    if n and off > n * 0.05:
+        sys.exit(f'Export ages disagree with the game date {today} for {off}/{n} players: FM26 Scout misread the '
+                 f'save\'s date (its "in-game date" line). Fix the exporter, delete the CSV, re-export.')
+
+
 def load(path):
     rows = list(csv.DictReader(open(path, encoding='utf-8')))
     for p in rows:
@@ -343,7 +360,9 @@ def export_save(save='latest'):
     save = latest_save() if save == 'latest' else Path(save)
     print(f'Save: {save.name}', file=sys.stderr)
     csv_path = ROOT / 'local' / 'exports' / f'{Path(save).stem}.csv'
-    if not csv_path.exists() or csv_path.stat().st_mtime < Path(save).stat().st_mtime:
+    # Re-export when the save or FM26 Scout itself is newer (a fixed exporter must not be served a stale CSV).
+    newest = max([Path(save).stat().st_mtime] + [f.stat().st_mtime for f in SCOUT.glob('fm26_*.py')])
+    if not csv_path.exists() or csv_path.stat().st_mtime < newest:
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([sys.executable, str(exporter), str(save), '--clubs', '-o', str(csv_path)], check=True)
     return csv_path

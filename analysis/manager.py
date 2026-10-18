@@ -49,6 +49,8 @@ def intval(p, k, default=-1):
 
 def load(csv=None):
     rows = sr.load(csv or sr.export_save('latest'))
+    if os.environ.get('FM_GAME_DATE'):
+        sr.check_ages(rows, dt.date.fromisoformat(os.environ['FM_GAME_DATE']))
     tactic = json.loads((ROOT / 'config' / 'tactic.json').read_text())
     sr.apply_tactic(tactic)
     return rows, tactic

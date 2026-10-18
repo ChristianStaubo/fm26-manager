@@ -23,6 +23,7 @@ Offer JSON (amounts in £; only player, date and one fee field are required):
 import argparse
 import datetime as dt
 import json
+import os
 import sys
 import unicodedata
 from pathlib import Path
@@ -254,6 +255,8 @@ def main():
     if tactic:
         sr.apply_tactic(tactic)
     rows = sr.load(csv_path)
+    if os.environ.get('FM_GAME_DATE'):
+        sr.check_ages(rows, dt.date.fromisoformat(os.environ['FM_GAME_DATE']))
     if tactic:  # starters come from the live XI selection; tactic.json only supplies the shape
         import manager
         picks = {x['slot']: x['player'] for x in manager.xi(rows, tactic)['xi']}
