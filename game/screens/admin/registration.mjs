@@ -28,6 +28,10 @@ export function registrationList(s) {
 }
 const spaces = s => Number(/You have (\d+) spaces? available/.exec(s.texts().join(' '))?.[1] ?? NaN);
 export const onRegistration = s => s.hasText('Registration') && s.hasText(/^Squad selection is/) && s.buttons().some(b => b.label === 'Confirm' && b.name === 'button-primary-label');
+// The list before anyone is picked (Champions League latter stages, 2035-09-04): no "Squad selection
+// is…" line and Confirm disabled until the list is legal, but Ask Assistant to Pick and the places count.
+export const onRegistrationPage = s => onRegistration(s)
+  || (s.buttons('Ask Assistant to Pick').length === 1 && /You have \d+ spaces? available/.test(s.texts().join(' ')));
 
 /** Register `names` (default: every unregistered player whose switch is enabled), then submit. */
 export async function register(names, {dryRun = false} = {}) {
@@ -100,8 +104,10 @@ export async function registerDepth({dryRun = false} = {}) {
 }
 
 // Autopilot: the "squad to be decided" message with the embedded list → register everyone eligible.
-// The "<Club> squad to be decided" message (2030-07-26) has a Respond button that opens the list.
-const squadMessage = s => s.buttons('Respond').length === 1 && s.hasText(/ squad to be decided$/);
+// The "<Club> squad to be decided" message (2030-07-26) has a Respond button that opens the list; so does
+// "<Club> to register players for latter stages" (Champions League, 2035-09-04; mapped with the user: Respond,
+// Ask Assistant to Pick, Confirm, Confirm; the depth rule added no one, the pick already had them).
+const squadMessage = s => s.buttons('Respond').length === 1 && s.hasText(/( squad to be decided| to register players for latter stages)$/);
 export const registrationHandler = {
   name: 'squad-registration',
   match: s => onRegistration(s) || squadMessage(s),
@@ -110,7 +116,7 @@ export const registrationHandler = {
     if (!onRegistration(s)) {
       await click('Respond');
       // Already submitted (2032-07-30, done by hand with the scroll): Respond no longer opens the list.
-      if (!await waitFor(onRegistration, {what: 'squad registration list', timeout: 8000}).catch(() => null))
+      if (!await waitFor(onRegistrationPage, {what: 'squad registration list', timeout: 8000}).catch(() => null))
         return {action: 'squad-registration', date: isoDate(s.date()), detail: 'already submitted'};
     }
     // The user's way (recorded 2035-08-05): Ask Assistant to Pick, then check our depth chart is in

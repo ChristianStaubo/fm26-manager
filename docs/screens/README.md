@@ -33,7 +33,7 @@ When a fix teaches us a screen, add or update its row here in the same commit.
 | Finances | todo | none | todo |
 | Scouting / shortlist | todo | none | todo |
 | Board expectations ("Response Required") | Continue slot | none: keep defaults, Confirm (`game/screens/admin/README.md`) | verified 2026-10 |
-| Squad registration | Continue slot | none: use recommended | seen 2026-10 |
+| Squad registration (league; Champions League latter stages) | Continue slot → Respond | `squad-registration`: Ask Assistant to Pick, add depth players left out, Confirm ×2 | verified 2035-09-04 (UCL, mapped with the user) |
 | Press conference | Portal → Messages → announcing message → its **Attend Press Conference** (not the Continue slot) → Press Room → Start Press Conference → answers → Leave Press Conference (Continue slot) | `fm press`, `fm run` | verified 2026-06-17 |
 | Inbox message list | Portal → Messages; items are `NewsItemButton`s labelled "<sender> <time> <subject>"; an open message lists its item twice (`fm click` takes the first) | `fm click "<label>"` | verified 2026-06-25 |
 | Transfer Activity deal list | Recruitment → Transfer Activity; deals are **toggles** "<Player> <Stage>" (select with a toggle, not a click); details pane on the right (value, wage, Accept/Stall/Reject Offer or Cancel Offer) | `fm offers` (list), `fm deal "<player>"` (club + stage + fee in the middle pane, e.g. "Aston Villa / Contract £7M (£13M)") | verified 2026-06-26 |

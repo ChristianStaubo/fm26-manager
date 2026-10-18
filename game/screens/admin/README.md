@@ -43,6 +43,10 @@ deadline (1 Sep). The message's own "Respond" button is covered by the list (occ
 scrolling into view, which the tools cannot do yet. The list also redraws after each switch
 ("UI content changed"): re-run for the rest. Cox, Kayode, Onyeka registered by tool; Lopez, Bird,
 Broholm needed scrolling.
+**Champions League latter stages** (mapped with the user, 2035-09-04): "<Club> to register players for latter
+stages" → Respond opens the same list, empty ("You have 25 spaces available", no "Squad selection is"
+line, Confirm disabled) → Ask Assistant to Pick (compliant, 21/25) → Confirm → Confirm. The handler runs
+the league flow (`registerDepth`); the depth rule added no one. Fixtures `ucl-registration-*`.
 
 ## Squad numbers (`squad-numbers`, 2026-07-25)
 "<Club> squad numbers to be decided": Respond → **Ask Assistant to Assign** → Confirm Squad Numbers →
