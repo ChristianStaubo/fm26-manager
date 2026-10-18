@@ -117,6 +117,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--csv')
     ap.add_argument('--player')
+    ap.add_argument('--roles', action='store_true', help='everyone with a depth role: {name: [position, role]}')
     a = ap.parse_args()
     rows, tactic = m.load(a.csv)
-    print(json.dumps(role(rows, tactic, a.player) if a.player else chart(rows, tactic), default=str))
+    print(json.dumps(roles(rows, tactic)[1] if a.roles else role(rows, tactic, a.player) if a.player else chart(rows, tactic), default=str))

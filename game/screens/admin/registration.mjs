@@ -56,6 +56,49 @@ export async function register(names, {dryRun = false} = {}) {
   return done;
 }
 
+/** Who must be registered (user, 2035-08-05): every player with a depth role (starter, backup, third)
+ *  who needs registering (21+); free places first; if short, unregister players we're selling
+ *  (price book) or with no depth role. Pure: (list, roles, free, selling) → {add, drop, short}. */
+export function registrationPlan(list, roles, free, selling = () => false) {
+  const needs = p => p.enabled && !(p.age <= 20) && roles[p.name] && roles[p.name][1] !== 'surplus';
+  const add = list.filter(p => !p.registered && needs(p));
+  const spare = list.filter(p => p.registered && p.enabled && !needs(p) || p.registered && selling(p.name))
+    .sort((a, b) => (selling(b.name) ? 1 : 0) - (selling(a.name) ? 1 : 0));
+  const room = Number.isFinite(free) ? free : add.length;
+  const drop = spare.slice(0, Math.max(0, add.length - room));
+  return {add: add.map(p => p.name), drop: drop.map(p => p.name), short: Math.max(0, add.length - room - drop.length)};
+}
+
+export async function registerDepth({dryRun = false} = {}) {
+  const {click, clickWhere} = await import('../../ui/index.mjs');
+  const {analysis} = await import('../../../capabilities/data.mjs');
+  const pricebook = await import('../../../capabilities/value/pricebook.mjs');
+  let s = await Screen.read();
+  if (s.buttons('Ask Assistant to Pick').length === 1 && !dryRun) {
+    await click('Ask Assistant to Pick');
+    await settle(1500);
+    s = await Screen.read();
+  }
+  const roles = analysis('depth.py', ['--roles']);
+  const plan = registrationPlan(registrationList(s), roles, spaces(s), n => !!pricebook.lookup(n));
+  const entry = {action: 'squad-registration', date: isoDate(s.date()), assistant: true, ...plan};
+  if (plan.short) throw new NeedsAnalyst(`Registration: ${plan.short} depth player(s) don't fit (${plan.add.join(', ')}); choose who to leave out`, entry);
+  if (dryRun) return {...entry, dryRun: true};
+  const sw = (x, name) => x.items.find(i => i.id === registrationList(x).find(q => q.name === name)?.switchId);
+  for (const name of plan.drop) { await toggle(x => sw(x, name), false, `unregister ${name}`); await settle(300); }
+  for (const name of plan.add) { await toggle(x => sw(x, name), true, `register ${name}`); await settle(300); }
+  const after = registrationList(await Screen.read());
+  const missing = plan.add.filter(n => !after.find(p => p.name === n)?.registered);
+  if (missing.length) throw new NeedsAnalyst(`Registration switch did not stick for ${missing.join(', ')}`, entry);
+  // Confirm, then the dialog's own Confirm ("Please Confirm: Submit completed squad list?").
+  await clickWhere(x => x.buttons().find(b => b.label === 'Confirm' && b.name === 'button-primary-label'), 'Confirm squad list');
+  await waitFor(x => x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'submit squad list dialog'});
+  await clickWhere(x => x.buttons('Confirm').find(b => x.within(b.id, 'GenericModalDialog')), 'Submit completed squad list');
+  await waitFor(x => !x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'dialog closed'}).catch(() => null);
+  await log(entry);
+  return entry;
+}
+
 // Autopilot: the "squad to be decided" message with the embedded list → register everyone eligible.
 // The "<Club> squad to be decided" message (2030-07-26) has a Respond button that opens the list.
 const squadMessage = s => s.buttons('Respond').length === 1 && s.hasText(/ squad to be decided$/);
@@ -70,21 +113,9 @@ export const registrationHandler = {
       if (!await waitFor(onRegistration, {what: 'squad registration list', timeout: 8000}).catch(() => null))
         return {action: 'squad-registration', date: isoDate(s.date()), detail: 'already submitted'};
     }
-    // A compliant list is submitted as it stands: registering every 21+ player would re-add players
-    // who are leaving or on loan (Kislyak, Bouhoudane, Backhaus).
-    const now = await Screen.read();
-    if (now.hasText('Squad selection is fully compliant')) {
-      if (dryRun) return {action: 'squad-registration', detail: 'compliant: would submit', dryRun: true};
-      // The same two steps as a full registration: the page's Confirm, then the dialog's own Confirm
-      // ("Please Confirm: Submit completed squad list?"). Leaving the second to overlay recovery failed
-      // on 2034-07-28 ("Expected one button Confirm, found 0").
-      const {clickWhere} = await import('../../ui/index.mjs');
-      await clickWhere(x => x.buttons().find(b => b.label === 'Confirm' && b.name === 'button-primary-label'), 'Confirm squad list');
-      await waitFor(x => x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'submit squad list dialog'});
-      await clickWhere(x => x.buttons('Confirm').find(b => x.within(b.id, 'GenericModalDialog')), 'Submit completed squad list');
-      await waitFor(x => !x.tree.nodes.some(n => n.name === 'GenericModalDialog' && n.visible), {what: 'dialog closed'}).catch(() => null);
-      return {action: 'squad-registration', date: isoDate(now.date()), detail: 'submitted the compliant list as it stands'};
-    }
-    return register(undefined, {dryRun});
+    // The user's way (recorded 2035-08-05): Ask Assistant to Pick, then check our depth chart is in
+    // (the assistant left out Boem, Wark, Angulo and a winger with 5 places free), then Confirm. A
+    // "compliant" list as it stands is not enough: compliant only means legal.
+    return registerDepth({dryRun});
   },
 };
