@@ -36,6 +36,8 @@
   "selling": {
     "_section": "4",
     "overperformer_goals_over_xg": 3.0,
+    "expensive_backup_vs_median": 1.25,
+    "_expensive_backup": "User, 2026-10-19 (Finck, CA 140 backup on £82K/wk, listed by a flat £80K line): a backup is expensive above this x our first-team median wage (at least buying.table.backup_max_wage), so the line rises as the club does: \"we're becoming the best team in the world\".",
     "overperformer_min_age": 26,
     "_overperformer": "Sell high: a 26+ attacker who scored >= this many goals above his xG had a lucky season; his value peaks now and finishing regresses (a FM Moneyball YouTuber sold a 19-goals-from-12-xG striker at 27 for 46M; our own Kofane/Risser regressed the other way).",
     "youth_max_age": 21,

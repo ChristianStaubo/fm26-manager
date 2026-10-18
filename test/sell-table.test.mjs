@@ -49,3 +49,14 @@ print(json.dumps({x['name']: x['action'] for x in st.table(rows, {'slots': [{'sl
   assert.equal(d.Arnalot, 'sell', '£92K/wk backup behind Luiz');
   assert.equal(d.Slatina, 'loan', 'PA 189 at 19: develops on loan, not as the third');
 });
+
+test('an expensive backup is measured against our own wages (user, 2026-10-19: Finck at £82K "isn\'t that high")', () => {
+  const d = run(`import json, sell_table as st
+C = st.m.CLUB
+def p(name, ca, pa, age, lb=1, value=10e6, wage=71000):
+    return {'name': name, 'club': C, 'contract_club': C, 'on_loan_at': '', 'age': str(age), 'ca': str(ca), 'pa': str(pa), 'value': str(int(value)),
+            'wage': str(wage), 'contract_expires': '2038-06-30', 'pos_DL': str(lb), 'pos_WBL': '1'}
+rows = [p('Start', 160, 165, 26, lb=20, wage=150000), p('Finck', 140, 189, 25, lb=20, wage=82000), p('Third', 135, 140, 26, lb=20)] + [p(f'Mid{i}', 150, 150, 26) for i in range(10)]
+print(json.dumps({x['name']: x['action'] for x in st.table(rows, {'slots': [{'slot': 'LB'}]})}))`);
+  assert.equal(d.Finck, undefined, '£82K against a £71K median: under 1.25x (£89K), kept');
+});

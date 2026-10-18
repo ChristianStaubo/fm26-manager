@@ -7,7 +7,8 @@ From the depth chart (depth.py) and the player's age and wage:
   sell   30+ backup or third, wage above the first-team median, the position meets the depth standard
          without him (Truffert)                                         → backup/third senior price
   sell   30+ starter (cash in at peak; the buy table replaces him)    → starter senior price
-  sell   any backup or third above buying.table.backup_max_wage, depth holds without him (a displaced
+  sell   any backup or third above selling.expensive_backup_vs_median x our first-team median wage
+         (at least buying.table.backup_max_wage), depth holds without him (a displaced
          starter: Arnalot once Luiz starts, Ylla once Senhaji does)    → his role's price
   sell   a lucky scoring season: 26+, goals >= xG + overperformer_goals_over_xg (Gray, 25 from 17.05 xG,
          2036): his value peaks now, finishing regresses                → his role's price
@@ -48,6 +49,7 @@ def table(rows, tactic, leaving=()):
     leaving = set(leaving)
     rows = [r for r in rows if r['name'] not in leaving]
     median = wage_bands.bands(rows, m.CLUB)['median']
+    expensive = max(MAX_KID_WAGE, median * S.get('expensive_backup_vs_median', 1.25))
     ours = m.our_squad(rows)   # loanees back within 60 days too: each gets loan again / promote / sell
     out = []
     for p in ours:
@@ -72,10 +74,12 @@ def table(rows, tactic, leaving=()):
             action, why, ask = 'sell', 'surplus: no starter/backup/third role', price('surplus')
         elif role in ('backup', 'third') and b == 'senior' and wage > median and ok:
             action, why, ask = 'sell', f'30+ {role} on £{int(wage / 1000)}K/wk (> median £{int(median / 1000)}K), depth holds without him', price(role)
-        elif role in ('backup', 'third') and wage > MAX_KID_WAGE and ok:
+        elif role in ('backup', 'third') and wage > expensive and ok:
             # Strong starters, cheap backups (user, 2033-08-05; 2026-10-19): a starter an upgrade displaced
             # (Arnalot after Luiz, Ylla after Senhaji) is an expensive backup: sold at his role's price.
-            action, why, ask = 'sell', f'{role} on £{int(wage / 1000)}K/wk (> the £{int(MAX_KID_WAGE / 1000)}K backup cap), depth holds without him', price(role)
+            # "Expensive" scales with our wages (user, 2026-10-19: Finck's £82K "isn't that high... we're
+            # becoming the best team in the world").
+            action, why, ask = 'sell', f'{role} on £{int(wage / 1000)}K/wk (> £{int(expensive / 1000)}K: {S.get("expensive_backup_vs_median", 1.25)}x our first-team median), depth holds without him', price(role)
         elif role == 'starter' and b == 'senior':
             action, why, ask = 'sell', '30+ starter: cash in at peak; the buy table replaces him', price('starter')
         else:
