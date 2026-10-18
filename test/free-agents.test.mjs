@@ -1,7 +1,8 @@
 // Free agents first (user, 2031-05-28), judged by CA/PA (PLAYBOOK §1a, user 2026-10-18).
 // Ethan Mbappé (24, Lille, on loan at Holstein Kiel, contract to June 2031, FM value £0.2M) was skipped by
 // every market search for being on loan and joined Monaco free. Rusnák (20, CA 147, FM value £4.3M) and
-// Holmbjerg (18, PA 178, gone to Roma) were cut by the old attribute bar in January 2036.
+// Holmbjerg (18, PA 178, gone to Roma) were cut by the old attribute bar in January 2036. Alexandre Luiz
+// (24, CA 178, Genk) was priced at his collapsed FM value, £16.7M: too few players compare at the top.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
@@ -54,4 +55,11 @@ r = fa.scan(rows)
 print(json.dumps([[c['name'], c['always_buy'], c['why']] for c in r['players']]))`, '2036-05-01');
   assert.deepEqual(out.map(c => c[0]).sort(), ['Lasse Holmbjerg', 'Young English']);
   for (const [, always, why] of out) { assert.equal(always, true); assert.match(why, /free wonderkid/); }
+});
+
+test('a player above everyone near his CA is priced from the nearest wider band (a floor), not his collapsed FM value (Alexandre Luiz)', () => {
+  const out = run(`rows.append(row('Alexandre Luiz', 'Genk', 1e6, 156, 160, age=23, ends='2036-06-30', pos='ST', nation='Brazil'))
+r = fa.scan(rows)
+print(json.dumps([[c['name'], c['worth'], c['worth_basis']] for c in r['players']]))`, '2036-05-01');
+  assert.deepEqual(out, [['Alexandre Luiz', 20e6, 'players of his CA and age']]);
 });

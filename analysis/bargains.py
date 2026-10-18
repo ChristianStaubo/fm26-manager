@@ -33,16 +33,22 @@ def priced_pool(rows):
 
 
 def typical_values(rows, pool=None):
-    """typical(p): the median value of players within +-3 CA and +-1 year of age (None when fewer than
-    min_cell of them): what a player of his quality and age costs, whatever his own contract (an expiring
-    player's FM value collapses: Rusnák £4.3M vs typical £25.2M, 2036). Shared with free_agents.py."""
+    """typical(p): the median value of players within +-3 CA and +-1 year of age: what a player of his
+    quality and age costs, whatever his own contract (an expiring player's FM value collapses: Rusnák
+    £4.3M vs typical £25.2M, 2036). Shared with free_agents.py.
+    Fewer than min_cell compare: the CA band widens (+-6, +-9) until enough do; at the top of the game
+    only weaker players are added, so it is a floor (Alexandre Luiz, CA 178, was priced at his collapsed
+    FM value, £16.7M, below a CA 147, 2036-05). None when even +-9 is too few."""
     iv, cells = m.intval, {}
     for p in (pool if pool is not None else priced_pool(rows)):
         cells.setdefault((iv(p, 'ca') // 3, iv(p, 'age')), []).append(value(p))
 
     def typical(p):
-        vs = [v for dc in (-1, 0, 1) for da in (-1, 0, 1) for v in cells.get((iv(p, 'ca') // 3 + dc, iv(p, 'age') + da), [])]
-        return st.median(vs) if len(vs) >= B['min_cell'] else None
+        for k in (1, 2, 3):
+            vs = [v for dc in range(-k, k + 1) for da in (-1, 0, 1) for v in cells.get((iv(p, 'ca') // 3 + dc, iv(p, 'age') + da), [])]
+            if len(vs) >= B['min_cell']:
+                return st.median(vs)
+        return None
     return typical
 
 

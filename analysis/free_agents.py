@@ -14,7 +14,8 @@ which cut Holmbjerg, PA 178, and Rusnák, CA 147, and on 2036-05-01 listed nobod
 Foreign under-18s are not listed: they won't join an English club (user, 2031-05-28; tested 2026-10-18).
 Worth: FM's value of a player in his final months collapses (Mbappé £0.2M, Rusnák £4.3M), so each is
 priced as what players of his CA (±3) and age (±1) are worth (bargains.typical_values), the resale we
-could get once he's on a long contract; FM's value when too few compare.
+could get once he's on a long contract (a wider CA band when too few compare: a floor at the top of the game);
+FM's value when even that is too few.
 """
 import datetime as dt
 import argparse, json, statistics as st
