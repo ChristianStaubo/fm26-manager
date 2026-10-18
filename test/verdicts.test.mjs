@@ -77,3 +77,20 @@ test('profit is per season: the net if every proposal went through, each player 
     {step: 'squad', item: 'sell? Gray', verdict: 'propose', price: 51e6}];
   assert.deepEqual(seasonNet(rows, 35e6), {surplus: 35e6, sales: 91e6, buys: 91e6, net: 35e6});
 });
+
+test('settled rows are answered by code; a player raised by several steps is one row (2026-10-19: 63 rows took ~10 min)', () => {
+  const r = {...report, steps: {...report.steps,
+    free_agents: {ok: true, data: {players: [{name: 'Alexandre Luiz', age: 24, slot: 'LB', worth: 89e6, always_buy: true}]}},
+    bargains: {ok: true, data: {undervalued: [{name: 'Alexandre Luiz', ratio: 32, typical: 89e6}], buried: []}},
+    audit: {ok: true, data: {decide: ['free agent Alexandre Luiz (24, LB) worth £89M: fm precontract']}},
+    sells: {ok: true, data: [{name: 'Slatina', action: 'loan', why: 'prospect outside the depth chart', age: 19, ca: 148, pa: 189, role: 'surplus'},
+      {name: 'Gray', action: 'sell', ask: 61e6, role: 'backup', why: 'lucky season'}]}}};
+  const rows = rowsOf(r);
+  assert.equal(rows.filter(x => x.item === 'Alexandre Luiz' || /Luiz/.test(x.item)).length, 1);
+  const base = join(mkdtempSync(join(tmpdir(), 'fm-verdicts-')), '2036-06-04-season_end'), rv = review(base, r);
+  const slat = rv.rows.find(x => x.item === 'Slatina'), gray = rv.rows.find(x => x.item === 'Gray');
+  assert.equal(slat.verdict, 'act'); assert.equal(slat.auto, true); assert.match(slat.why, /Loan by the sell table/);
+  assert.equal(gray.verdict, undefined, 'a sale is the manager\'s call');
+  record(base, {step: 'sells', item: 'Slatina', verdict: 'pass', why: 'override'}, rows);
+  assert.equal(review(base, r).rows.find(x => x.item === 'Slatina').verdict, 'pass', 'the manager can override a settled row');
+});

@@ -55,6 +55,8 @@ After a checkpoint runs, answer EVERY row it raised before you act on any or sto
   answering demands, a free-agent pass, a loan by the table. Then do it.
 - `propose`: it needs the user's approval (buying/selling while those are 'approve'); `--price` is the maximum.
 - `pass`: not doing it, and why (the table row doesn't fit, a rule says no, a better option).
+Rows the tables settled (loan / let-go kids) come pre-answered (`auto`); override one only if you disagree.
+A player raised by several steps is one row. Use the tables' prices; `fm price` only when a row has none.
 Follow the tables; when you override one (e.g. skip a backup the buy table asks for), say so in the `--why`.
 The judge (`fm audit`) fails while any row has no verdict. Never run `fm verdicts agree/overturn`: that is the
 user's review, recorded by the main session.
