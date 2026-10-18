@@ -25,3 +25,11 @@ test('a later bid uses the agent\'s last quote (one ask per player), if recent (
   assert.equal(await lastQuote('Udo Pepper', '2036-09-01', rows), null, 'older than 60 days: not trusted');
   assert.equal(await lastQuote('Someone Else', '2036-06-09', rows), null);
 });
+
+test('release clauses "to foreign clubs" are read, from texts or the GM button (Zare, £1.8M, 2036-06-12)', async () => {
+  const {releaseClause} = await import('../capabilities/buy/buy.mjs');
+  const fake = (texts, buttons = []) => ({texts: () => texts, buttons: () => buttons.map(label => ({label}))});
+  assert.equal(releaseClause(fake(['Persepolis have a minimum fee release clause to foreign clubs of £1,800,000.'])), 1800000);
+  assert.equal(releaseClause(fake([], ['Phil Giles General Manager They have a minimum fee release clause of £12.75M. Offer must be accepted'])), 12750000);
+  assert.equal(releaseClause(fake(['Pepper has an active relegation release fee of £34,000,000.'])), null, 'a relegation fee is not a clause we can pay now');
+});

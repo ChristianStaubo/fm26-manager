@@ -99,7 +99,10 @@ export function sellOnRow(s) {
 }
 // "Gaitán has a minimum fee release clause of £12,750,000." on the offer screen (2030-07-14): the
 // club must accept that fee, so we offer exactly it with no extra clauses (user, 2026-10-14).
-export const releaseClause = s => parseMoney(s.texts().map(t => /minimum fee release clause of (£[\d,.]+[MK]?)/i.exec(t)?.[1]).find(Boolean) ?? null);
+// "minimum fee release clause of £X", or "... release clause to foreign clubs of £1,800,000" (Zare, Persepolis,
+// 2036-06-12); the GM's line can be a button's label rather than a text.
+export const releaseClause = s => parseMoney([...s.texts(), ...s.buttons().map(b => b.label || '')]
+  .map(t => /minimum fee release clause(?: (?:to|for) [\w ]{1,30}?)? of (£[\d,.]+[MK]?)/i.exec(t)?.[1]).find(Boolean) ?? null);
 // Every extra's remove button, top to bottom: "Additional Fees" (add-ons: "Per League Appearance
 // 10 games £88K", Gaitán) and "Additional Clauses" (sell-on, loan back). A release-clause payment
 // left the add-on in (£12.75M became £13.75M) when only the clauses were removed.
@@ -394,7 +397,8 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   facts.valueRange ??= offerValueRange(s);
   if (!facts.valueRange && (open === undefined || max === undefined)) { await leave(); throw new NeedsAnalyst(`No valuation for ${name}; pass --open and --max`, facts); }
   const keenToSell = s.hasText(/keen to offload|looking to sell|placed him on the transfer list/i);
-  const walkAway = Math.min(max ?? defaultMax(facts), approved?.limit ?? Infinity);
+  // The approval's slack is within it (user, 2026-10-19): Pepper's £11.47M allows the £11.5M Forest accepted.
+  const walkAway = Math.min(max ?? defaultMax(facts), approved ? approved.limit + tolerance(approved.limit) : Infinity);
   const priority = isPriority(approved ?? (await import('../approvals.mjs')).find('buy', name)), finalYear = inFinalYear(facts.contract, isoDate(profile.date()));
   let fee = Math.min(open ?? openingBid(facts, {keenToSell, priority, finalYear}), walkAway);
   // Never open below what the club told us it accepts (Zare: agent £1.8M, opened £1.5M, flatly rejected:
@@ -426,7 +430,16 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
     await log({...base, ...r});
     return {...base, ...r};
   }
-  if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee, BID); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
+  if (prefilled && !s.buttons('Suggest Terms').length) {
+    // A retry on a later day reopens the form pre-filled with the rejected bid and only Make Offer: only an
+    // edit brings Suggest Terms back, and the same fee again is pointless (Pepper, £11.25M rejected, 06-09).
+    // Bid one step above it within the walk-away, or say there's no room.
+    const target = fee > feeBox ? fee : feeBox + buyStep(facts);
+    if (target > walkAway) { await leave(); const r = {...base, outcome: 'no-room', why: `rejected at ${feeBox}; the next step ${target} is above the walk-away ${walkAway}`}; await log(r); return r; }
+    fee = target;
+    await setFee('Fee', fee, BID);
+    await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'});
+  }
   const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras, keepLoanBack: loanBack});
   // A priority target flatly rejected: FM takes a new bid the next day; bid his asking price then.
   if (priority && r.outcome === 'walked-away' && r.history?.at(-1)?.state === 'rejected') {
