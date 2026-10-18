@@ -1,7 +1,7 @@
 // Handlers for transfer screens that stop the game (NeedAction): bids for our players and
 // agent payoff demands. Each handler: match(screen) → bool, run(screen, {dryRun}) → outcome.
 // Decisions come from decide.mjs + policy.json; anything outside the rules throws NeedsAnalyst.
-import {Screen, waitFor, click, setFee, NeedsAnalyst, parseMoney, parseRange, parseDate, isoDate} from '../ui/index.mjs';
+import {Screen, waitFor, click, setFee, NeedsAnalyst, need, parseMoney, parseRange, parseDate, isoDate} from '../ui/index.mjs';
 import {decideSale, decidePayoff, decideLoan, loadRules} from '../../capabilities/sell/decide.mjs';
 import {negotiate, offerValueRange, defaultMax, buyStep, gmLine} from '../../capabilities/buy/buy.mjs';
 import {classify, saveReplyScreen} from '../../capabilities/deals/replies.mjs';
@@ -257,6 +257,8 @@ export const loanOffer = {
     // No obligation to buy: the loan table decides (an option to buy is recorded only; user, 2033-09-01).
     if (!loan.obligationFee) {
       const date = isoDate(s.date()), wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
+      // The loan table decides on these: a missing one is a page still loading, not a "no" (2035-07-10).
+      need({wageShare, duration: loan.duration, playingTime: loan.playingTime}, ['wageShare', 'duration', 'playingTime'], `Loan approach for ${loan.player}`);
       const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration, optionFee: loan.optionFee});
       const entry = {action: 'loan-offer', date, loan, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
       if (dryRun) return {...entry, dryRun: true};
@@ -443,6 +445,9 @@ export const plainLoanPage = {
   match: s => s.buttons('Accept Offer').length === 1 && s.buttons('Reject Offer').length === 1 && !!readPlainLoanPage(s)?.player,
   async run(s, {dryRun = false} = {}) {
     const l = readPlainLoanPage(s), date = isoDate(s.date());
+    // Stevenage, Northampton for Cousins (2035-07-10): read before the page loaded, rejected as "wage
+    // share unreadable". Missing facts are an error, never a decision.
+    need(l, ['wageShare', 'duration', 'playingTime'], `Loan offer for ${l.player} (${l.club})`);
     const months = l.duration === 'End of season' ? 9 : 0;
     const v = await loanVerdict({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.monthlyFee * months, date, duration: l.duration});
     const entry = {action: 'plain-loan-page', date, loan: l, decision: v.action, why: v.reason, type: v.type, listed: v.listed};

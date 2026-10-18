@@ -14,5 +14,11 @@ Implements playbook §1b, §7–8. The cycle: `playbook/cycle.json`. Calendar: `
   (`holiday.mjs`)
 **How:** this module only sequences. Screen handlers live in `game/screens/`; decisions come from
 `sell`, `buy` and `contracts`.
+**Stuck detection** (`progress.mjs`, robotics' execution monitoring): the autopilot fingerprints each
+screen (main pane texts and action buttons, dialog, Continue slot, date; not clocks, live scores or
+Portal tiles). A handler meeting a screen it already acted on today stops at once (`stuck: …`).
+Progress for the 5-minute watchdog is a screen not seen before today, not a decision. A handler
+that can't read a fact it needs throws `Unreadable` (`need()` in `game/ui/overlays.mjs`) before
+acting: the autopilot reads again (twice at most), then hands over; it never decides on a blank.
 **Never:** makes a transfer or contract decision itself.
 **Screens:** `docs/screens/season.md`.

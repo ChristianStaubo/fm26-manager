@@ -4,6 +4,18 @@ import {Screen, clean, settle} from './screen.mjs';
 import {click, act} from './controls.mjs';
 
 export class NeedsAnalyst extends Error { constructor(message, details) { super(message); this.details = details; } }
+// A fact a decision needs isn't on screen yet (a page still loading: 8 loan offers were rejected on
+// "wage share unreadable", 2035-07-10). Thrown BEFORE acting; the autopilot reads again, then hands over.
+export class Unreadable extends NeedsAnalyst {
+  constructor(what, missing, facts) { super(`${what}: can't read ${missing.join(', ')}`, {missing, facts}); this.missing = missing; this.facts = facts; }
+}
+const blank = v => v == null || v === '' || (typeof v === 'number' && Number.isNaN(v));
+/** Throw Unreadable unless every key of `facts` in `keys` has a value. */
+export function need(facts, keys, what) {
+  const missing = keys.filter(k => blank(facts?.[k]));
+  if (missing.length) throw new Unreadable(what, missing, facts);
+  return facts;
+}
 
 // Confirmation dialogs answered automatically: title or question → button. Add new ones here.
 // Generic titles ("Please Confirm") are matched by their question (dialog-description) instead.

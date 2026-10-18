@@ -4,7 +4,8 @@
 // Stop reasons: 'until' (date reached), 'window-closed', 'needs-analyst' (no handler, or a
 // handler escalated), 'unfamiliar-state', 'decision-limit', 'error' (do not retry blindly).
 import {getState} from '../../game/bridge/client.mjs';
-import {Screen, NeedsAnalyst, isoDate, settle, click} from '../../game/ui/index.mjs';
+import {Screen, NeedsAnalyst, Unreadable, isoDate, settle, click} from '../../game/ui/index.mjs';
+import {fingerprint, Progress} from './progress.mjs';
 import {samePlayer} from '../../game/ui/navigate.mjs';
 import {control, withLock} from './continue.mjs';
 import {loadRules} from '../sell/decide.mjs';
@@ -46,12 +47,15 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
   return withLock('autopilot', async () => {
     const stopAt = until ? new Date(until + 'T00:00:00Z') : null;
     const decisions = [];
-    let handoffs = 0, lastAction = null, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null, retried = null, clearedOn = null;
+    let handoffs = 0, closes = null, pressedOnce = false, lastMatchDay = null, lastReturn = null, dealsDay = null, retried = null, clearedOn = null;
     const stop = (reason, extra = {}) => ({reason, decisions, ...extra});
     const reportStuck = async why => { try { return await (await import('../../cli/friction.mjs')).stuck(why); } catch { return null; } };
     // Watchdog (user, 2032-07-12: "surely we need something to catch when we get stuck"): no new game
     // date and no decision for watchdog_minutes → save a stuck report and stop, never hang silently.
-    let progressAt = Date.now(), lastDate = null, lastCount = 0;
+    // Progress = a screen not seen before today (progress.mjs); a decision alone is not progress: a
+    // handler repeating itself with no effect used to reset the clock.
+    let progressAt = Date.now(), lastDate = null;
+    const progress = new Progress(), unreadableTries = new Map();
     const limitMs = (loadRules().autopilot?.watchdog_minutes ?? 5) * 60e3;
     // A step that hangs inside the loop (a wait that never returns) is caught by a timer beside it.
     const hard = setInterval(async () => {
@@ -63,7 +67,6 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
     }, 30e3);
     hard.unref?.();
     try { for (;;) {
-      if (decisions.length !== lastCount) { lastCount = decisions.length; progressAt = Date.now(); }
       if (Date.now() - progressAt > limitMs) {
         const report = await reportStuck(`autopilot watchdog: no progress for ${Math.round(limitMs / 60e3)} min on ${lastDate}`);
         return stop('stalled', {why: `no new game date or decision for ${Math.round(limitMs / 60e3)} minutes`, date: lastDate, report, screen: summarize(await Screen.read().catch(() => null) || {texts: () => [], buttons: () => []})});
@@ -72,6 +75,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
       if (['error', 'unavailable'].includes(r.reason)) return stop(r.reason, {error: r.error});
       const s = await Screen.read(), today = s.date();
       if (today && isoDate(today) !== lastDate) { lastDate = isoDate(today); progressAt = Date.now(); }
+      if (progress.saw(fingerprint(s), lastDate)) progressAt = Date.now();
       // Once per game day in a window: observe the deals (state machine, capabilities/deals). A deal
       // stuck, vanished before signing, or in a state we don't know stops us (2032-01 wonderkids).
       if (today && !dryRun && isoDate(today) !== dealsDay && inWindow(today)) {
@@ -124,8 +128,9 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
         const st = await getState();
         // Press conferences block Continue; answer them (tasks/admin/press.mjs).
         if (st.stateName === 'PressConference' && !dryRun) {
-          if (lastAction === 'press') return stop('needs-analyst', {why: 'press conference still pending after handling it', screen: summarize(s)});
-          lastAction = 'press';
+          const pfp = fingerprint(s);
+          if (progress.repeated(pfp, 'press', lastDate)) return stop('needs-analyst', {why: 'press conference still pending after handling it', screen: summarize(s)});
+          progress.acted(pfp, 'press', lastDate);
           try { decisions.push(await pressConference()); continue; }
           catch (e) {
             // The conference can end on its own while we look for it (2033-01-19, pre-match: the game was
@@ -179,12 +184,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
       // was back at CanContinue): carry on, once per game day, instead of stopping for nothing.
       if (!handler && (await getState()).stateName !== 'NeedAction' && clearedOn !== lastDate) { clearedOn = lastDate; continue; }
       if (!handler) return stop('needs-analyst', {why: 'no handler for this screen', screen: summarize(screen)});
-      // Loop guard: the same handler on the same screen twice means its action had no effect.
-      const key = handler.name + '|' + screen.texts().join('|').slice(0, 2000);
-      if (key === lastAction) return stop('needs-analyst', {handler: handler.name, why: `${handler.name} had no effect (screen unchanged after acting)`, screen: summarize(screen)});
-      lastAction = key;
+      // Progress monitor: this handler already ran on this very screen today and the screen is back,
+      // so its action had no effect. Stop now, not after the watchdog (progress.mjs).
+      const fp = fingerprint(screen), day = isoDate(screen.date()) || lastDate, key = handler.name + '|' + fp;
+      if (progress.repeated(fp, handler.name, day))
+        return stop('needs-analyst', {handler: handler.name, why: `stuck: ${handler.name} already acted on this screen today and it came back (no effect)`, screen: summarize(screen)});
       try {
-        const done = await handler.run(screen, {dryRun}); decisions.push(done); await settle(1000);
+        const done = await handler.run(screen, {dryRun}); progress.acted(fp, handler.name, day); decisions.push(done); await settle(1000);
         // A sale agreed that needs a buy now: stop so the replacement happens in this window.
         if (!dryRun && saleNeedsBuy(done))
           return stop('needs-analyst', {handler: handler.name, why: `sold ${done.offer?.player} to ${done.offer?.club} (${done.offer?.total ?? done.offer?.guaranteed}): follow-up buy?`, sale: done});
@@ -196,7 +202,14 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           retried = key;
           const label = (await Screen.read()).continueLabel();
           if (label && !/^(Continue|Processing)/.test(label)) { try { await click(label, {name: 'continue-button'}); } catch {} }
-          await settle(2000); lastAction = null; continue;
+          await settle(2000); continue;
+        }
+        // A fact the decision needs wasn't on screen yet (Unreadable, thrown before acting): the page is
+        // probably still loading. Read it again, twice at most per handler and day; then hand over.
+        const tries = handler.name + '|' + day;
+        if (e instanceof Unreadable && (unreadableTries.get(tries) || 0) < 2) {
+          unreadableTries.set(tries, (unreadableTries.get(tries) || 0) + 1);
+          await settle(2500); continue;
         }
         if (e instanceof NeedsAnalyst) return stop('needs-analyst', {handler: handler.name, why: e.message, details: e.details, screen: summarize(await Screen.read())});
         return stop('error', {handler: handler.name, error: e.message, stack: e.stack, doNotRetryAutomatically: true});
