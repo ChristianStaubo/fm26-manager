@@ -167,7 +167,7 @@ const GLOBAL_ACTIONS = {
   },
   inputInfo: () => inputInfo(),
   removeVirtual: () => removeVirtualDevices(),
-  recordStart: r => recordStart(r.classes),
+  recordStart: r => recordStart(r.classes, {pattern: r.pattern}),
   recordStop: () => recordStop(),
 };
 

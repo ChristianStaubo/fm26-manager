@@ -143,7 +143,8 @@ Bridge
   reload                         reload the agent after editing bridge/agent/*.js
   input-reset                    remove virtual keyboard devices (if real clicks stop working)
   watch [--seconds N] [--out file.jsonl]   mapping session: log what changes on screen while the user acts
-  record start | record stop [file.json]   log FM UI calls while you act by hand
+  record start [--classes A,B] [--pattern re] | record stop [file.json]   log FM calls (UI classes, or any game class) while you act
+  explore classes <regex> | explore methods <Class> [regex] [--depth N] | explore fields <Class>   the game's own classes (development)
 `;
 
 const argv = process.argv.slice(2);
@@ -345,9 +346,16 @@ try {
     case 'train-position': out(await (await import('../capabilities/squad/train-position.mjs')).trainPosition(a1, flags.club, flags.pos, {dryRun})); break;
     case 'watch': out(await watch({seconds: Number(flags.seconds || 300), interval: Number(flags.interval || 1000), out: flags.out})); break;
     case 'reload': out(await request('reload', {timeoutMs: 30000})); break;
+    case 'explore': {   // development: find the game's own objects and methods (game/bridge/agent/70-explore.js)
+      const {explore} = await import('../game/bridge/client.mjs');
+      out(await explore(a1, a1 === 'classes' ? {pattern: a2, limit: num(flags.limit)} : a1 === 'capture' ? {name: a2, method: pos[3], depth: num(flags.depth), count: num(flags.count), argc: num(flags.argc)}
+        : a1 === 'find' ? {pattern: a2, classes: flags.classes, params: flags.params, limit: num(flags.limit)}
+        : {name: a2, pattern: pos[3], depth: num(flags.depth), limit: num(flags.limit)}));
+      break;
+    }
     case 'input-reset': out(await ui.removeVirtual()); break;
     case 'record':
-      if (a1 === 'start') out(await ui.recordStart());
+      if (a1 === 'start') out(await ui.recordStart(flags.classes ? String(flags.classes).split(',') : undefined, flags.pattern));
       else {
         // The bridge hands the events over once: always keep them (2034-01-01, a missing folder lost a
         // recording of the user). A default file under local/runs/recordings, plus the one asked for.

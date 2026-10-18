@@ -40,7 +40,11 @@ export function traceLine(req, ms, {result, error} = {}, at = new Date()) {
 
 let ready = false;
 export const traceFile = (day = new Date().toISOString().slice(0, 10)) => new URL(`${day}.jsonl`, TRACE_DIR);
+// Calls made by this process, by kind (before the status filter): benchmarks read these.
+export const counts = {};
 export function record(req, ms, outcome) {
+  const o = typeof req === 'string' ? {op: req} : req || {}, k = o.action ? `${o.op}:${o.action}` : o.op;
+  counts[k] = (counts[k] || 0) + 1;
   if (OFF) return;
   try {
     const l = traceLine(req, ms, outcome);

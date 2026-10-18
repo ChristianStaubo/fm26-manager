@@ -21,8 +21,34 @@ export const fold = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036
 // The same player under a full or short name ("Thiago" for "Thiago Almada"): equal, or one ends the other at a word.
 export const samePlayer = (a, b) => { const x = fold(a), y = fold(b); return !!x && !!y && (x === y || x.endsWith(' ' + y) || y.endsWith(' ' + x)); };
 export const sameName = (a, b) => { const w = t => fold(t).split(/\s+/).filter(Boolean).sort().join(' '); return w(a) === w(b); };
-// Open a player's profile through the global search. `club` disambiguates namesakes.
+// Open a player's profile: directly when we know his database index (a game call, ~1.2 s), else
+// through the global search (~7.6 s; measured 2026-10-18, local/runs/benchmarks), learning the index
+// for next time. `club` disambiguates namesakes. FM_DIRECT=off: always the search.
+const isProfile = s => s.items.some(i => i.kind === 'menu' && i.label === 'Actions') && s.items.some(i => i.name === 'ContractDetails');
+async function openDirect(name, club) {
+  if (process.env.FM_DIRECT === 'off') return null;
+  const people = await import('./person-index.mjs'), index = people.get(name, club);
+  if (!index) return null;
+  const {direct} = await import('../bridge/client.mjs');
+  try {
+    await recover();
+    await direct('openPerson', {index});
+    return await waitFor(s => isProfile(s) && s.texts().some(t => sameName(t, name)) && !blocking(s).length, {what: `${name} profile (direct)`, timeout: 5000});
+  } catch (e) {
+    // No profile in this session's history to copy yet: not the index's fault. Anything else: forget it.
+    if (!/No profile in the panel history|No PersonReference to copy/.test(e.message)) people.forget(name, club);
+    return null;
+  }
+}
+async function learnIndex(name, club) {
+  try {
+    const {direct} = await import('../bridge/client.mjs'), p = await direct('currentPerson');
+    if (p?.table === 1) (await import('./person-index.mjs')).learn(name, club, p.index);
+  } catch { /* the UI path worked; learning is a bonus */ }
+}
 export async function openPlayer(name, club) {
+  const fast = await openDirect(name, club);
+  if (fast) return fast;
   await goTo('Portal'); // search results depend on the page; from the Portal they include people
   await click('Search');
   await waitFor(s => overlays(s).some(o => o.kind === 'search'), {what: 'search box'});
@@ -55,7 +81,9 @@ export async function openPlayer(name, club) {
   // route is "See All Results (N)" → the Search Results page, one row per person ("26 Brazil Player
   // Hamburger SV") with his name in a NameButton row.
   else if (!(await openFromAllResults(name, club))) throw new NeedsAnalyst(`No search result for ${name}${club ? ' (' + club + ')' : ''}`);
-  return waitFor(s => s.items.some(i => i.kind === 'menu' && i.label === 'Actions') && s.items.some(i => i.name === 'ContractDetails') && !blocking(s).length, {what: `${name} profile`});
+  const s = await waitFor(x => isProfile(x) && !blocking(x).length, {what: `${name} profile`});
+  await learnIndex(name, club);
+  return s;
 }
 
 // Clubs as the export and the game write them: "Hamburger Sport-Verein" / "Hamburger SV".

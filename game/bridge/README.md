@@ -38,14 +38,21 @@ per game: a second one fails with "unable to intercept function". Stop it with C
 | `30-ui-tree.js` | read the UI tree; snapshot of actionable elements |
 | `40-ui-actions.js` | `ELEMENT_ACTIONS` (click, menu, hover, text, number, toggle, dropdown, preset, row) and checks |
 | `50-input.js` | virtual keyboard (Escape/Enter/Tab) |
-| `60-recorder.js` | record FM UI calls while a person clicks (to map new controls) |
+| `60-recorder.js` | record FM calls while a person (or a command) acts: UI classes, or any game class by name (`fm record start --classes A,B --pattern re`) |
+| `70-explore.js` | development: search the game's classes, methods and fields, capture a call's arguments (`fm explore …`) |
+| `75-direct.js` | direct game calls instead of clicks (`openPerson`); used direct-first with the UI as the fallback (`game/ui/navigate.mjs`) |
 | `90-main.js` | UI-thread job queue (UpdatePanels hook), discovery, RPC exports |
 
-After editing: `node cli/fm.mjs reload` (keeps the Continue state).
+After editing: `node cli/fm.mjs reload` (keeps the Continue state). `server.py` changes need a bridge restart.
+The server also keeps a black box (`blackbox.py`: last screens and requests, for incidents, `telemetry/`).
+
+Direct calls (lessons, 2026-10-18): build game objects the way the game does (copy one it made rather
+than calling a bare constructor); resolve abstract methods on the concrete class (`runtime_invoke`
+doesn't dispatch virtually); keep Frida's default `exceptions: 'steal'` (`'propagate'` crashed FM).
 
 ## Protocol
 One JSON request per connection: `{"op": "status" | "uitree" | "ui" | "advance" |
-"open-required-action" | "reload" | "inspect" | "uimetadata", ...}` → `{"ok": true, "result": …}`.
+"open-required-action" | "reload" | "inspect" | "uimetadata" | "explore" | "direct" | "blackbox", ...}` → `{"ok": true, "result": …}`.
 `ui` requests: `{"op":"ui","action":"click","snapshot":…,"id":…,"expectedName":…,"expectedLabel":…}`
 (element actions need the snapshot from the latest `uitree`), or element-free actions
 `key`, `closeDropdowns`, `removeVirtual`, `inputInfo`, `recordStart`, `recordStop`.

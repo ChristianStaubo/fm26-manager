@@ -42,6 +42,11 @@ export function classifyState(s) {
 }
 export const getState = async () => { const s = await request('status'); return {...s, automationState: classifyState(s)}; };
 
+// Development: the game's classes and methods (agent/70-explore.js).
+export const explore = (what, extra = {}) => request({op: 'explore', what, ...extra}, {timeoutMs: 60000});
+// Direct game calls (agent/75-direct.js): the game's own code instead of clicks; game/ui/direct.mjs.
+export const direct = (action, extra = {}) => request({op: 'direct', action, ...extra});
+
 // ---- UI ------------------------------------------------------------------------
 export const inspectUI = () => request('uitree');
 const element = (tree, node) => ({snapshot: tree.snapshot, id: node.id, expectedName: node.name, expectedLabel: node.label || ''});
@@ -63,6 +68,6 @@ export const ui = {
   closeSearch: () => request({op: 'ui', action: 'closeSearch'}),
   removeVirtual: () => request({op: 'ui', action: 'removeVirtual'}),
   inputInfo: () => request({op: 'ui', action: 'inputInfo'}),
-  recordStart: classes => request({op: 'ui', action: 'recordStart', classes}),
+  recordStart: (classes, pattern) => request({op: 'ui', action: 'recordStart', classes, pattern}),
   recordStop: () => request({op: 'ui', action: 'recordStop'}, {timeoutMs: 15000}),
 };

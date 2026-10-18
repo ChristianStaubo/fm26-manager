@@ -26,7 +26,7 @@ from blackbox import BlackBox
 HERE = Path(__file__).resolve().parent
 RUNTIME = Path(os.environ.get('FM26_BRIDGE_DIR', '/tmp/fm26-bridge'))
 PROCESS = os.environ.get('FM26_PROCESS', 'Football Manager 26')
-OPS = {'status', 'inspect', 'uimetadata', 'uitree', 'ui', 'reload', 'advance', 'open-required-action', 'blackbox'}
+OPS = {'status', 'inspect', 'uimetadata', 'uitree', 'ui', 'reload', 'advance', 'open-required-action', 'blackbox', 'explore', 'direct'}
 
 
 def agent_source():
@@ -120,6 +120,10 @@ def main():
                         result = {'reloaded': True}
                     elif op == 'ui':
                         result = exports.ui(request)
+                    elif op == 'explore':
+                        result = exports.explore(request)
+                    elif op == 'direct':
+                        result = exports.direct(request)
                     else:
                         result = getattr(exports, op.replace('-', ''))()
                     response = {'ok': True, 'result': result}

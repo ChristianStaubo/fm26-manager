@@ -49,6 +49,8 @@ rpc.exports = {
     return queueJob('ui:' + request.action, () => uiAction(request), {action: !reading});
   },
   uimetadata() { return classMetadata; },
+  explore(request) { return attached(() => explore(request)); },   // 70-explore.js (development)
+  direct(request) { return queueJob('direct:' + request.action, () => direct(request), {action: true}); },   // 75-direct.js
   inspect() { return attached(() => ({pid: Process.id, managerAddress: manager ? A.target(manager).toString() : null, manualTimer, states: stateNames, methods: managerMethods})); },
   anchor() { return attached(() => manager ? A.target(manager).toString() : null); },
   seed(address, timer) { return attached(() => { captureManager(ptr(address)); if (Number.isInteger(timer)) manualTimer = timer; }); },
