@@ -81,9 +81,11 @@ const isSale = r => r.step === 'sells' || /^sell\b/i.test(r.item);
 /** Profit is per season (user, 2026-10-18): the season's net transfer money if every proposal went through
  *  at its price (sales at their minimum, buys at their maximum), from the surplus the buy table started with.
  *  A player raised by two steps (Pepper: wonderkid and bargain) counts once; overturned proposals don't. */
-export function seasonNet(rows, surplus = 0) {
+export function seasonNet(rows, surplus = 0, promised = []) {
   const seen = new Set(), name = r => r.item.replace(/^(sell\??|buy|wonderkid|\w+ upgrade)\s+/i, '').toLowerCase();
   let sales = 0, buys = 0;
+  // A promise price (Miceli: sold if £81M is bid) is a sale the plan counts on; its replacement row is a buy.
+  for (const p of promised) if (Number.isFinite(p.price) && !seen.has(p.name.toLowerCase())) { seen.add(p.name.toLowerCase()); sales += p.price; }
   for (const r of rows) {
     if (r.verdict !== 'propose' || r.review === 'overturned' || !Number.isFinite(r.price) || seen.has(name(r))) continue;
     seen.add(name(r));
@@ -99,7 +101,7 @@ export function review(base, report) {
   });
   const surplus = report?.steps?.buys?.data?.season_surplus;
   return {rows, missing: rows.filter(r => !r.verdict).length, unreviewed: rows.filter(r => r.verdict && !r.review).length,
-    season: seasonNet(rows, Number.isFinite(surplus) ? surplus : 0)};
+    season: seasonNet(rows, Number.isFinite(surplus) ? surplus : 0, report?.steps?.buys?.data?.promised_sales || [])};
 }
 /** The user's review of one verdict: agreed or overturned (with what they decided instead). */
 export function markReview(base, {step, item, review: kind, decided}) {

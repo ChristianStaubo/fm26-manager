@@ -94,3 +94,8 @@ test('settled rows are answered by code; a player raised by several steps is one
   record(base, {step: 'sells', item: 'Slatina', verdict: 'pass', why: 'override'}, rows);
   assert.equal(review(base, r).rows.find(x => x.item === 'Slatina').verdict, 'pass', 'the manager can override a settled row');
 });
+
+test('a promised sale (Miceli: sold if £81M is bid) counts in the season net, once', () => {
+  const rows = [{step: 'buys', item: 'CB replace for Edoardo Miceli', verdict: 'propose', price: 21e6}];
+  assert.deepEqual(seasonNet(rows, 35e6, [{name: 'Edoardo Miceli', price: 81e6}]), {surplus: 35e6, sales: 81e6, buys: 21e6, net: 95e6});
+});

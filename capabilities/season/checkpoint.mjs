@@ -42,6 +42,8 @@ export const STEPS = {
     const selling = [...new Set([...(ctx.sells || []).filter(x => x.action === 'sell').map(x => x.name),
       ...Object.values(loadBook().players).filter(p => p.promise).map(p => p.name)])];
     const d = analysis('buy_table.py', ['--record', '--window', ctx.name === 'january' ? 'january' : 'summer', ...(selling.length ? ['--selling', selling.join(',')] : [])], {date: ctx.date});
+    // Promise prices are sales the season counts (verdicts.seasonNet): Miceli's £81M had no row.
+    d.promised_sales = Object.values(loadBook().players).filter(p => p.promise).map(p => ({name: p.name, price: p.minimum}));
     const name = c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`;
     const md = [`${d.window} · squad avg CA ${d.squad_avg} · season surplus ${money(d.season_surplus)} → ${money(d.after_buys)} after these`];
     for (const r of d.positions) {

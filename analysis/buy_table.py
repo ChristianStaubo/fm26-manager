@@ -127,9 +127,10 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
     once he is sold (the need carries if_sold)."""
     selling = set(selling) - set(leaving)
     leaving = set(leaving) | selling
-    left = {}
+    left, planned_at = {}, {}
     for pos, v in depth.chart(rows, tactic).items():
         left[pos] = [x for x in v['players'][:v['slots']] if x['name'] in leaving]
+        planned_at[pos] = [x['name'] for x in v['players'] if x['name'] in selling]
     ours_now = {p['name'] for p in rows if p['contract_club'] == m.CLUB}
     for x in departed:
         if x['name'] not in ours_now and x['position'] in left:
@@ -147,7 +148,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
     wage_cap = bands['median'] * m.POLICY['contracts']['max_salary_vs_first_team_median']   # the hard wage cap
     # The squad's level (user, 2033-09-01: a great starter shouldn't raise the backup bar; Carroll 128 is
     # fine behind Brown 154): the mean CA of our top `squad_size` players.
-    squad_avg, backup_level = m.squad_level(rows_now)
+    squad_avg, backup_level = m.squad_level(rows)   # the squad's level before the sales we plan (2036-06: 149, not 141)
     starters_all = {x['name'] for v in chart.values() for x in v['players'][:v['slots']]}
     used = set()
     out = []
@@ -166,7 +167,8 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
         missing = depth.backups(n) - len(found)
         # Who could be sold to pay for an upgrade here: the starter it displaces, then the rest of the
         # position (not starting elsewhere).
-        sellers = [x['name'] for x in sorted(starters, key=lambda x: x['ca'])[:1]] + [x['name'] for x in players[n:] if x['name'] not in starters_all]
+        # Planned sales there come first (Froholdt for Senhaji); prospects going on loan are not sellers.
+        sellers = planned_at.get(pos, []) + [x['name'] for x in sorted(starters, key=lambda x: x['ca'])[:1]] + [x['name'] for x in players[n:] if x['name'] not in starters_all and not x.get('develop')]
         row = {'position': pos, 'weakest': weakest, '_sellers': sellers, 'starters': [f"{x['name']} {x['ca']}" for x in starters],
                'backup': ', '.join(f"{b['name']} {b['ca']}{'' if b['natural'] else ' (cover)'}" for b in found) or None, 'needs': []}
         for x in left.get(pos, []):
@@ -202,7 +204,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
             left_money -= c['value']; taken.add(r['position'])
     # Funded upgrades (user, 2026-10-18): profit is per season, and an upgrade comes with a sale at its
     # position. Summer only; the best CA gain per £ that one sale there (plus what's left) pays for.
-    value_of = {p['name']: float(p['value'] or 0) for p in rows_now if p['contract_club'] == m.CLUB}
+    value_of = {p['name']: float(p['value'] or 0) for p in rows if p['contract_club'] == m.CLUB}
     for r in out:
         opt = r.get('upgrade_option')
         if window != 'summer' or not opt or r['position'] in taken:
@@ -231,7 +233,8 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
     # (fm approve buy … --note "wonderkid": the autopilot loan-lists him when he signs).
     kids, weakest = [], iter(held_list)
     for c in wonderkids(rows_now):
-        c = {**c, 'on_arrival': 'squad' if c['ca'] >= backup_level else 'loan'}
+        # A developing prospect plays on loan unless he'd start (user, 2026-10-19): Pepper, CA 118/PA 186, is loaned.
+        c = {**c, 'on_arrival': 'loan' if m.developing(c['age'], c['ca'], c['pa']) or c['ca'] < backup_level else 'squad'}
         if len(kids) < room:
             kids.append(c)
         elif (w := next(weakest, None)) and c['pa'] >= m.intval(w, 'pa') + W.get('swap_min_pa_gain', 5):
