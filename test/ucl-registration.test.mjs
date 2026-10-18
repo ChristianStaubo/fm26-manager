@@ -32,3 +32,10 @@ test('"Transfer deadline passed" (league list, final chance) is squad registrati
   const s = loadScreen('registration-deadline-passed');
   assert.equal(HANDLERS.find(h => h.match(s))?.name, 'squad-registration');
 });
+
+test('rows first: an empty list is not ready (the plan must never come from 0 rows)', async () => {
+  const {rowsReady} = await import('../game/screens/admin/registration.mjs');
+  assert.equal(rowsReady(loadScreen('ucl-registration-message')), false, 'no rows drawn');
+  assert.equal(rowsReady(loadScreen('ucl-registration-empty')), true, 'rows drawn, nobody registered yet');
+  assert.equal(rowsReady(loadScreen('ucl-registration-picked')), true);
+});

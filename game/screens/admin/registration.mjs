@@ -4,7 +4,7 @@
 // "Squad selection is fully compliant" only means the list is legal: on 2026-07-24 it left out
 // Broholm, Lopez, Bird, Kayode, Onyeka and Cox with 9 places free. Changes are allowed until the
 // deadline; Confirm → dialog "Please Confirm: Submit completed squad list?" → Confirm.
-import {Screen, waitFor, toggle, clickWhere, settle, isoDate, NeedsAnalyst} from '../../ui/index.mjs';
+import {Screen, waitFor, toggle, clickWhere, settle, isoDate, NeedsAnalyst, Unreadable} from '../../ui/index.mjs';
 import {log} from '../../../capabilities/log.mjs';
 
 const SWITCH = 'inputs-switch-toggle-large-default';
@@ -73,15 +73,19 @@ export function registrationPlan(list, roles, free, selling = () => false) {
   return {add: add.map(p => p.name), drop: drop.map(p => p.name), short: Math.max(0, add.length - room - drop.length)};
 }
 
+// The list draws its rows in batches after the header: the page check passed with 0 rows and the plan
+// came out "nothing to add" (2035-09-04, Transfer deadline passed). Rows first; none is unreadable.
+export const rowsReady = s => registrationList(s).length > 0;
 export async function registerDepth({dryRun = false} = {}) {
-  const {click, clickWhere} = await import('../../ui/index.mjs');
   const {analysis} = await import('../../../capabilities/data.mjs');
   const pricebook = await import('../../../capabilities/value/pricebook.mjs');
-  let s = await Screen.read();
+  let s = await waitFor(rowsReady, {what: 'registration rows', timeout: 10000}).catch(() => null);
+  if (!s) throw new Unreadable('Registration list', ['rows'], {});
   if (s.buttons('Ask Assistant to Pick').length === 1 && !dryRun) {
-    await click('Ask Assistant to Pick');
+    // A selector click retries while the page redraws (a plain click failed "found 0", 2035-09-04).
+    await clickWhere(x => x.buttons('Ask Assistant to Pick')[0], 'Ask Assistant to Pick');
     await settle(1500);
-    s = await Screen.read();
+    s = await waitFor(x => rowsReady(x) && x.hasText(/^Squad selection is/), {what: 'registration rows after the pick', timeout: 10000});
   }
   const roles = analysis('depth.py', ['--roles']);
   const plan = registrationPlan(registrationList(s), roles, spaces(s), n => !!pricebook.lookup(n));
