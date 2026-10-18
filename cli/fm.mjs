@@ -325,6 +325,9 @@ try {
     case 'note': out(note(pos.slice(1).join(' '))); break;
     case 'press': out(await pressConference({dryRun})); break;
     case 'sell': {
+      // The asking price stays Unspecified (user, 2026-10-08; again 2026-10-19: Finck was listed with one
+      // because a brief said "ask £20.9M"): our minimum and target live in the price book.
+      if (flags.price && !flags['set-asking']) throw new Error('fm sell lists with the asking price Unspecified (user rule): use --min (and --target); pass --set-asking with --price only when the user asked for an asking price');
       const r = await listPlayer(a1, flags.club, {price: num(flags.price), deter: !!flags.deter, min: num(flags.min), target: num(flags.target), force: !!flags.force, dryRun});
       // A re-price (--price) used to skip the price book: the bid handler then had no floor (Brown,
       // Ørjasæter, 2030-07-31). Record --min whenever it is given.

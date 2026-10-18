@@ -47,6 +47,10 @@ Buying, selling and releasing need the user. When you have the proposals (each w
 and why, from `fm plan`, `fm price`, `fm buy --dry-run`), stop with outcome `approval`. Never run
 `fm approve` or `fm intervene`.
 
+## Listing for sale
+`fm sell "<name>" --club <club> --min <approved minimum>`: the asking price stays **Unspecified** (user rule);
+our minimum and target live in the price book and bids are answered against them. Never `--price`.
+
 ## Checkpoint verdicts (every checkpoint)
 After a checkpoint runs, answer EVERY row it raised before you act on any or stop:
 `node cli/fm.mjs verdicts` lists them (`-` = no verdict yet). For each:
