@@ -144,7 +144,8 @@ export function replyState(s) {
   // The answers are an explicit set (capabilities/deals/replies.mjs). 'notes' is the line before any
   // answer; an agreement after Make Offer counts as made.
   const state = s.hasText(/An offer has been made/) ? 'made' : classify(gmLine(s));
-  return state === 'notes' ? null : state === 'agreement' ? 'made' : state;
+  // 'walked' (the club ended talks) is a rejection for our bids: buying behaves as before.
+  return state === 'notes' ? null : state === 'agreement' ? 'made' : state === 'walked' ? 'rejected' : state;
 }
 // Suggest Terms, then wait for the reply: a NEW General Manager line (or Suggest Terms gone).
 // "Timed out waiting for club response" (Maza, Atubolu 2028-06): the reply can take longer than

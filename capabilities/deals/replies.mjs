@@ -9,6 +9,8 @@ export const REPLIES = [
   ['made', /An offer has been made/i],
   ['agreement', /An agreement has been reached/i],
   ['rejected', /is unacceptable|have rejected|bid rejected/i],
+  // After our counter at the sell price (Al-Hilal for Rosete, 2036-01-05): the same as a rejection, he stays.
+  ['walked', /walk away from negotiations|deal for .+ can be achieved/i],
   ['final', /have (submitted|proposed) a non-negotiable offer/i],
   ['accepted', /prepared to accept the latest offer|feel the (offer|negotiation) for .+ is acceptable|(?<!un)acceptable/i],
   ['countered', /negotiated the offer|responded to the latest offer/i],
@@ -16,7 +18,7 @@ export const REPLIES = [
   ['submit', /declined to give an immediate answer|An offer will need to be submitted/i],
   ['notes', /noted some key considerations|prepared a few notes/i],
 ];
-/** 'accepted' | 'countered' | 'more' | 'final' | 'rejected' | 'made' | 'agreement' | 'submit' | 'notes' | 'unknown' | null (no line) */
+/** 'accepted' | 'countered' | 'more' | 'final' | 'rejected' | 'walked' | 'made' | 'agreement' | 'submit' | 'notes' | 'unknown' | null (no line) */
 export function classify(gm) {
   if (!gm) return null;
   return REPLIES.find(([, re]) => re.test(gm))?.[0] ?? 'unknown';

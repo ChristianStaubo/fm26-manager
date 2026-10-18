@@ -14,6 +14,7 @@ const SEEN = [
   ["Phil Giles General Manager Man Utd's Gannon Doak bid rejected", 'rejected'],
   ["Phil Giles General Manager I've noted some key considerations that should be reviewed before proceeding.", 'notes'],
   ['Phil Giles General Manager HSV declined to give an immediate answer. An offer will need to be submitted.', 'submit'],
+  ["Phil Giles General Manager Al-Hilal don't feel a deal for Jesús Rosete can be achieved and have decided to walk away from negotiations.", 'walked'],
 ];
 test('every answer seen maps to its state', () => { for (const [line, state] of SEEN) assert.equal(classify(line), state, line); });
 test('an answer we have never seen is unknown (stop and capture), no line is null', () => {

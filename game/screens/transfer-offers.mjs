@@ -192,6 +192,9 @@ export const incomingOffer = {
         const r = readOffer(v, {headClub: offer.club, shortName: offer.player, coach: ''});
         entry.reply = {upfront: r.upfront, guaranteed: r.guaranteed, total: r.total};
       }
+      // They walked away from our counter at the sell price: playbook §4, the same as a rejection. He stays;
+      // a final outcome, not a stop (Rosete, Al-Hilal, 2036-01-05: logged as needing a decision).
+      if (entry.replyState === 'walked') { entry.outcome = 'walked-away'; await log({...entry, executed: true}); return entry; }
       if (entry.replyState !== 'accepted') { await log({...entry, executed: true}); throw new NeedsAnalyst(`Counter for ${offer.player}: ${entry.verdict}`, entry); }
       await click('Accept Offer');
       entry.accepted = true;
