@@ -46,7 +46,7 @@ Act
   recover                        close menus/popups/search, answer known dialogs
   click "<label>" [--name <element name>]
   key Escape|Enter|Tab|Space|C
-  save                           save the game (FM menu → Save Game); then --fresh exports read it
+  save [--as <name>]             save the game (FM menu → Save Game); --as: Save Game As a new file (FM plays on in it)
   continue [steps]               press Continue up to N times (stops when an action is needed)
   run [--until YYYY-MM-DD] [--dry-run]   autopilot (handles routine screens, stops for decisions)
   holiday [--until YYYY-MM-DD | --days N] [--dry-run]
@@ -234,7 +234,8 @@ try {
       }
       const rv = v.review(base, pick.report);
       out({checkpoint: `${pick.date}-${pick.name}`, rows: rv.rows.length, missing: rv.missing, unreviewed: rv.unreviewed,
-        list: rv.rows.map(x => ({step: x.step, item: x.item, verdict: x.verdict ?? '-', ...(x.price ? {price: x.price} : {}), why: x.why, review: x.review, detail: x.detail}))});
+        season_if_all_proposals: rv.season,   // profit is per season (user, 2026-10-18)
+        list: rv.rows.map(x => ({step: x.step, item: x.item, verdict: x.verdict ?? '-', ...(Number.isFinite(x.price) ? {price: x.price} : {}), why: x.why, review: x.review, detail: x.detail}))});
       break;
     }
     case 'incident':
@@ -368,7 +369,7 @@ try {
     }
     case 'negotiations': { const {report} = await import('../capabilities/sell/negotiations.mjs'); out(await report()); break; }
     case 'renew': out(await (flags.dof ? delegateRenewal : renewSelf)(a1, flags.club, {dryRun, preview: !!flags.preview})); break;   // we negotiate (tick rule); --dof hands over
-    case 'save': { const r = await saveGame(); out(r); process.exitCode = r.saved ? 0 : 1; break; }
+    case 'save': { const r = await saveGame({as: flags.as}); out(r); process.exitCode = r.saved ? 0 : 1; break; }
     case 'loanlist': out(await loanListPlayer(a1, flags.club, {why: flags.why || '', dryRun})); break;
     case 'unlist': { const r = await unlistPlayer(a1, flags.club, {dryRun}); if (r.changed) approvals.revoke('sell', a1); out(r); break; }
     case 'move': out(await movePlayer(a1, flags.club, {to: flags.to || 'senior', dryRun})); break;

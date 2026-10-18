@@ -109,6 +109,37 @@ def today_of(rows):
     return dt.date.fromisoformat(max(dates)) if dates else dt.date.today()
 
 
+# Our squad (user, 2026-10-18): loanees coming back within this many days count as ours. The depth chart
+# left out Awudu (CA 155), E. Đukić (164) and Slatina (148), back on 29 June, so the 2036 season-end tables
+# asked for a DM and an ST backup we had, and the portfolio counted 4 prospects where we had more.
+RETURN_WITHIN_DAYS = 60
+
+
+def back_by(p, today):
+    """On loan now, back within RETURN_WITHIN_DAYS (the export keeps no ended loans)."""
+    try:
+        return (dt.date.fromisoformat((p.get('loan_ends') or '')[:10]) - today).days <= RETURN_WITHIN_DAYS
+    except ValueError:
+        return False
+
+
+def our_squad(rows, today=None, min_age=16):
+    """Players contracted to us, at the club or back from loan within RETURN_WITHIN_DAYS."""
+    today = today or today_of(rows)
+    return [p for p in rows if p['contract_club'] == CLUB and intval(p, 'age') >= min_age
+            and (not p.get('on_loan_at') or back_by(p, today))]
+
+
+def squad_level(rows, today=None):
+    """(squad average CA, backup level): the mean CA of our top buying.table.squad_size players, and that
+    minus backup_within. One definition for every table (it was -25 in the buy table and free agents and
+    -10 in bargains: 125 vs 146 on 2036-06-04)."""
+    t = POLICY.get('buying', {}).get('table', {})
+    cas = sorted((intval(p, 'ca') for p in our_squad(rows, today)), reverse=True)[:t.get('squad_size', 22)]
+    avg = round(sum(cas) / len(cas)) if cas else 140
+    return avg, avg - t.get('backup_within', 25)
+
+
 def is_free_agent(p):
     """No club AND no contract. A player AT a club with empty contract fields is 'contract unknown'
     (the export misses it: Gray at Leeds, Collecchi at Monza, 2031-01), never a free agent
@@ -240,9 +271,13 @@ def squad(rows, tactic, date=None):
                                            'why': f"overperformer: {sr.num(p, 'goals'):.0f} goals from {sr.num(p, 'xg'):.1f} xG; finishing regresses, value peaks now"})
         if p['on_loan_at']:
             continue
-        if pol_sell.get('age_30_plus_sell_at_v_low') and age >= 30 and wage >= bands['median']:
+        # Keepers age later (selling.sell_by_role_age.senior_from_age_by_position: GK 33; Brady, 32, was
+        # flagged on 2036-06-04 while the sell table rightly kept him).
+        senior = pol_sell.get('sell_by_role_age', {})
+        senior = senior.get('senior_from_age_by_position', {}).get('GK') if 'GK' in p['pos'] and len(p['pos']) == 1 else None
+        if pol_sell.get('age_30_plus_sell_at_v_low') and age >= (senior or 30) and wage >= bands['median']:
             out['sell_candidates'].append({'name': p['name'], 'age': age, 'wage': wage, 'value': int(p['value']),
-                                           'why': f'30+ on £{wage // 1000}K/wk (≥ first-team median): value only falls'})
+                                           'why': f'{senior or 30}+ on £{wage // 1000}K/wk (≥ first-team median): value only falls'})
         # No minutes-based rule: we force one XI all season, so low minutes reflect our selection,
         # not the player's quality (user, 2026-10-09).
     # Dedupe sell candidates by name (keep the first reason).

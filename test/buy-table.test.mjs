@@ -41,14 +41,14 @@ print(json.dumps([c['name'] for c in bt.table(ours + market + kids, tactic, seas
   assert.deepEqual(d, ['Pepper', 'Awudu'], 'foreign 16-year-old and the £44M one excluded');
 });
 
-test('wonderkid portfolio (user, 2034-09): the summer list fills only the room left under portfolio_max; on_arrival loan vs squad', () => {
-  const d = run(setup + `held = [p(f'Kid{i}', C, 100, age=19) for i in range(9)]
+test('wonderkid portfolio (user, 2034-09; 2026-10-18: max 6 at PA 170+): the summer list fills only the room left; on_arrival loan vs squad', () => {
+  const d = run(setup + `held = [p(f'Kid{i}', C, 100, age=19) for i in range(5)]
 for k in held: k['pa'] = '180'
 kids = [p('Awudu', 'Hoff', 95, age=18, value=0.4e6), p('Ready', 'Gent', 140, age=19, value=5e6)]
 for k, pa in zip(kids, (181, 180)): k['pa'] = str(pa); k['nation'] = 'Germany'
 t = bt.table(ours + market + held + kids, tactic, season_surplus=0, window='summer')
 print(json.dumps({'portfolio': t['portfolio'], 'kids': [(c['name'], c['on_arrival']) for c in t['wonderkids']]}))`);
-  assert.deepEqual(d.portfolio, {held: 9, room: 1});
+  assert.deepEqual(d.portfolio, {held: 5, room: 1});
   assert.deepEqual(d.kids, [['Awudu', 'loan']], 'one slot left: the best PA; CA 95 is below the backup level');
 });
 
@@ -60,4 +60,29 @@ c = bt.table(ours + market, tactic, season_surplus=45e6, window='january', depar
 k = lambda t: [n['kind'] for r in t['positions'] if r['position'] == 'LB' for n in r['needs']]
 print(json.dumps([k(a), k(b), k(c)]))`);
   assert.deepEqual(d, [['replace'], [], []], 'Brown 154 < 167 → replace; a 150 leaver is covered by Brown; Brown still ours → nothing');
+});
+
+test('bought wonderkids (user, 2026-10-18): PA 180+ and two a window, best PA first', () => {
+  const d = run(setup + `kids = [p(f'K{pa}', 'Club', 100, age=18, value=5e6) for pa in (176, 179, 180, 183, 186)]
+for k in kids: k['pa'] = k['name'][1:]; k['nation'] = 'Germany'
+print(json.dumps([c['name'] for c in bt.table(ours + market + kids, tactic, season_surplus=0, window='summer')['wonderkids']]))`);
+  assert.deepEqual(d, ['K186', 'K183']);
+});
+
+test('a loanee back within 60 days is in the depth chart: no backup bought for him (Awudu, 2036-06-04)', () => {
+  const d = run(setup + `back = p('Awudu', 'Utrecht', 140, gk=20, age=20, cc=C); back['on_loan_at'] = 'Utrecht'; back['loan_ends'] = '2033-09-29'
+away = p('Away', 'Ajax', 140, gk=20, age=20, cc=C); away['on_loan_at'] = 'Ajax'; away['loan_ends'] = '2034-06-30'
+r = lambda extra: [n['kind'] for x in bt.table(ours + market + extra, tactic, season_surplus=45e6, window='summer')['positions'] if x['position'] == 'GK' for n in x['needs']]
+print(json.dumps([r([back]), r([away])]))`);
+  assert.deepEqual(d, [[], ['backup']], 'back on 29 Sept: he is the backup; back next June: still a hole');
+});
+
+test('an upgrade the surplus cannot pay for is a buy once a player at that position is sold (user, 2026-10-18: Senhaji if Froholdt sells)', () => {
+  const d = run(setup + `for x in ours:
+    if x['name'] == 'Brown': x['value'] = str(int(18e6))
+t = bt.table(ours + market, tactic, season_surplus=5e6, window='summer')
+lb = next(x for x in t['positions'] if x['position'] == 'LB')
+print(json.dumps({c['name']: [c['buy'], c.get('buy_if_sold')] for c in lb['upgrade_option']['candidates']}))`);
+  assert.deepEqual(d.Upgrade, [false, ['Brown']], '£20M: the £5M left + Brown (the starter he displaces, £18M) pays; Carroll (£1M) does not');
+  assert.deepEqual(d.Costly, [false, null], '£90M: no single sale there pays');
 });

@@ -27,17 +27,22 @@ export function rowsOf(report) {
   for (const p of data('free_agents')?.players || []) add('free_agents', p.name, `${p.age}, ${p.slot ?? p.positions}${p.ca ? `, CA ${p.ca}/PA ${p.pa}` : ''}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}: ${p.route ?? ''}`);
   for (const p of data('wonderkids')?.players || []) add('wonderkids', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   for (const p of data('newgens')?.signable_now || []) add('newgens', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
-  const sq = data('squad');
-  for (const n of sq?.needs || []) add('squad', `${n.position} ${n.kind}`, n.why);
-  for (const c of sq?.sell_candidates || []) add('squad', `sell? ${c.name}`, c.why);
-  const buys = data('buys');
+  // The squad step is the picture; the buy and sell tables decide. Its own needs (output-based upgrade
+  // flags, specialist counts) and sell candidates contradicted the tables on 2036-06-04 (CB depth, Brady
+  // 30+): rows only when the tables didn't run.
+  const sq = data('squad'), buys = data('buys'), sells = Array.isArray(data('sells')) ? data('sells') : null;
+  if (!buys) for (const n of sq?.needs || []) add('squad', `${n.position} ${n.kind}`, n.why);
+  if (!sells) for (const c of sq?.sell_candidates || []) add('squad', `sell? ${c.name}`, c.why);
   for (const r of buys?.positions || []) for (const n of r.needs || [])
     add('buys', `${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''}`, `CA >= ${n.min_ca}: ${(n.candidates || []).slice(0, 3).map(c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`).join(' · ') || 'none in range'}`);
+  // Upgrades (user, 2026-10-18): one the season surplus pays for, or one a sale at that position funds.
+  for (const r of buys?.positions || []) for (const c of r.upgrade_option?.candidates || []) if (c.buy || c.buy_if_sold)
+    add('buys', `${r.position} upgrade ${c.name}`, `${c.age}, CA ${c.ca}, ${c.club}, ${money(c.value)}: ${c.buy ? 'the season surplus pays' : `only once ${c.buy_if_sold.join(' or ')} is sold`} (starters ${r.starters.join(', ')})`);
   for (const c of buys?.wonderkids || []) add('buys', `wonderkid ${c.name}`, `PA ${c.pa}, ${c.positions}, ${c.club}, ${money(c.value)}`);
   const bargains = data('bargains');
   for (const c of (bargains?.undervalued || []).slice(0, 5)) add('bargains', c.name, `undervalued ${c.ratio}x (typical ${money(c.typical)}): ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
   for (const c of (bargains?.buried || []).slice(0, 5)) add('bargains', c.name, `buried talent: ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
-  for (const x of Array.isArray(data('sells')) ? data('sells') : []) if (x.action !== 'keep') add('sells', x.name, `${x.action}${x.ask ? ' at ' + money(x.ask) : ''} (${x.role ?? ''})`);
+  for (const x of sells || []) if (x.action !== 'keep') add('sells', x.name, `${x.action}${x.ask ? ' at ' + money(x.ask) : ''} (${x.role ?? ''})`);
   const plan = data('plan');
   for (const b of plan?.buy || []) add('plan', `buy ${b.name}`, `${b.slot} ${b.role}, ${money(b.value)}, walk away ${money(b.walk_away)}`);
   for (const x of plan?.sell || []) add('plan', `sell ${x.name}`, (x.why || []).join('; '));
@@ -67,10 +72,26 @@ export function record(base, {step, item, verdict, why, price, date}, rows) {
   appendFileSync(fileOf(base), JSON.stringify(v) + '\n');
   return v;
 }
+const isSale = r => r.step === 'sells' || /^sell\b/i.test(r.item);
+/** Profit is per season (user, 2026-10-18): the season's net transfer money if every proposal went through
+ *  at its price (sales at their minimum, buys at their maximum), from the surplus the buy table started with.
+ *  A player raised by two steps (Pepper: wonderkid and bargain) counts once; overturned proposals don't. */
+export function seasonNet(rows, surplus = 0) {
+  const seen = new Set(), name = r => r.item.replace(/^(sell\??|buy|wonderkid|\w+ upgrade)\s+/i, '').toLowerCase();
+  let sales = 0, buys = 0;
+  for (const r of rows) {
+    if (r.verdict !== 'propose' || r.review === 'overturned' || !Number.isFinite(r.price) || seen.has(name(r))) continue;
+    seen.add(name(r));
+    if (isSale(r)) sales += r.price; else buys += r.price;
+  }
+  return {surplus, sales, buys, net: surplus + sales - buys};
+}
 /** Every row with its verdict (if any) and review (if any). */
 export function review(base, report) {
   const v = load(base), rows = rowsOf(report).map(r => ({...r, ...(v.get(key(r.step, r.item)) || {}), step: r.step, item: r.item, detail: r.detail}));
-  return {rows, missing: rows.filter(r => !r.verdict).length, unreviewed: rows.filter(r => r.verdict && !r.review).length};
+  const surplus = report?.steps?.buys?.data?.season_surplus;
+  return {rows, missing: rows.filter(r => !r.verdict).length, unreviewed: rows.filter(r => r.verdict && !r.review).length,
+    season: seasonNet(rows, Number.isFinite(surplus) ? surplus : 0)};
 }
 /** The user's review of one verdict: agreed or overturned (with what they decided instead). */
 export function markReview(base, {step, item, review: kind, decided}) {

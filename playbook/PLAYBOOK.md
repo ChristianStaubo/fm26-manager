@@ -14,6 +14,10 @@ These are the user's rules (decided 2026-10-09).
     who cost less).
 - Spend the budget when it improves the squad. There's **no reserve**, but **no spending for its
   own sake**: we're here to make money too.
+- **Profit is per season, not per window** (user, 2026-10-18): the season (1 July to 30 June, both
+  windows) ends with a positive net transfer balance. A summer that spends is fine if the season pays
+  it back. Each checkpoint's verdicts show the season's net if every proposal went through
+  (`fm verdicts`: `season_if_all_proposals`); proposals keep it at or above zero.
 - Baseline (claude-2): 2025/26 finished **9th, 55 points**. Over ~3 seasons, finish higher than
   that with a positive transfer balance.
 
@@ -87,7 +91,11 @@ The rules behind them:
   - **At most one per window**, and only when he's **really costing us** (wages against output,
     clear decline), not just slightly overvalued.
 - Players **aged 30+ on big wages** are sellable at the bottom of their range: their value only falls.
-- **Sell high on luck:** a 26+ attacker who scored 3+ goals above his xG had a lucky season; his value peaks now and his finishing will regress (`fm squad` flags him).
+- **Sell high on luck:** a 26+ attacker who scored 3+ goals above his xG had a lucky season; his value peaks now and his finishing will regress (the sell table lists him at his role's price; Gray, 25 from 17 xG, 2036).
+- **Bids weigh depth** (user, 2026-10-18): the price comes from his role in the depth chart, which counts
+  loanees back within 60 days and signings already agreed (a starter's sale means the buy table replaces
+  him). A promise the game holds us to is a price: Miceli (promised a sale at £81M, 2036-06) sits in the
+  price book at £81M.
 - Add-ons count as part of the fee (they are usually hit).
 - **Never just reject a bid: counter at the price we'd sell for** (user, 2031-07-22). If they say
   no, it's the same as a rejection; if they say yes, we've made a profit, and we're good at
@@ -122,6 +130,12 @@ The rules behind them:
   first; judge, then buy. (Last time 12 signings in one window broke the team.)
 - **Needs first:** buy for a position that is short (below two) or where a starter is
   underperforming. The signing must be **at least as good** as the player he replaces.
+- **An upgrade comes with a sale at its position** (user, 2026-10-18: "if we buy an upgrade to a
+  position, we also need to sell that position... if Froholdt sells, it might make sense to get this
+  guy"). A clear upgrade (+8 CA on our weakest starter there, 25 or under) is bought from the season's
+  surplus, or, when the surplus can't pay, **only once a player at that position is sold** (the buy
+  table's `buy_if_sold`: the starter he displaces first). The displaced starter then becomes an expensive
+  backup: the sell table prices him.
 - **Targets:**
   - strong output in their own league (rank)
   - judged only as a **regular starter**: 60% of the minutes his league's data window allows (the export holds ~the last 20 league games for other clubs). Smaller samples are noise (the 2027 signings were bought on ~11 apps and regressed). Rank attackers on xG/xA, not goals; a keeper's goals prevented needs more than one season
@@ -150,16 +164,23 @@ The rules behind them:
   asking price the next game day (the autopilot does it).
 - **Final year of his contract: open at 0.7x his value** (Yılmaz went for 0.69x); the agent's range runs high.
 
-### Wonderkids (user, 2034-09)
-A cycle, not a one-off: buy cheap, develop away, then play or sell.
-1. **Buy** (summer buy table): PA >= 175, aged 16-20 (18+ unless British/Irish), <= £15M, up to 4 a
-   window, and at most **10 in the portfolio** (prospects <= 23 outside the depth chart).
+### Wonderkids (user, 2034-09; limits 2026-10-18)
+A cycle, not a one-off: buy cheap, develop away, then play or sell. **We hold before we buy** (user,
+2026-10-18: "if we accumulate six new wonderkids every season and only sell one a season, that sucks"):
+the prospects we own are reviewed first (the sell table: loan again, promoted into the depth chart, or
+sold), and buys only fill the room that leaves.
+1. **Buy** (summer buy table): PA >= **180**, aged 16-20 (18+ unless British/Irish), <= £15M, at most **2 a
+   window**, and at most **6 in the portfolio** (every prospect we own: <= 23, PA >= 170, outside the
+   depth chart, on loan or not). A free one at PA 175+ is always a buy (§1b free agents). Over the
+   limit, the sell table sells the weakest.
 2. **On arrival:** one at our backup level (squad average - 25 CA) joins the squad; the rest go
    straight on the loan list (approve with `--note "wonderkid"`; the autopilot lists him when he signs).
 3. **On loan** while he is a prospect (<= 21, or <= 23 with PA >= 160) and outside the depth chart:
    the loan table decides offers (he must start; never an option to buy).
 4. **Promoted** when his CA reaches our backup level: the depth chart takes him as a backup/starter.
 5. **Over 23:** a normal player. Not starting → surplus → the sell table sells him.
+6. **Paid like a first-teamer** (above the backup wage cap) but outside the depth chart: sold, not loaned
+   (no loan club pays it).
 
 ## 6. Contracts
 - The **Director of Football negotiates**. We decide who and for how long.

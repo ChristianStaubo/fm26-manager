@@ -44,10 +44,7 @@ def scan(rows, max_age=None, min_worth=None, min_attr=None):
     t = m.today_of(rows)
     by = m.free_by(t)
     iv, typical = m.intval, bargains.typical_values(rows)
-    # Our level as the buy table measures it: the mean CA of our top squad_size players, loanees out.
-    ours = sorted((iv(p, 'ca') for p in rows if p['contract_club'] == m.CLUB and not p.get('on_loan_at')), reverse=True)[:table.get('squad_size', 22)]
-    squad_avg = round(sum(ours) / len(ours)) if ours else 140
-    backup_level = squad_avg - table.get('backup_within', 25)
+    squad_avg, backup_level = m.squad_level(rows, t)   # as every table measures it (manager.squad_level)
     wk_pa, wk_age = table.get('wonderkid_min_pa', 175), pol.get('wonderkid_max_age', 23)
     out = []
     for p in rows:

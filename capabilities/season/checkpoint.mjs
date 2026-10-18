@@ -60,7 +60,7 @@ export const STEPS = {
   async bargains(ctx) {
     const d = analysis('bargains.py', [], {date: ctx.date});
     const name = c => `${c.name} (${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}) ${money(c.value)}`;
-    return {data: d, md: [`caps: ${d.caps.per_window} buys, ${money(d.caps.max_spend)} a window · backup level CA ${d.backup_level}`,
+    return {data: d, md: [`caps: ${d.caps.per_window} buys, ${money(d.caps.max_spend)} a window · squad avg CA ${d.squad_avg}, bar CA ${d.quality_bar} (avg − 10)`,
       ...d.undervalued.slice(0, 5).map(c => `undervalued ${c.ratio}x (typical ${money(c.typical)}): ${name(c)}`),
       ...d.buried.slice(0, 5).map(c => `buried talent: ${name(c)}`)]};
   },

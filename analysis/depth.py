@@ -3,7 +3,8 @@
 
 The user's depth standard (2033-08-17, 2034-01-01): per position one starter per slot, max(1, slots - 1)
 natural backups (three CBs → two backups), and a third player who can cover. U21 players count; players out on loan don't. Naturals (rated 18+ there)
-rank first for starter/backup; cover players (15-17) only count towards the third.
+rank first for starter/backup; cover players (15-17) only count towards the third. Loanees back within
+manager.RETURN_WITHIN_DAYS count (manager.our_squad): Awudu, E. Đukić and Slatina were left out on 2036-06-04.
 
 role: starter | backup | third | surplus, at his most important position; depth_ok_without: does the
 position still meet the standard if he leaves? (If not, selling him needs a replacement: price him as
@@ -24,7 +25,7 @@ def best_rating(p, slot):
 
 
 def chart(rows, tactic):
-    ours = [p for p in rows if p['contract_club'] == m.CLUB and not p.get('on_loan_at') and m.intval(p, 'age') >= 16]
+    ours = m.our_squad(rows)
     positions = {}
     for s in tactic['slots']:
         if s['slot'] in m.SLOT_POSITIONS:

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {rowsOf, record, review, markReview, ledgerKind} from '../capabilities/season/verdicts.mjs';
+import {rowsOf, record, review, markReview, ledgerKind, seasonNet} from '../capabilities/season/verdicts.mjs';
 import {checkCheckpoints} from '../capabilities/audit/audit.mjs';
 
 // A small January-style report: the rows the manager must answer.
@@ -22,8 +22,10 @@ const report = {checkpoint: 'january', date: '2036-01-05', verdicts: true, steps
 
 test('every table row becomes a row to answer, named so the agent can address it', () => {
   const rows = rowsOf(report).map(r => `${r.step}|${r.item}`);
+  // The buy table ran, so the squad step's own needs are not rows (the tables decide); the sell table
+  // didn't, so its sell candidates still are.
   assert.deepEqual(rows, ['contracts|Chris Brady', 'final_year|Mattia Romeo', 'free_agents|Yumeki Yokoyama', 'wonderkids|Ethan Hewitt',
-    'squad|DM upgrade', 'squad|sell? Manuel Saavedra', 'buys|ST backup', 'bargains|Radovan Rusnák']);
+    'squad|sell? Manuel Saavedra', 'buys|ST backup', 'bargains|Radovan Rusnák']);
 });
 
 test('a verdict needs a known kind, a reason, a price when it proposes, and a real row', () => {
@@ -35,7 +37,7 @@ test('a verdict needs a known kind, a reason, a price when it proposes, and a re
   record(base, {step: 'buys', item: 'st backup', verdict: 'propose', why: 'Mitrović, 19, CA 141', price: 4e6}, rows);
   record(base, {step: 'contracts', item: 'Chris Brady', verdict: 'act', why: 'renewal test passed'}, rows);
   const r = review(base, report);
-  assert.equal(r.missing, 6);
+  assert.equal(r.missing, 5);
   assert.equal(r.rows.find(x => x.item === 'ST backup').price, 4e6);
 });
 
@@ -58,4 +60,20 @@ test('the judge fails the latest verdict-era checkpoint while rows are unanswere
   assert.deepEqual(checkCheckpoints({today: '2036-05-02', cycle, reports: [old], missingVerdicts: () => 9}).fail, []);
   assert.match(checkCheckpoints({today: '2036-05-02', cycle, reports: [old, fresh], missingVerdicts: () => 3}).fail[0], /newgen checkpoint 2036-05-01: 3 row\(s\) without a verdict/);
   assert.deepEqual(checkCheckpoints({today: '2036-05-02', cycle, reports: [old, fresh], missingVerdicts: () => 0}).fail, []);
+});
+
+test('upgrade rows: one the surplus pays, or one a sale at that position funds (user, 2026-10-18)', () => {
+  const r = {...report, steps: {...report.steps, buys: {ok: true, data: {season_surplus: 35e6, positions: [{position: 'DM', starters: ['Rosete 180', 'Ylla 161'], needs: [],
+    upgrade_option: {candidates: [{name: 'Senhaji', age: 23, ca: 178, club: 'Espanyol', value: 73e6, buy: false, buy_if_sold: ['Arnal Ylla', 'Victor Froholdt']}, {name: 'Other', age: 24, ca: 170, value: 90e6, buy: false}]}}]}}}};
+  const row = rowsOf(r).find(x => x.step === 'buys');
+  assert.equal(row.item, 'DM upgrade Senhaji');
+  assert.match(row.detail, /only once Arnal Ylla or Victor Froholdt is sold/);
+});
+
+test('profit is per season: the net if every proposal went through, each player once, overturned ones out', () => {
+  const rows = [{step: 'sells', item: 'Froholdt', verdict: 'propose', price: 40e6}, {step: 'buys', item: 'DM upgrade Senhaji', verdict: 'propose', price: 80e6},
+    {step: 'buys', item: 'wonderkid Pepper', verdict: 'propose', price: 11e6}, {step: 'bargains', item: 'Pepper', verdict: 'propose', price: 11e6},
+    {step: 'free_agents', item: 'Luiz', verdict: 'propose', price: 0}, {step: 'buys', item: 'wonderkid Sweeney', verdict: 'propose', price: 12e6, review: 'overturned'},
+    {step: 'squad', item: 'sell? Gray', verdict: 'propose', price: 51e6}];
+  assert.deepEqual(seasonNet(rows, 35e6), {surplus: 35e6, sales: 91e6, buys: 91e6, net: 35e6});
 });

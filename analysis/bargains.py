@@ -3,7 +3,8 @@
 players priced well below what players of their quality and age usually cost (JSON on stdout).
 
 Three lists, position-free (resale buys: one who'd start plays, the rest go on loan):
-  undervalued  value <= typical / undervalued_ratio, age <= max_age, CA >= the squad's backup level;
+  undervalued  value <= typical / undervalued_ratio, age <= max_age, CA >= the quality bar (squad average CA - 10:
+               near our level, for resale; not the backup level, which is squad average - buying.table.backup_within);
                typical = median value of players within +-3 CA and +-1 year (enough of them)
   buried       age <= buried_max_age, PA >= buried_min_pa, CA well below (a big club's reserves: PSG)
   (wonderkids are the buy table's list)
@@ -57,9 +58,8 @@ def scan(rows, squad_avg=None):
     pool = priced_pool(rows)
     typical = typical_values(rows, pool)
 
-    ours = sorted((iv(p, 'ca') for p in rows if p['contract_club'] == m.CLUB), reverse=True)
-    squad_avg = squad_avg or (round(sum(ours[:22]) / max(1, len(ours[:22]))) if ours else 140)
-    backup_level = squad_avg - 10
+    squad_avg = squad_avg or m.squad_level(rows)[0]
+    quality_bar = squad_avg - 10
     card = lambda p, **x: {'name': p['name'], 'club': p['contract_club'], 'age': iv(p, 'age'), 'positions': p['positions'],
                            'ca': iv(p, 'ca'), 'pa': iv(p, 'pa'), 'value': int(value(p)), 'wage': int(float(p['wage'] or 0)),
                            'competition': p.get('competition', ''), **x}
@@ -70,7 +70,7 @@ def scan(rows, squad_avg=None):
         age, ca, pa, v = iv(p, 'age'), iv(p, 'ca'), iv(p, 'pa'), value(p)
         if age < 18 or v > B['max_fee']:
             continue
-        if age <= B['max_age'] and ca >= backup_level:
+        if age <= B['max_age'] and ca >= quality_bar:
             t = typical(p)
             if t and t / v >= B['undervalued_ratio']:
                 under.append(card(p, typical=int(t), ratio=round(t / v, 1)))
@@ -78,7 +78,7 @@ def scan(rows, squad_avg=None):
             buried.append(card(p))
     under.sort(key=lambda c: -c['ratio'])
     buried.sort(key=lambda c: (-c['pa'], c['value']))
-    return {'squad_avg': squad_avg, 'backup_level': backup_level, 'caps': {'per_window': B['per_window'], 'max_spend': B['max_spend']},
+    return {'squad_avg': squad_avg, 'quality_bar': quality_bar, 'caps': {'per_window': B['per_window'], 'max_spend': B['max_spend']},
             'undervalued': under[:B['top']], 'buried': buried[:B['top']]}
 
 

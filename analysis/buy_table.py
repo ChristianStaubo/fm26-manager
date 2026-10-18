@@ -2,10 +2,12 @@
 """The buy decision table (user, 2033-09-01): which positions need a signing, and the best-value
 candidates for each (JSON on stdout).
 
-Per position, from our depth chart (depth.py; U21s count, loanees out don't):
+Per position, from our depth chart (depth.py; U21s count, loanees back within 60 days too):
   replace  a starter is leaving: like-for-like, CA >= his CA - replace_within
   upgrade  CA >= our weakest starter + upgrade_by; a buy only if age <= upgrade_max_age, fee at value,
-           wage within the ceiling and the season's net spend stays positive
+           wage within the ceiling and the season's net spend stays positive; when the surplus can't pay,
+           the best one is a buy once a player at that position is sold (buy_if_sold: the displaced
+           starter first; user, 2026-10-18: "if Froholdt sells, it might make sense to get this guy")
   backup   no backup within backup_within CA of min(weakest starter, squad average) (naturals or cover; not a starter
            elsewhere; one position each):
            CA >= starter - backup_within; free first, aim <= backup_aim_fee, at most backup_max_fee
@@ -74,7 +76,9 @@ def wonderkids(rows):
         if p['contract_club'] in (m.CLUB, '') or (p['club'] or '').startswith('club#') or p.get('on_loan_at'):
             continue
         age, pa, value = m.intval(p, 'age'), m.intval(p, 'pa'), float(p['value'] or 0)
-        if pa < R['wonderkid_min_pa'] or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age']:
+        # Bought (with a fee) only at buy_min_pa: a couple of good ones (user, 2026-10-18). A free one at
+        # wonderkid_min_pa is always a buy (free_agents.py).
+        if pa < max(R['wonderkid_min_pa'], m.POLICY.get('wonderkids', {}).get('buy_min_pa', 0)) or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age']:
             continue
         if age < 18 and p.get('nation') not in BRITISH_IRISH:
             continue
@@ -111,8 +115,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
     wage_cap = bands['median'] * m.POLICY['contracts']['max_salary_vs_first_team_median']   # the hard wage cap
     # The squad's level (user, 2033-09-01: a great starter shouldn't raise the backup bar; Carroll 128 is
     # fine behind Brown 154): the mean CA of our top `squad_size` players.
-    ours = sorted((m.intval(p, 'ca') for p in rows_now if p['contract_club'] == m.CLUB and not p.get('on_loan_at')), reverse=True)
-    squad_avg = round(sum(ours[:R['squad_size']]) / max(1, len(ours[:R['squad_size']])))
+    squad_avg, backup_level = m.squad_level(rows_now)
     starters_all = {x['name'] for v in chart.values() for x in v['players'][:v['slots']]}
     used = set()
     out = []
@@ -129,7 +132,10 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
             if b:
                 used.add(b['name']); found.append(b)
         missing = depth.backups(n) - len(found)
-        row = {'position': pos, 'weakest': weakest, 'starters': [f"{x['name']} {x['ca']}" for x in starters],
+        # Who could be sold to pay for an upgrade here: the starter it displaces, then the rest of the
+        # position (not starting elsewhere).
+        sellers = [x['name'] for x in sorted(starters, key=lambda x: x['ca'])[:1]] + [x['name'] for x in players[n:] if x['name'] not in starters_all]
+        row = {'position': pos, 'weakest': weakest, '_sellers': sellers, 'starters': [f"{x['name']} {x['ca']}" for x in starters],
                'backup': ', '.join(f"{b['name']} {b['ca']}{'' if b['natural'] else ' (cover)'}" for b in found) or None, 'needs': []}
         for x in left.get(pos, []):
             rb = x['ca'] - R['replace_within']
@@ -158,12 +164,30 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
         c['buy'] = r['position'] not in taken and c['value'] <= left_money
         if c['buy']:
             left_money -= c['value']; taken.add(r['position'])
+    # Funded upgrades (user, 2026-10-18): profit is per season, and an upgrade comes with a sale at its
+    # position. Summer only; the best CA gain per £ that one sale there (plus what's left) pays for.
+    value_of = {p['name']: float(p['value'] or 0) for p in rows_now if p['contract_club'] == m.CLUB}
     for r in out:
-        r.pop('weakest', None)
-    # The portfolio (user, 2034-09): at most portfolio_max prospects (<= 23, outside the depth chart) at once.
-    held = sum(1 for p in rows_now if p['contract_club'] == m.CLUB and m.intval(p, 'age') <= 23 and m.intval(p, 'pa') >= R['wonderkid_min_pa']
+        opt = r.get('upgrade_option')
+        if window != 'summer' or not opt or r['position'] in taken:
+            continue
+        fundable = []
+        for c in opt['candidates']:
+            by = [x for x in r['_sellers'] if c['age'] <= R['upgrade_max_age'] and max(left_money, 0) + value_of.get(x, 0) >= c['value']]
+            if by:
+                fundable.append((c, by))
+        if fundable:
+            c, by = max(fundable, key=lambda cb: (cb[0]['ca'] - r['weakest']) / max(cb[0]['value'], 1))
+            c['buy_if_sold'] = by[:3]
+    for r in out:
+        r.pop('weakest', None); r.pop('_sellers', None)
+    # The portfolio (user, 2034-09; 2026-10-18: "if we accumulate six new wonderkids every season and only
+    # sell one, that sucks"): at most portfolio_max prospects (<= 23, PA >= portfolio_min_pa, outside the
+    # depth chart, on loan or not) at once; buys only fill the room promotions and sales leave.
+    W = m.POLICY.get('wonderkids', {})
+    held = sum(1 for p in rows_now if p['contract_club'] == m.CLUB and m.intval(p, 'age') <= 23 and m.intval(p, 'pa') >= W.get('portfolio_min_pa', R['wonderkid_min_pa'])
                and assigned.get(p['name'], (None, 'surplus'))[1] == 'surplus')
-    room = max(0, m.POLICY.get('wonderkids', {}).get('portfolio_max', 10) - held)
+    room = max(0, W.get('portfolio_max', 6) - held)
     # On arrival (user, 2034-09): one at our backup level joins the squad; the rest go on the loan list
     # (fm approve buy … --note "wonderkid": the autopilot loan-lists him when he signs).
     kids = [{**c, 'on_arrival': 'squad' if c['ca'] >= squad_avg - R['backup_within'] else 'loan'} for c in wonderkids(rows_now)[:room]]

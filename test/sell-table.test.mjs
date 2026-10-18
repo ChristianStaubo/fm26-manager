@@ -22,3 +22,17 @@ print(json.dumps({x['name']: [x['action'], x['ask']] for x in st.table(rows, {'s
   assert.equal(d.Low[0], 'let-go', 'young, low PA: not listed');
   assert.equal(d.Back, undefined); assert.equal(d.Third, undefined);
 });
+
+test('sell table (user, 2026-10-18): a lucky scorer sells, a prospect on first-team wages sells, the portfolio over its limit sells the weakest', () => {
+  const d = run(`import json, sell_table as st
+C = st.m.CLUB
+def p(name, ca, pa, age, lb=1, value=10e6, wage=20000, **x):
+    return {'name': name, 'club': C, 'contract_club': C, 'on_loan_at': '', 'age': str(age), 'ca': str(ca), 'pa': str(pa), 'value': str(int(value)),
+            'wage': str(wage), 'contract_expires': '2038-06-30', 'pos_DL': str(lb), 'pos_WBL': '1', **x}
+rows = [p('Start', 150, 155, 26, lb=20), p('Back', 140, 145, 27, lb=20, goals='25', xg='17.0', goals_minus_xg='8.0'), p('Third', 130, 140, 25, lb=20),
+        p('Paid', 120, 174, 21, lb=20, wage=89000)] + [p(f'Kid{pa}', 100, pa, 19, lb=20) for pa in (171, 172, 173, 175, 178, 180, 185)]
+print(json.dumps({x['name']: [x['action'], x['why'][:20]] for x in st.table(rows, {'slots': [{'slot': 'LB'}]})}))`);
+  assert.equal(d.Back[0], 'sell', 'lucky season: 25 from 17 xG');
+  assert.equal(d.Paid[0], 'sell', '£89K/wk: no loan club pays it');
+  assert.deepEqual(['Kid171', 'Kid172', 'Kid173', 'Kid175', 'Kid178', 'Kid180', 'Kid185'].map(k => d[k][0]), ['sell', 'loan', 'loan', 'loan', 'loan', 'loan', 'loan'], 'seven at PA 170+: the weakest goes');
+});
