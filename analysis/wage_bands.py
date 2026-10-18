@@ -36,7 +36,10 @@ def peer_band(rows, club, name, within=4, min_peers=3):
         or next((r for r in rows if r['name'] == name and ca(r) is not None), None)
     if not him:
         return None
-    ours = [r for r in rows if r['contract_club'] == club and ca(r) is not None and float(r['wage'] or 0) > 0]
+    # Seniors only (2035-08-18, Ortiz): our 19-21-year-olds on youth wages (Awudu £17K, Luna £17K) put
+    # a CA 139 striker's ceiling at £27.5K, below our own opening; seniors at his level earn £27-82K.
+    ours = [r for r in rows if r['contract_club'] == club and ca(r) is not None and float(r['wage'] or 0) > 0
+            and int(str(r.get('age') or 0) or 0) >= 22]
     w = within
     while True:
         peers = [r for r in ours if abs(ca(r) - ca(him)) <= w and r['name'] != name]
