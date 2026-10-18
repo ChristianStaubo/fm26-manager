@@ -7,12 +7,18 @@ import {Screen, openPlayer, peekActions, actionPath, profileFacts, NeedsAnalyst,
 import {askAgent, ASK} from './ask.mjs';
 import {negotiatePersonalTerms} from '../contracts/personal-terms.mjs';
 import {gate} from '../approvals.mjs';
+import {record as recordArranged} from './arranged.mjs';
+import {club as clubConfig} from '../data.mjs';
+const ourClub = () => clubConfig().club;
 
 export const APPROACH = 'Approach To Sign';
 
 export async function preContract(name, club, {preview = false, dryRun = false} = {}) {
   if (!dryRun) gate('buy', 'buy', name, {price: 0, what: `pre-contract ${name} (${club})`});
   let profile = await openPlayer(name, club);
+  // Already agreed (Luiz and Rusnák, 2036-06-04): nothing to offer.
+  const done = profileFacts(profile).arranged;
+  if (done) { if (done.club === ourClub()) recordArranged(name, done); return {action: 'pre-contract', name, club, outcome: 'arranged', arranged: done}; }
   let {top} = await peekActions('Transfer');
   let agent = null;
   if (top.includes(ASK) && !dryRun) {

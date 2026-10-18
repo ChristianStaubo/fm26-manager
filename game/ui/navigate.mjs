@@ -1,5 +1,5 @@
 // Get to things: players (via global search), profile Actions menus.
-import {Screen, waitFor, settle, clean, parseMoney, parseRange} from './screen.mjs';
+import {Screen, waitFor, settle, clean, parseMoney, parseRange, parseDate, isoDate} from './screen.mjs';
 import {click, clickWhere, openMenu, hover, type} from './controls.mjs';
 import {recover, overlays, NeedsAnalyst} from './overlays.mjs';
 // A hover tooltip (an attribute description left open, 2032-01-01) blocks nothing: don't wait for it.
@@ -119,7 +119,12 @@ export function profileFacts(s) {
   const valueText = s.items.find(i => i.kind === 'button' && /^£[\d.,]+[KMB]? - £[\d.,]+[KMB]?$/.test(i.label))?.label;
   // A transfer-listed player shows his asking price (one amount) where the value range was.
   const asking = valueText ? null : s.items.find(i => i.kind === 'button' && i.name === 'SIButton' && /^£[\d.]+[KM]?$/.test(i.label) && Math.abs(i.bounds[0] - (s.items.find(x => x.name === 'ContractDetails')?.bounds[0] ?? -1)) < 5);
-  return {wage: parseMoney(contract), contract, valueRange: parseRange(valueText), valueText, askingPrice: asking ? parseMoney(asking.label) : null};
+  // "Transfer arranged" / "Joining Brentford on 7/1/2036" (Alexandre Luiz, 2036-06-04): a pre-contract or
+  // deal already agreed. The agent couldn't see it and set out to re-offer.
+  const at = s.items.findIndex(i => i.kind === 'text' && /^Transfer arranged$/i.test(i.label || ''));
+  const join = at < 0 ? null : s.items.slice(at + 1, at + 4).map(i => /^Joining (.+) on (\d{1,2}\/\d{1,2}\/\d{4})$/.exec(i.label || '')).find(Boolean);
+  return {wage: parseMoney(contract), contract, valueRange: parseRange(valueText), valueText, askingPrice: asking ? parseMoney(asking.label) : null,
+    arranged: join ? {club: join[1], date: isoDate(parseDate(join[2]))} : at >= 0 ? {club: null, date: null} : null};
 }
 
 // Context-menu entries currently shown (EntryElement rows), with their x position.

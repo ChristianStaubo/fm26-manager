@@ -28,7 +28,7 @@ export function rowsOf(report) {
   const named = new Set(), first = (step, name, detail, auto) => { const k = String(name).toLowerCase(); if (named.has(k)) return; named.add(k); add(step, name, detail, auto); };
   for (const p of data('contracts')?.expiring || []) add('contracts', p.name, `${p.issue} (to ${p.expires}), ${money(p.value)}: ${p.do}`);
   for (const p of data('final_year')?.players || []) add('final_year', p.name, `final year, ${money(p.value)}: ${p.decision?.action ?? '?'}${p.decision?.reason ? ' (' + p.decision.reason + ')' : ''}`);
-  for (const p of data('free_agents')?.players || []) first('free_agents', p.name, `${p.age}, ${p.slot ?? p.positions}${p.ca ? `, CA ${p.ca}/PA ${p.pa}` : ''}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}: ${p.route ?? ''}`);
+  for (const p of data('free_agents')?.players || []) first('free_agents', p.name, `${p.age}, ${p.slot ?? p.positions}${p.ca ? `, CA ${p.ca}/PA ${p.pa}` : ''}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}: ${p.route ?? ''}`, p.arranged ? {verdict: 'act', why: `Done: transfer arranged, joining ${p.arranged.club} on ${p.arranged.date} (seen on his profile)`} : null);
   for (const p of data('wonderkids')?.players || []) add('wonderkids', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   for (const p of data('newgens')?.signable_now || []) add('newgens', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   // The squad step is the picture; the buy and sell tables decide. Its own needs (output-based upgrade

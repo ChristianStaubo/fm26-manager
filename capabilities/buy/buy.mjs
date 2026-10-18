@@ -304,6 +304,12 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (agent?.asked && !agent.willing) return {action: 'buy', name, club, outcome: 'unwilling', agent};
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
+  // A transfer already arranged (to us, or elsewhere): no bid (Luiz, 2036-06-04).
+  if (facts.arranged) {
+    const {record} = await import('./arranged.mjs'), {club: cfg} = await import('../data.mjs');
+    if (facts.arranged.club === cfg().club) record(name, facts.arranged);
+    return {action: 'buy', name, club, outcome: 'arranged', arranged: facts.arranged};
+  }
   // The agent's fee range is what the club will accept: use it, not the profile's range, which can
   // lag (Meïté 2030-07-21: agent £16-20M, profile still higher → we opened at £21.5M).
   if (agent?.feeRange?.every(Number.isFinite)) { facts.valueRangeProfile = facts.valueRange; facts.valueRange = agent.feeRange; }

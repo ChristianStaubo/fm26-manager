@@ -104,7 +104,10 @@ export const STEPS = {
   },
   async free_agents(ctx) {
     const d = ctx.freeAgents = analysis('free_agents.py', ['--top', '25'], {date: ctx.date});
-    const md = d.players.map(c => `${c.watch ? '**WATCH** ' : ''}${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.homegrown ? '**HG** ' : ''}${c.name} (${c.age}, ${c.slot ?? c.positions}, CA ${c.ca}/PA ${c.pa}: ${c.why}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
+    // Agreed pre-contracts seen on profiles (the export can't tell them from offers): done, not targets.
+    const {lookup} = await import('../buy/arranged.mjs');
+    for (const p of d.players) { const a = lookup(p.name); if (a) p.arranged = a; }
+    const md = d.players.map(c => `${c.arranged ? `**ARRANGED: joining ${c.arranged.club} on ${c.arranged.date}** ` : ''}${c.watch ? '**WATCH** ' : ''}${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.homegrown ? '**HG** ' : ''}${c.name} (${c.age}, ${c.slot ?? c.positions}, CA ${c.ca}/PA ${c.pa}: ${c.why}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
     return {data: d, md: md.length ? md : [`none worth ${money(5e6)}+ ending by ${d.free_by}`]};
   },
   async wonderkids(ctx) {

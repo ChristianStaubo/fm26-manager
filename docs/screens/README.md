@@ -19,6 +19,7 @@ When a fix teaches us a screen, add or update its row here in the same commit.
 |---|---|---|---|
 | Portal | date button, or `fm click Portal` | `goTo('Portal')` | verified 2026-10 |
 | Player profile | Portal → Search → name → result row | `fm player "<name>" --club <club>` | verified 2026-10 |
+| Transfer arranged | profile header: text "Transfer arranged" then "Joining <club> on M/D/YYYY" (an agreed pre-contract or deal; Luiz, 2036-06-04). The save export can't tell it from a pending offer | `profileFacts().arranged`; `fm player` records ours in `local/runs/arranged.json`; `fm buy`/`fm precontract` stop on it | verified 2036-06-04 |
 | Player Actions menu | profile → `Actions` menu → hover submenus | `actionPath([...])`, `fm player` peeks `Transfer` | verified 2026-10 |
 | Set transfer status / asking price | profile → Actions → Transfer → Set Transfer Status | `fm sell` | verified 2026-10 |
 | Make offer / negotiation | profile → Actions → Make An Offer (top level, or under Transfer) | `fm buy` | verified 2026-10 |

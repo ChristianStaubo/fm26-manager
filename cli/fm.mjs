@@ -192,8 +192,10 @@ try {
     }
     case 'key': out(await fm.key(a1)); break;
     case 'player': {
-      const s = await fm.openPlayer(a1, flags.club);
-      out({...fm.profileFacts(s), actions: await fm.peekActions(flags.menu || 'Transfer')});
+      const s = await fm.openPlayer(a1, flags.club), facts = fm.profileFacts(s);
+      // An arranged move to us is recorded: the free-agent step then marks him done (capabilities/buy/arranged.mjs).
+      if (facts.arranged?.club === (await import('../capabilities/data.mjs')).club().club) (await import('../capabilities/buy/arranged.mjs')).record(a1, facts.arranged);
+      out({...facts, actions: await fm.peekActions(flags.menu || 'Transfer')});
       break;
     }
     case 'continue': out(await withLock('continue', () => control({maxSteps: Number(a1 || 10)}))); break;

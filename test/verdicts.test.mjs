@@ -99,3 +99,11 @@ test('a promised sale (Miceli: sold if £81M is bid) counts in the season net, o
   const rows = [{step: 'buys', item: 'CB replace for Edoardo Miceli', verdict: 'propose', price: 21e6}];
   assert.deepEqual(seasonNet(rows, 35e6, [{name: 'Edoardo Miceli', price: 81e6}]), {surplus: 35e6, sales: 81e6, buys: 21e6, net: 95e6});
 });
+
+test('a free agent whose transfer to us is arranged is answered as done (Luiz, Rusnák, 2036-06-04)', () => {
+  const r = {...report, steps: {...report.steps, free_agents: {ok: true, data: {players: [
+    {name: 'Alexandre Luiz', age: 24, slot: 'LB', worth: 89e6, always_buy: true, arranged: {club: 'Brentford', date: '2036-07-01'}}]}}}};
+  const base = join(mkdtempSync(join(tmpdir(), 'fm-verdicts-')), '2036-06-04-season_end');
+  const row = review(base, r).rows.find(x => x.item === 'Alexandre Luiz');
+  assert.equal(row.verdict, 'act'); assert.equal(row.auto, true); assert.match(row.why, /joining Brentford on 2036-07-01/);
+});
