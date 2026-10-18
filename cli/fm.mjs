@@ -59,6 +59,10 @@ Act
 Manager (decisions; read playbook/PLAYBOOK.md first). JSON; add --fresh after saving the game
   squad [--fresh]                alerts (no contract, regulars in U21), depth, needs, sell candidates, youth (§2)
   cycle [--budget N]             THE LOOP: holiday to the next checkpoint (playbook/cycle.json), run every step, write one report
+  verdicts [--checkpoint D]      every row the latest checkpoint raised, with the manager's verdict (missing = '-')
+  verdict <step> "<item>" act|propose|pass --why "…" [--price N]   answer one row (propose = needs approval, with a max price)
+  verdicts agree --all | agree <step> "<item>" | overturn <step> "<item>" --decided "…" [--rule "…"]
+                                 the USER's review (main session only): feeds the autonomy ledger (fm autonomy)
   checkpoint [<name>] [--budget N] [--lens L] [--no-save]   run a checkpoint now (no name: what's next); report in local/reports/checkpoints/
   free [--max-age N] [--min-worth N] [--min-attr N] [--top N] [--fresh]
                                  FIRST at every checkpoint: free agents + contracts ending by 30 June (loanees too),
@@ -208,6 +212,31 @@ try {
       break;
     }
     case 'incidents': out(await incidents.list()); break;
+    case 'verdicts': case 'verdict': {
+      // The manager's answer to every row of a checkpoint, and the user's review (capabilities/season/verdicts.mjs).
+      const cp = await import('../capabilities/season/checkpoint.mjs'), v = await import('../capabilities/season/verdicts.mjs');
+      const all = cp.reports().filter(r => r.report?.verdicts);
+      const pick = flags.checkpoint ? all.find(r => r.file.includes(flags.checkpoint)) : all.at(-1);
+      if (!pick) throw new Error('No checkpoint report with verdicts yet (fm checkpoint / fm cycle writes them from 2026-10-18 on)');
+      const base = pick.file.replace(/\.json$/, ''), rows = v.rowsOf(pick.report);
+      if (cmd === 'verdict') { out(v.record(base, {step: a1, item: a2, verdict: pos[3], why: flags.why, price: num(flags.price), date: pick.date}, rows)); break; }
+      if (a1 === 'agree' || a1 === 'overturn') {   // the USER's review: recorded by the main session, never the player agent
+        const {record} = await import('../capabilities/interventions.mjs'), kind = a1 === 'agree' ? 'agreed' : 'overturned';
+        if (kind === 'overturned' && !flags.decided) throw new Error('overturn needs --decided "what the user decided instead"');
+        const r = v.review(base, pick.report).rows.filter(x => x.verdict && (flags.all ? !x.review : x.step === a2 && x.item.toLowerCase() === String(pos[3] || '').toLowerCase()));
+        if (!r.length) throw new Error('No matching verdict: fm verdicts agree --all | agree <step> "<item>" | overturn <step> "<item>" --decided "…"');
+        for (const x of r) {
+          v.markReview(base, {step: x.step, item: x.item, review: kind, decided: flags.decided});
+          record({capability: v.CAPABILITY[x.step] || x.step, kind: v.ledgerKind(x.verdict, kind), date: pick.date, rule: flags.rule || null,
+            proposed: `${x.step}: ${x.item} → ${x.verdict}${x.price ? ' ' + x.price : ''} (${x.why})`, decided: kind === 'agreed' ? 'as the manager decided' : flags.decided});
+        }
+        out({checkpoint: `${pick.date}-${pick.name}`, reviewed: r.length, as: kind}); break;
+      }
+      const rv = v.review(base, pick.report);
+      out({checkpoint: `${pick.date}-${pick.name}`, rows: rv.rows.length, missing: rv.missing, unreviewed: rv.unreviewed,
+        list: rv.rows.map(x => ({step: x.step, item: x.item, verdict: x.verdict ?? '-', ...(x.price ? {price: x.price} : {}), why: x.why, review: x.review, detail: x.detail}))});
+      break;
+    }
     case 'incident':
       if (a1 === 'fixture') out(await incidents.fixture(a2, pos[3], pos[4]));
       else out(a1 ? await incidents.show(a1) : await incidents.list());

@@ -203,6 +203,10 @@ A cycle, not a one-off: buy cheap, develop away, then play or sell.
   a handler couldn't (the decision tables still decide), or press one safe button (`policy.json`
   `autopilot.fallback.safe_buttons`) on a screen with no money involved; anything about fees, wages,
   contracts or offers stops for us. Each such call is logged for review.
+- **Every checkpoint row gets a verdict** (user, 2026-10-18): act (within autonomy), propose (needs approval,
+  with a price) or pass (with why), recorded with `fm verdict`. The user reviews them (`fm verdicts`); agreed
+  verdicts count towards 'auto' like unchanged approvals. The path to a season without supervision: run to a
+  checkpoint, review its verdicts, promote what the manager gets right, go on.
 - An approval is one player, one action and a price: buy up to a maximum, sell from a minimum.
   The manager proposes (`fm buy … --dry-run` prices it); the user approves in chat; the main
   session records it (`fm approve`). The tools refuse anything outside it.

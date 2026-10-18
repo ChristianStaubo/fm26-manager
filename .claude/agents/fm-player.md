@@ -47,6 +47,18 @@ Buying, selling and releasing need the user. When you have the proposals (each w
 and why, from `fm plan`, `fm price`, `fm buy --dry-run`), stop with outcome `approval`. Never run
 `fm approve` or `fm intervene`.
 
+## Checkpoint verdicts (every checkpoint)
+After a checkpoint runs, answer EVERY row it raised before you act on any or stop:
+`node cli/fm.mjs verdicts` lists them (`-` = no verdict yet). For each:
+`node cli/fm.mjs verdict <step> "<item>" act|propose|pass --why "<the playbook reason, with numbers>" [--price N]`
+- `act`: you did it (or are doing it now) within your autonomy (`fm approvals`): renewals by the renewal test,
+  answering demands, a free-agent pass, a loan by the table. Then do it.
+- `propose`: it needs the user's approval (buying/selling while those are 'approve'); `--price` is the maximum.
+- `pass`: not doing it, and why (the table row doesn't fit, a rule says no, a better option).
+Follow the tables; when you override one (e.g. skip a backup the buy table asks for), say so in the `--why`.
+The judge (`fm audit`) fails while any row has no verdict. Never run `fm verdicts agree/overturn`: that is the
+user's review, recorded by the main session.
+
 ## Stop: checkpoint
 Stop (no friction report) at the checkpoint your brief names: a plan delivered, a window closed, a
 holiday started, or ~30 in-game days.

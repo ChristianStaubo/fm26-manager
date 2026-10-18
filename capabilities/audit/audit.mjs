@@ -99,7 +99,7 @@ function lastPosition() {
 // (2031) and Jesús Fortea were free, worth £30M+, and nobody looked: no report, no question.
 // `stillFree`: today's free-agent list, when known. A player who has since renewed (Odobert, Villa to
 // 2036, still flagged in 2033-01 from the summer report) needs no answer.
-export function checkCheckpoints({today, cycle, reports = [], decisions = [], interventions = [], stillFree = null}) {
+export function checkCheckpoints({today, cycle, reports = [], decisions = [], interventions = [], stillFree = null, missingVerdicts = null}) {
   const decide = [], warn = [];
   if (!today || !cycle) return {fail: [], decide, warn};
   const season = (d => { const y = Number(d.slice(0, 4)); return d.slice(5) >= '07-01' ? y : y - 1; })(today);
@@ -119,7 +119,13 @@ export function checkCheckpoints({today, cycle, reports = [], decisions = [], in
   for (const p of latest?.report.steps.free_agents.data.players || [])
     if (p.always_buy && !answered(p.name) && (!stillFree || stillFree.some(n => norm(n) === norm(p.name))))
       decide.push(`free agent ${p.name} (${p.age}, ${p.slot}) worth ${m(p.worth)}, ${p.contract_club || 'free'} to ${p.contract_until || '-'} (${latest.name} ${latest.date}): fm precontract / fm buy, or record a pass (fm intervene free_agents rejected --proposed "${p.name}" --decided "why")`);
-  return {fail: [], decide, warn};
+  // Every row of the latest checkpoint gets the manager's verdict (user, 2026-10-18: "pause, assess, then auto").
+  const fail = [], last = reports.filter(r => r.report?.verdicts).at(-1);
+  if (last && missingVerdicts) {
+    const n = missingVerdicts(last);
+    if (n) fail.push(`${last.name} checkpoint ${last.date}: ${n} row(s) without a verdict: fm verdicts, then fm verdict <step> "<item>" act|propose|pass --why "…"`);
+  }
+  return {fail, decide, warn};
 }
 
 export async function audit({alerts, position, since, stillFree} = {}) {
@@ -138,5 +144,7 @@ export async function audit({alerts, position, since, stillFree} = {}) {
 
 async function cycleCheck(decisions, stillFree) {
   const [{gameDate}, cp, iv] = await Promise.all([import('../data.mjs'), import('../season/checkpoint.mjs'), import('../interventions.mjs')]);
-  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports: cp.reports(), decisions, interventions: iv.all(), stillFree});
+  const v = await import('../season/verdicts.mjs');
+  const missingVerdicts = r => v.review(r.file.replace(/\.json$/, ''), r.report).missing;
+  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports: cp.reports(), decisions, interventions: iv.all(), stillFree, missingVerdicts});
 }

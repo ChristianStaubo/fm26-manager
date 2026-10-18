@@ -129,7 +129,8 @@ export async function runCheckpoint(name, {budget, lens, maxAge, date, save = tr
   if (!cp) throw new Error(`checkpoint: ${cycle.checkpoints.map(c => c.name).join(' | ')}`);
   if (save) { const {saveGame} = await import('./save.mjs'); await saveGame(); analysis('free_agents.py', ['--top', '1'], {fresh: true}); }
   date ??= await gameDate();
-  const ctx = {name, date, budget, lens, maxAge}, report = {checkpoint: name, date, season: seasonOf(date), why: cp.why, steps: {}};
+  // verdicts: every row the tables raise gets the manager's act / propose / pass (season/verdicts.mjs).
+  const ctx = {name, date, budget, lens, maxAge}, report = {checkpoint: name, date, season: seasonOf(date), why: cp.why, verdicts: true, steps: {}};
   const md = [`# ${name} checkpoint, ${date}`, '', cp.why, ''];
   for (const step of cp.steps) {
     md.push(`## ${step}`);
@@ -144,6 +145,8 @@ export async function runCheckpoint(name, {budget, lens, maxAge, date, save = tr
     writeFileSync(`${base}.md`, md.join('\n'));
     report.files = [`${base}.md`.replace(ROOT, ''), `${base}.json`.replace(ROOT, '')];
   }
+  const {rowsOf} = await import('./verdicts.mjs'), n = rowsOf(report).length;
+  if (n) md.push('## verdicts', `- ${n} rows to answer: fm verdicts (list), fm verdict <step> "<item>" act|propose|pass --why "…" [--price N]`, '');
   report.markdown = md.join('\n');
   return report;
 }

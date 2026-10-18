@@ -25,5 +25,10 @@ Haiku, the user's login; ~4-8 s) looks first. A fact a handler can't read: it re
 must appear on the screen, and the handler's table decides. No handler: it may press one `safe_buttons`
 button that is on the screen, or none; a screen with `money_words` always stops. At most 3 per run,
 never twice on one screen; each is a `supervisor-decision` in the ledger for review. `FM_FALLBACK=off`.
+**Verdicts** (`verdicts.mjs`, `fm verdicts` / `fm verdict`): every row a checkpoint raises (renewals, final
+year, free agents, wonderkids, newgens, needs, buys, bargains, sells, plan) gets the manager's act / propose /
+pass with a reason, stored beside the report (`<date>-<name>.verdicts.jsonl`). The judge fails a checkpoint
+(from 2026-10-18 on) with rows unanswered. The user's review (`fm verdicts agree|overturn`) feeds the
+autonomy ledger: agreed verdicts count towards 'auto'.
 **Never:** makes a transfer or contract decision itself.
 **Screens:** `docs/screens/season.md`.
