@@ -20,6 +20,50 @@ const approveSale = (player, decision, amount) =>
 
 const monthsBetween = (a, b) => (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
 
+// ---- Loans: the same terms on four screens, one decision (2026-10-18) ------------------------------------
+// A loan approach message, a youth loan offer message, and two detail pages (Accept Offer / Reject Offer;
+// with "Overall Cost if deal becomes permanent" when there is a buy clause) carry the same terms. Loans
+// were 8 of ~30 friction reports: four readers, two deciders, and silent defaults (a wage share read as 0%
+// rejected Cousins' offers, 2035-07-10; the option page stopped for Schmitt, 2036-01-05). Now: a value whose
+// label is on screen but can't be read is NaN, never 0; every loan without an obligation is decided by
+// decideByTable (need() first, then the loan table); an obligation to buy stays a sale (decideLoan/decideSale).
+/** The first item within `within` items after the text `label` that satisfies pred (a value never comes
+ *  from a later field: the old unbounded lookups could read "Unused Salary Percentage" as the wage share). */
+function nextAfter(s, label, pred, within = 4) {
+  const i = s.items.findIndex(x => x.kind === 'text' && (label instanceof RegExp ? label.test(x.label) : x.label === label));
+  return i < 0 ? undefined : s.items.slice(i + 1, i + 1 + within).find(pred);
+}
+const hasValue = i => ['text', 'dropdown', 'button'].includes(i.kind) && !!i.label;
+const pctOf = t => { const m = /(\d+)%/.exec(t || ''); return m ? Number(m[1]) / 100 : NaN; };
+const seasonEndMonths = today => {
+  if (!today) return undefined;
+  const end = new Date(Date.UTC(today.getUTCFullYear() + (today.getUTCMonth() >= 5 ? 1 : 0), 4, 31));
+  return monthsBetween(today, end);
+};
+const normDuration = d => d?.replace(/End Of Season/i, 'End of season');
+/** A loan detail page's terms (plain or with a buy clause): dropdowns and buttons after their labels. */
+export function pageLoanFields(s) {
+  const player = s.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean);
+  const label = l => nextAfter(s, l, hasValue)?.label;
+  const money = l => { if (!s.hasText(l)) return 0; const v = nextAfter(s, l, i => hasValue(i) && parseMoney(i.label) !== null); return v ? parseMoney(v.label) : NaN; };
+  const age = Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN);
+  const duration = normDuration(label('Duration'));
+  return {player, club: s.after('To', i => i.kind === 'text')?.label, age,
+    wageShare: s.hasText('Playing Salary Percentage') ? pctOf(label('Playing Salary Percentage')) : NaN,
+    monthlyFee: money('Playing Monthly Fee'), duration, playingTime: label('Agreed Playing Time'),
+    months: duration === 'End of season' ? seasonEndMonths(s.date()) : undefined};
+}
+/** Every loan without an obligation to buy (user, 2033-08-17/09-01: the loan table; nothing stops for the
+ *  user). facts: {player, age, wageShare, duration, playingTime, fees, optionFee}; a blank → Unreadable. */
+async function decideByTable(facts, {date, what}) {
+  need(facts, ['wageShare', 'duration', 'playingTime'], what);
+  // Already leaving on a deal we agreed (Bouhoudane to Espanyol; Frosinone bid after, 2032-07-31).
+  const {load} = await import('../../capabilities/deals/store.mjs');
+  const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state) && samePlayer(d.player, facts.player));
+  if (going) return {action: 'reject', reason: `already leaving (deal at ${going.state})`};
+  return loanVerdict({...facts, date});
+}
+
 // Negotiable or not: the offer page shows it as a dropdown labelled "Negotiable" (Man Utd for Doak,
 // 2031-06-17), not a text; reading texts only made every offer non-negotiable and rejected it.
 export const negotiable = d => {
@@ -258,10 +302,9 @@ export const loanOffer = {
     // first-team plain-loan escalation.
     // No obligation to buy: the loan table decides (an option to buy is recorded only; user, 2033-09-01).
     if (!loan.obligationFee) {
-      const date = isoDate(s.date()), wageShare = facts.wageShare ?? Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
-      // The loan table decides on these: a missing one is a page still loading, not a "no" (2035-07-10).
-      need({wageShare, duration: loan.duration, playingTime: loan.playingTime}, ['wageShare', 'duration', 'playingTime'], `Loan approach for ${loan.player}`);
-      const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration, optionFee: loan.optionFee});
+      const date = isoDate(s.date()), wageShare = facts.wageShare ?? pctOf(loan.salaryPct);
+      const v = await decideByTable({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, duration: loan.duration,
+        fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), optionFee: loan.optionFee}, {date, what: `Loan approach for ${loan.player}`});
       const entry = {action: 'loan-offer', date, loan, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
       if (dryRun) return {...entry, dryRun: true};
       if (!await answerLoan(loan.player, v.action === 'accept' ? 'Accept' : 'Reject')) return {...entry, executed: false, skipped: 'offer no longer on screen'};
@@ -305,7 +348,7 @@ export function readLoanPage(s) {
   const value = s.after('Transfer Value', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label;
   const range = parseRange(value) || (parseMoney(value) !== null ? [parseMoney(value), parseMoney(value)] : null);
   const wage = parseMoney(s.after('Salary', i => i.kind === 'button' && /p\/w/.test(i.label))?.label);
-  const pct = Number(/(\d+)%/.exec(s.after('Playing Salary Percentage', i => /\d+%/.test(i.label))?.label || '')?.[1] ?? 0) / 100;
+  const pct = pctOf(nextAfter(s, 'Playing Salary Percentage', i => /\d+%/.test(i.label || ''))?.label);   // unread: NaN, not 0 (2036-01-05)
   const today = s.date(), end = today && new Date(Date.UTC(today.getUTCFullYear() + (today.getUTCMonth() >= 5 ? 1 : 0), 4, 31));
   const weeks = today && end ? Math.max(0, Math.round((end - today) / 6048e5)) : 0;
   return {player, club: s.after('To', i => i.kind === 'text')?.label, overall, range, wage, wageShare: pct, weeks,
@@ -343,10 +386,22 @@ async function loanContext(player, date, duration) {
 export const loanOfferPage = {
   name: 'loan-offer-page',
   match: s => s.buttons('Accept Offer').length === 1 && s.buttons('Reject Offer').length === 1 && !!readLoanPage(s),
-  async run(s, {dryRun = false} = {}) {
+  async run(s, {dryRun = false, facts = {}} = {}) {
     const l = readLoanPage(s), book = pricebook.lookup(l.player);
     const entry = {action: 'loan-offer', date: isoDate(s.date()), loan: l};
-    if (!l.mandatory) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Loan for ${l.player} (${l.club}) has no obligation to buy: decide on wage relief and depth`, entry); }
+    // An option (not an obligation) to buy: a loan, decided by the loan table with the option recorded
+    // (user, 2033-09-01). It used to stop for the user (Schmitt to Monaco, 2036-01-05).
+    if (!l.mandatory) {
+      const f = {...pageLoanFields(s), ...facts};
+      f.duration = normDuration(f.duration);
+      const v = await decideByTable({player: l.player, age: f.age, wageShare: f.wageShare, playingTime: f.playingTime, duration: f.duration,
+        fees: (f.monthlyFee || 0) * (f.months || 0), optionFee: l.overall}, {date: entry.date, what: `Loan offer for ${l.player} (${l.club})`});
+      Object.assign(entry, {loan: {...l, ...f}, decision: v.action, why: v.reason, type: v.type, listed: v.listed});
+      if (dryRun) return {...entry, dryRun: true};
+      await click(v.action === 'accept' ? 'Accept Offer' : 'Reject Offer');
+      await log({...entry, executed: true});
+      return entry;
+    }
     const [vLow, vHigh] = book ? book.range : (l.range || [NaN, NaN]);
     entry.decision = decideSale({guaranteed: (l.overall ?? NaN) + l.wageRelief, vLow, vHigh, negotiable: false, countersSoFar: 0,
       ...(book ? {priceBook: true, minimum: book.minimum, target: book.target} : {})});
@@ -390,10 +445,8 @@ export const youthLoanOffer = {
       if (!await answerLoan(l.player, decision === 'accept' ? 'Accept' : 'Reject', readYouthLoan)) return {...entry, executed: false, skipped: 'offer no longer on screen'};
       await log({...entry, executed: true}); return entry;
     };
-    const {load} = await import('../../capabilities/deals/store.mjs');
-    const going = Object.values(load().deals || {}).find(d => d.dir === 'out' && ['contract', 'confirmation'].includes(d.state) && samePlayer(d.player, l.player));
-    if (going) return answer('reject', `already leaving (deal at ${going.state})`);
-    const v = await loanVerdict({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.fee, date: entry.date, duration: l.duration});
+    const v = await decideByTable({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.fee, duration: l.duration},
+      {date: entry.date, what: `Loan offer for ${l.player} (${l.club})`});
     Object.assign(entry, {type: v.type, listed: v.listed});
     return answer(v.action, v.reason);
   },
@@ -433,14 +486,8 @@ export const loanBackRequest = {
 // plain-loan rule (outside our XI, most of his wage covered); anything else stops for the user.
 export function readPlainLoanPage(s) {
   if (!s.hasText('Playing Salary Percentage') || loanOfferPage.match(s)) return null;
-  const player = s.texts().map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean);
-  const club = s.after('To', i => i.kind === 'text')?.label;
-  const pct = s.after('Playing Salary Percentage', i => i.kind === 'dropdown' && /\d+%/.test(i.label || ''))?.label;
-  const age = Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN);
-  return {club, player, age, wageShare: pct ? Number(/(\d+)%/.exec(pct)[1]) / 100 : NaN,
-    monthlyFee: parseMoney(s.after('Playing Monthly Fee', i => i.kind === 'button' && parseMoney(i.label) !== null)?.label) ?? 0,
-    duration: s.after('Duration', i => i.kind === 'dropdown')?.label?.replace(/End Of Season/i, 'End of season'),
-    playingTime: s.after('Agreed Playing Time', i => i.kind === 'dropdown')?.label};
+  const {club, player, age, wageShare, monthlyFee, duration, playingTime} = pageLoanFields(s);
+  return {club, player, age, wageShare, monthlyFee, duration, playingTime};
 }
 export const plainLoanPage = {
   name: 'plain-loan-page',
@@ -451,9 +498,9 @@ export const plainLoanPage = {
     if (l.duration) l.duration = l.duration.replace(/End Of Season/i, 'End of season');   // as the page reader writes it
     // Stevenage, Northampton for Cousins (2035-07-10): read before the page loaded, rejected as "wage
     // share unreadable". Missing facts are an error, never a decision.
-    need(l, ['wageShare', 'duration', 'playingTime'], `Loan offer for ${l.player} (${l.club})`);
-    const months = l.duration === 'End of season' ? 9 : 0;
-    const v = await loanVerdict({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.monthlyFee * months, date, duration: l.duration});
+    const months = l.duration === 'End of season' ? seasonEndMonths(s.date()) ?? 0 : 0;
+    const v = await decideByTable({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, duration: l.duration,
+      fees: (l.monthlyFee || 0) * months}, {date, what: `Loan offer for ${l.player} (${l.club})`});
     const entry = {action: 'plain-loan-page', date, loan: l, decision: v.action, why: v.reason, type: v.type, listed: v.listed};
     const decision = v.action;
     if (dryRun) return {...entry, dryRun: true};
