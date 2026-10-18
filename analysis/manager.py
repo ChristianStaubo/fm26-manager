@@ -130,12 +130,25 @@ def our_squad(rows, today=None, min_age=16):
             and (not p.get('on_loan_at') or back_by(p, today))]
 
 
+def developing(age, ca, pa):
+    """A prospect still growing (user, 2026-10-19: "Dukic and Slatina are both super quality players, ideally
+    they don't become backups, and develop and either play for us or we sell... I don't want to stunt their
+    development on the bench"): a prospect by the sell table's definition (selling.prospects: <= 21, or <= 23
+    with PA >= 160) with PA at least wonderkids.develop_min_headroom above his CA. He starts for us or plays
+    on loan: never a backup or third (depth.roles)."""
+    P = {'max_age': 21, 'older_max_age': 23, 'older_min_pa': 160, **POLICY.get('selling', {}).get('prospects', {})}
+    prospect = age <= P['max_age'] or (age <= P['older_max_age'] and pa >= P['older_min_pa'])
+    return prospect and pa - ca >= POLICY.get('wonderkids', {}).get('develop_min_headroom', 10)
+
+
 def squad_level(rows, today=None):
     """(squad average CA, backup level): the mean CA of our top buying.table.squad_size players, and that
     minus backup_within. One definition for every table (it was -25 in the buy table and free agents and
     -10 in bargains: 125 vs 146 on 2036-06-04)."""
     t = POLICY.get('buying', {}).get('table', {})
-    cas = sorted((intval(p, 'ca') for p in our_squad(rows, today)), reverse=True)[:t.get('squad_size', 22)]
+    # Developing prospects play elsewhere unless they start: they don't set the level (Đukić 164, Slatina 148).
+    cas = sorted((intval(p, 'ca') for p in our_squad(rows, today) if not developing(intval(p, 'age'), intval(p, 'ca'), intval(p, 'pa'))),
+                 reverse=True)[:t.get('squad_size', 22)]
     avg = round(sum(cas) / len(cas)) if cas else 140
     return avg, avg - t.get('backup_within', 25)
 

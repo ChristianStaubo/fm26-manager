@@ -48,7 +48,7 @@ kids = [p('Awudu', 'Hoff', 95, age=18, value=0.4e6), p('Ready', 'Gent', 140, age
 for k, pa in zip(kids, (181, 180)): k['pa'] = str(pa); k['nation'] = 'Germany'
 t = bt.table(ours + market + held + kids, tactic, season_surplus=0, window='summer')
 print(json.dumps({'portfolio': t['portfolio'], 'kids': [(c['name'], c['on_arrival']) for c in t['wonderkids']]}))`);
-  assert.deepEqual(d.portfolio, {held: 5, room: 1});
+  assert.deepEqual(d.portfolio, {held: 5, room: 1, weakest: ['Kid0', 'Kid1']});
   assert.deepEqual(d.kids, [['Awudu', 'loan']], 'one slot left: the best PA; CA 95 is below the backup level');
 });
 
@@ -85,4 +85,30 @@ lb = next(x for x in t['positions'] if x['position'] == 'LB')
 print(json.dumps({c['name']: [c['buy'], c.get('buy_if_sold')] for c in lb['upgrade_option']['candidates']}))`);
   assert.deepEqual(d.Upgrade, [false, ['Brown']], '£20M: the £5M left + Brown (the starter he displaces, £18M) pays; Carroll (£1M) does not');
   assert.deepEqual(d.Costly, [false, null], '£90M: no single sale there pays');
+});
+
+test('a developing prospect is a starter or on loan, never our backup (user, 2026-10-19: Slatina, E. Đukić)', () => {
+  const d = run(setup + `kid = p('Slatina', C, 150, gk=20, age=19); kid['pa'] = '189'
+t = bt.table(ours + market + [kid], tactic, season_surplus=45e6, window='summer')
+g = next(x for x in t['positions'] if x['position'] == 'GK')
+print(json.dumps([g['backup'], [n['kind'] for n in g['needs']]]))`);
+  assert.deepEqual(d, [null, ['backup']], 'Slatina (CA 150, PA 189) is not the backup keeper: a settled one is bought (Sullivan 113 is below the bar)');
+});
+
+test('planned sales: needs without them; a starter\'s replacement only once he is sold (Miceli, promise at £81M)', () => {
+  const d = run(setup + `t = bt.table(ours + market, tactic, season_surplus=45e6, window='summer', selling=['Brown'])
+lb = next(x for x in t['positions'] if x['position'] == 'LB')
+print(json.dumps([(n['kind'], n.get('for'), n.get('if_sold')) for n in lb['needs']]))`);
+  assert.deepEqual(d[0], ['replace', 'Brown', 'Brown']);
+});
+
+test('a full portfolio takes a clearly better prospect, who replaces the weakest (user, 2026-10-19: Pepper for Collins)', () => {
+  const d = run(setup + `held = [p(f'Kid{i}', C, 100 + i, age=20) for i in range(6)]
+for k in held: k['pa'] = '172'
+kids = [p('Pepper', 'Forest', 118, age=18, value=9.5e6), p('Meh', 'X', 110, age=18, value=5e6)]
+for k, pa in zip(kids, (186, 181)): k['pa'] = str(pa); k['nation'] = 'Republic of Ireland'
+t = bt.table(ours + market + held + kids, tactic, season_surplus=0, window='summer')
+print(json.dumps({'portfolio': t['portfolio']['room'], 'kids': [(c['name'], c.get('replaces')) for c in t['wonderkids']]}))`);
+  assert.equal(d.portfolio, 0);
+  assert.deepEqual(d.kids, [['Pepper', 'Kid0'], ['Meh', 'Kid1']], 'PA 186 and 181 beat PA 172 by 5+: each replaces the weakest left (lowest CA first)');
 });

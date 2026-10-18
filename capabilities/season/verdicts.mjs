@@ -34,11 +34,11 @@ export function rowsOf(report) {
   if (!buys) for (const n of sq?.needs || []) add('squad', `${n.position} ${n.kind}`, n.why);
   if (!sells) for (const c of sq?.sell_candidates || []) add('squad', `sell? ${c.name}`, c.why);
   for (const r of buys?.positions || []) for (const n of r.needs || [])
-    add('buys', `${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''}`, `CA >= ${n.min_ca}: ${(n.candidates || []).slice(0, 3).map(c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`).join(' · ') || 'none in range'}`);
+    add('buys', `${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''}`, `${n.if_sold ? `only once ${n.if_sold} is sold; ` : ''}CA >= ${n.min_ca}: ${(n.candidates || []).slice(0, 3).map(c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`).join(' · ') || 'none in range'}`);
   // Upgrades (user, 2026-10-18): one the season surplus pays for, or one a sale at that position funds.
   for (const r of buys?.positions || []) for (const c of r.upgrade_option?.candidates || []) if (c.buy || c.buy_if_sold)
     add('buys', `${r.position} upgrade ${c.name}`, `${c.age}, CA ${c.ca}, ${c.club}, ${money(c.value)}: ${c.buy ? 'the season surplus pays' : `only once ${c.buy_if_sold.join(' or ')} is sold`} (starters ${r.starters.join(', ')})`);
-  for (const c of buys?.wonderkids || []) add('buys', `wonderkid ${c.name}`, `PA ${c.pa}, ${c.positions}, ${c.club}, ${money(c.value)}`);
+  for (const c of buys?.wonderkids || []) add('buys', `wonderkid ${c.name}`, `PA ${c.pa}, ${c.positions}, ${c.club}, ${money(c.value)}${c.replaces ? `; replaces ${c.replaces} in the portfolio (he is sold)` : ''}`);
   const bargains = data('bargains');
   for (const c of (bargains?.undervalued || []).slice(0, 5)) add('bargains', c.name, `undervalued ${c.ratio}x (typical ${money(c.typical)}): ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
   for (const c of (bargains?.buried || []).slice(0, 5)) add('bargains', c.name, `buried talent: ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);

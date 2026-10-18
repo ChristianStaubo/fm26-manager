@@ -7,6 +7,8 @@ From the depth chart (depth.py) and the player's age and wage:
   sell   30+ backup or third, wage above the first-team median, the position meets the depth standard
          without him (Truffert)                                         → backup/third senior price
   sell   30+ starter (cash in at peak; the buy table replaces him)    → starter senior price
+  sell   any backup or third above buying.table.backup_max_wage, depth holds without him (a displaced
+         starter: Arnalot once Luiz starts, Ylla once Senhaji does)    → his role's price
   sell   a lucky scoring season: 26+, goals >= xG + overperformer_goals_over_xg (Gray, 25 from 17.05 xG,
          2036): his value peaks now, finishing regresses                → his role's price
   loan   prospects (<= 21, or <= 23 with PA >= 160) outside the depth chart, PA >= 130: develop, resell
@@ -70,6 +72,10 @@ def table(rows, tactic, leaving=()):
             action, why, ask = 'sell', 'surplus: no starter/backup/third role', price('surplus')
         elif role in ('backup', 'third') and b == 'senior' and wage > median and ok:
             action, why, ask = 'sell', f'30+ {role} on £{int(wage / 1000)}K/wk (> median £{int(median / 1000)}K), depth holds without him', price(role)
+        elif role in ('backup', 'third') and wage > MAX_KID_WAGE and ok:
+            # Strong starters, cheap backups (user, 2033-08-05; 2026-10-19): a starter an upgrade displaced
+            # (Arnalot after Luiz, Ylla after Senhaji) is an expensive backup: sold at his role's price.
+            action, why, ask = 'sell', f'{role} on £{int(wage / 1000)}K/wk (> the £{int(MAX_KID_WAGE / 1000)}K backup cap), depth holds without him', price(role)
         elif role == 'starter' and b == 'senior':
             action, why, ask = 'sell', '30+ starter: cash in at peak; the buy table replaces him', price('starter')
         else:
@@ -80,7 +86,7 @@ def table(rows, tactic, leaving=()):
     # The portfolio limit (user, 2026-10-18): over wonderkids.portfolio_max prospects at PA >= portfolio_min_pa,
     # the weakest (lowest PA, then oldest) are sold rather than loaned again; bought ones only fill room.
     W = m.POLICY.get('wonderkids', {})
-    top = sorted((x for x in out if x['action'] == 'loan' and x['pa'] >= W.get('portfolio_min_pa', 170)), key=lambda x: (-x['pa'], x['age']))
+    top = sorted((x for x in out if x['action'] == 'loan' and x['pa'] >= W.get('portfolio_min_pa', 170)), key=lambda x: (-x['pa'], -x['ca'], x['age']))
     for x in top[W.get('portfolio_max', 6):]:
         x.update(action='sell', ask=x['surplus_ask'], why=f"portfolio over the limit ({len(top)} > {W.get('portfolio_max', 6)} prospects at PA {W.get('portfolio_min_pa', 170)}+): the weakest goes")
     for x in out:

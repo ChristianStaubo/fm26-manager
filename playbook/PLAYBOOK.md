@@ -135,7 +135,10 @@ The rules behind them:
   guy"). A clear upgrade (+8 CA on our weakest starter there, 25 or under) is bought from the season's
   surplus, or, when the surplus can't pay, **only once a player at that position is sold** (the buy
   table's `buy_if_sold`: the starter he displaces first). The displaced starter then becomes an expensive
-  backup: the sell table prices him.
+  backup: the sell table sells any backup paid above the backup wage cap (Arnalot once Luiz starts).
+- **Planned sales are planned around** (the checkpoint passes the sell table's sales and promise prices to
+  the buy table): needs are computed without them, and a starter's replacement is bought only once he is
+  sold (Miceli at £81M → a CB).
 - **Targets:**
   - strong output in their own league (rank)
   - judged only as a **regular starter**: 60% of the minutes his league's data window allows (the export holds ~the last 20 league games for other clubs). Smaller samples are noise (the 2027 signings were bought on ~11 apps and regressed). Rank attackers on xG/xA, not goals; a keeper's goals prevented needs more than one season
@@ -171,13 +174,18 @@ the prospects we own are reviewed first (the sell table: loan again, promoted in
 sold), and buys only fill the room that leaves.
 1. **Buy** (summer buy table): PA >= **180**, aged 16-20 (18+ unless British/Irish), <= £15M, at most **2 a
    window**, and at most **6 in the portfolio** (every prospect we own: <= 23, PA >= 170, outside the
-   depth chart, on loan or not). A free one at PA 175+ is always a buy (§1b free agents). Over the
-   limit, the sell table sells the weakest.
+   depth chart, on loan or not). A free one at PA 175+ is always a buy (§1b free agents). A full
+   portfolio still takes a prospect 5+ PA better than our weakest: he replaces him (Pepper, PA 186, for
+   Collins, CA 119/PA 172). Over the limit, the sell table sells the weakest.
 2. **On arrival:** one at our backup level (squad average - 25 CA) joins the squad; the rest go
    straight on the loan list (approve with `--note "wonderkid"`; the autopilot lists him when he signs).
 3. **On loan** while he is a prospect (<= 21, or <= 23 with PA >= 160) and outside the depth chart:
    the loan table decides offers (he must start; never an option to buy).
-4. **Promoted** when his CA reaches our backup level: the depth chart takes him as a backup/starter.
+4. **Starts for us, or keeps developing on loan: never benched** (user, 2026-10-19: "Dukic and Slatina are
+   both super quality players, ideally they don't become backups... I don't want to stunt their
+   development on the bench"). A prospect with PA 10+ above his CA is in the depth chart only as a
+   starter; otherwise the sell table loans him again. Backups come from settled players or a cheap
+   signing (the buy table). He joins the squad when he'd start, or is sold.
 5. **Over 23:** a normal player. Not starting → surplus → the sell table sells him.
 6. **Paid like a first-teamer** (above the backup wage cap) but outside the depth chart: sold, not loaned
    (no loan club pays it).

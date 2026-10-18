@@ -36,20 +36,26 @@ export const STEPS = {
   },
   // The buy decision table (analysis/buy_table.py): which positions need a signing, best-value names.
   async buys(ctx) {
-    const d = analysis('buy_table.py', ['--record', '--window', ctx.name === 'january' ? 'january' : 'summer'], {date: ctx.date});
+    // Planned sales (the sell table's, and promise prices in the price book: Miceli at £81M) are planned
+    // around: needs without them, a starter's replacement bought only once he is sold (user, 2026-10-19).
+    const {load: loadBook} = await import('../value/pricebook.mjs');
+    const selling = [...new Set([...(ctx.sells || []).filter(x => x.action === 'sell').map(x => x.name),
+      ...Object.values(loadBook().players).filter(p => p.promise).map(p => p.name)])];
+    const d = analysis('buy_table.py', ['--record', '--window', ctx.name === 'january' ? 'january' : 'summer', ...(selling.length ? ['--selling', selling.join(',')] : [])], {date: ctx.date});
     const name = c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`;
     const md = [`${d.window} · squad avg CA ${d.squad_avg} · season surplus ${money(d.season_surplus)} → ${money(d.after_buys)} after these`];
     for (const r of d.positions) {
-      for (const n of r.needs) md.push(`${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''} (CA ≥ ${n.min_ca}): ${n.candidates.slice(0, 2).map(name).join(' · ') || 'none in range'}`);
+      for (const n of r.needs) md.push(`${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''}${n.if_sold ? ' (only once he is sold)' : ''} (CA ≥ ${n.min_ca}): ${n.candidates.slice(0, 2).map(name).join(' · ') || 'none in range'}`);
       for (const c of (r.upgrade_option?.candidates || []).filter(c => c.buy)) md.push(`${r.position} upgrade: ${name(c)}`);
     }
-    for (const c of d.wonderkids || []) md.push(`wonderkid (PA ${c.pa}, ${c.positions}): ${name(c)} → ${c.on_arrival === 'squad' ? 'joins the squad (backup level)' : 'loan-listed on arrival (approve with --note "wonderkid")'}`);
+    for (const c of d.wonderkids || []) md.push(`wonderkid (PA ${c.pa}, ${c.positions}): ${name(c)} → ${c.on_arrival === 'squad' ? 'joins the squad (backup level)' : 'loan-listed on arrival (approve with --note "wonderkid")'}${c.replaces ? `; replaces ${c.replaces} in the portfolio (sold)` : ''}`);
     if (d.portfolio) md.push(`wonderkid portfolio: ${d.portfolio.held} held, room for ${d.portfolio.room}`);
     return {data: d, md};
   },
   // The sell (listing) table (analysis/sell_table.py): who to list for sale or loan, and at what price.
   async sells(ctx) {
     const d = analysis('sell_table.py', [], {date: ctx.date});
+    ctx.sells = d;   // the buys step plans around these sales
     const by = a => d.filter(x => x.action === a);
     return {data: d, md: [
       `sell: ${by('sell').map(x => `${x.name} (${x.age}, ${x.role}) ${money(x.ask)}`).join(' · ') || '-'}`,

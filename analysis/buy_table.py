@@ -90,11 +90,14 @@ def wonderkids(rows):
     return out[:R['wonderkids_per_window']]
 
 
-def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=()):
+def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=(), selling=()):
     """departed: starters at the last buy checkpoint ({name, position, ca}); one no longer ours is
     replaced like one leaving now (user, 2035-01-01: Stringfellow left on deadline day and January
-    listed no striker)."""
-    leaving = set(leaving)
+    listed no striker). selling: sales we plan but haven't made (the sell table's, a promise price:
+    Miceli at £81M, 2036-06): needs are planned without them, and a starter's replacement is bought only
+    once he is sold (the need carries if_sold)."""
+    selling = set(selling) - set(leaving)
+    leaving = set(leaving) | selling
     left = {}
     for pos, v in depth.chart(rows, tactic).items():
         left[pos] = [x for x in v['players'][:v['slots']] if x['name'] in leaving]
@@ -128,7 +131,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
         bar = min(weakest, squad_avg) - R['backup_within']
         found = []
         for _ in range(depth.backups(n)):   # three CBs → two backups (user, 2034-01-01)
-            b = next((x for x in players[n:] if x['name'] not in starters_all and x['name'] not in used and x['ca'] >= bar), None)
+            b = next((x for x in players[n:] if x['name'] not in starters_all and x['name'] not in used and x['ca'] >= bar and not x.get('develop')), None)
             if b:
                 used.add(b['name']); found.append(b)
         missing = depth.backups(n) - len(found)
@@ -139,7 +142,8 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
                'backup': ', '.join(f"{b['name']} {b['ca']}{'' if b['natural'] else ' (cover)'}" for b in found) or None, 'needs': []}
         for x in left.get(pos, []):
             rb = x['ca'] - R['replace_within']
-            row['needs'].append({'kind': 'replace', 'for': x['name'], 'min_ca': rb, 'candidates': candidates(rows_now, slot, rb)})
+            row['needs'].append({'kind': 'replace', 'for': x['name'], 'min_ca': rb, 'candidates': candidates(rows_now, slot, rb),
+                                 **({'if_sold': x['name']} if x['name'] in selling else {})})
         if len(starters) < n or any(not x['natural'] for x in starters):
             row['needs'].append({'kind': 'starter', 'min_ca': weakest, 'candidates': candidates(rows_now, slot, weakest)})
         for _ in range(missing):   # summer, and January too: a missing backup is a hole (user, 2033-09-01)
@@ -156,7 +160,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
         out.append(row)
     # The season must stay net positive: needs (replace/starter/backup) are paid first from the surplus,
     # then upgrades greedily by CA gained per £ while the surplus lasts (user, 2033-09-01).
-    left_money = season_surplus - sum((n['candidates'][0]['value'] if n['candidates'] else 0) for r in out for n in r['needs'])
+    left_money = season_surplus - sum((n['candidates'][0]['value'] if n['candidates'] else 0) for r in out for n in r['needs'] if not n.get('if_sold'))
     ups = sorted(((r, c) for r in out for c in (r.get('upgrade_option') or {}).get('candidates', []) if c['buy']),
                  key=lambda rc: -(rc[1]['ca'] - rc[0]['weakest']) / max(rc[1]['value'], 1))
     taken = set()
@@ -185,19 +189,29 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
     # sell one, that sucks"): at most portfolio_max prospects (<= 23, PA >= portfolio_min_pa, outside the
     # depth chart, on loan or not) at once; buys only fill the room promotions and sales leave.
     W = m.POLICY.get('wonderkids', {})
-    held = sum(1 for p in rows_now if p['contract_club'] == m.CLUB and m.intval(p, 'age') <= 23 and m.intval(p, 'pa') >= W.get('portfolio_min_pa', R['wonderkid_min_pa'])
-               and assigned.get(p['name'], (None, 'surplus'))[1] == 'surplus')
+    held_list = sorted((p for p in rows_now if p['contract_club'] == m.CLUB and m.intval(p, 'age') <= 23 and m.intval(p, 'pa') >= W.get('portfolio_min_pa', R['wonderkid_min_pa'])
+                        and assigned.get(p['name'], (None, 'surplus'))[1] == 'surplus'), key=lambda p: (m.intval(p, 'pa'), m.intval(p, 'ca'), -m.intval(p, 'age')))
+    held = len(held_list)
     room = max(0, W.get('portfolio_max', 6) - held)
+    # A full portfolio still takes a clearly better prospect (user, 2026-10-19: Pepper, PA 186, with Collins,
+    # 22, CA 119/PA 172, holding a place): he replaces the weakest, whom the sell table then sells (over the limit).
     # On arrival (user, 2034-09): one at our backup level joins the squad; the rest go on the loan list
     # (fm approve buy … --note "wonderkid": the autopilot loan-lists him when he signs).
-    kids = [{**c, 'on_arrival': 'squad' if c['ca'] >= squad_avg - R['backup_within'] else 'loan'} for c in wonderkids(rows_now)[:room]]
-    return {'wonderkids': kids if window == 'summer' else [], 'portfolio': {'held': held, 'room': room}, 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
+    kids, weakest = [], iter(held_list)
+    for c in wonderkids(rows_now):
+        c = {**c, 'on_arrival': 'squad' if c['ca'] >= backup_level else 'loan'}
+        if len(kids) < room:
+            kids.append(c)
+        elif (w := next(weakest, None)) and c['pa'] >= m.intval(w, 'pa') + W.get('swap_min_pa_gain', 5):
+            kids.append({**c, 'replaces': w['name']})
+    return {'wonderkids': kids if window == 'summer' else [], 'portfolio': {'held': held, 'room': room, 'weakest': [p['name'] for p in held_list[:2]]}, 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--csv')
     ap.add_argument('--leaving', default='')
+    ap.add_argument('--selling', default='', help='planned sales ("Name,Name"): needs without them; a starter\'s replacement only once he is sold')
     ap.add_argument('--window', choices=['summer', 'january'], default='summer', help='january: replacements and missing backups, no upgrades (user, 2033-09-01)')
     ap.add_argument('--record', action='store_true', help='replace starters who left since the last record (local/runs/starters.json), then record today\'s')
     ap.add_argument('--surplus', type=float, help="this season's net transfer surplus (fees out - in); default: from the ledger")
@@ -217,7 +231,8 @@ if __name__ == '__main__':
             departed = json.load(open(rec))['starters']
         except Exception:
             pass
-    out = table(rows, tactic, [x.strip() for x in a.leaving.split(',') if x.strip()], a.surplus, a.window, departed)
+    out = table(rows, tactic, [x.strip() for x in a.leaving.split(',') if x.strip()], a.surplus, a.window, departed,
+                [x.strip() for x in a.selling.split(',') if x.strip()])
     if a.record:
         chart = depth.chart(rows, tactic)
         rec.write_text(json.dumps({'date': os.environ.get('FM_GAME_DATE'), 'starters': [

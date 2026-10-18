@@ -38,7 +38,8 @@ def chart(rows, tactic):
         able = [p for p in ours if rate(p) >= 15]
         ranked = sorted(able, key=lambda p: (rate(p) < 18, -m.intval(p, 'ca')))
         out[pos] = {'slots': len(slots), 'players': [
-            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': rate(p) >= 18} for p in ranked]}
+            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': rate(p) >= 18,
+             **({'develop': True} if m.developing(m.intval(p, 'age'), m.intval(p, 'ca'), m.intval(p, 'pa')) else {})} for p in ranked]}
     return unique_starters(out)
 
 
@@ -66,8 +67,10 @@ def unique_starters(c):
 
 
 def depth_ok(players, slots):
-    """Starters for every slot + max(1, slots - 1) natural backups + a third who can cover."""
+    """Starters for every slot + max(1, slots - 1) natural backups + a third who can cover. Developing
+    prospects only count as starters (manager.developing)."""
     b = max(1, slots - 1)
+    players = players[:slots] + [x for x in players[slots:] if not x.get('develop')]
     return len(players) >= slots + b + 1 and all(x['natural'] for x in players[slots:slots + b])
 
 
@@ -75,7 +78,8 @@ def roles(rows, tactic):
     """Everyone's role, assigned across all positions at once (user, 2034-01-01: Burton and McAidoo came
     out as surplus): starters first; then backups and thirds from players who don't start elsewhere,
     each used once. A position with several starters has several backups (user, 2034-01-01: three CBs
-    → two backups): backups = max(1, slots - 1), then one third who can cover."""
+    → two backups): backups = max(1, slots - 1), then one third who can cover. A developing prospect is a
+    starter or nothing (user, 2026-10-19: not on our bench; the sell table loans him)."""
     c = chart(rows, tactic)
     out, used = {}, set()
     for pos, v in c.items():
@@ -87,7 +91,7 @@ def roles(rows, tactic):
         for pos, v in c.items():
             for _ in range(backups(v['slots']) if depth_role == 'backup' else 1):
                 x = next((x for x in v['players'][v['slots']:] if x['name'] not in starters and x['name'] not in used
-                          and (x['natural'] or depth_role == 'third')), None)
+                          and (x['natural'] or depth_role == 'third') and not x.get('develop')), None)
                 if x:
                     used.add(x['name'])
                     out.setdefault(x['name'], (pos, depth_role))

@@ -36,3 +36,16 @@ print(json.dumps({x['name']: [x['action'], x['why'][:20]] for x in st.table(rows
   assert.equal(d.Paid[0], 'sell', '£89K/wk: no loan club pays it');
   assert.deepEqual(['Kid171', 'Kid172', 'Kid173', 'Kid175', 'Kid178', 'Kid180', 'Kid185'].map(k => d[k][0]), ['sell', 'loan', 'loan', 'loan', 'loan', 'loan', 'loan'], 'seven at PA 170+: the weakest goes');
 });
+
+test('sell table (user, 2026-10-19): a displaced starter on a big wage is an expensive backup and is sold; a developing prospect is loaned, not benched', () => {
+  const d = run(`import json, sell_table as st
+C = st.m.CLUB
+def p(name, ca, pa, age, lb=1, value=10e6, wage=20000):
+    return {'name': name, 'club': C, 'contract_club': C, 'on_loan_at': '', 'age': str(age), 'ca': str(ca), 'pa': str(pa), 'value': str(int(value)),
+            'wage': str(wage), 'contract_expires': '2038-06-30', 'pos_DL': str(lb), 'pos_WBL': '1'}
+rows = [p('Luiz', 178, 187, 24, lb=20), p('Arnalot', 160, 160, 23, lb=20, value=88e6, wage=92000), p('Kani', 135, 145, 24, lb=20), p('Third', 130, 132, 26, lb=20),
+        p('Slatina', 148, 189, 19, lb=20)]
+print(json.dumps({x['name']: x['action'] for x in st.table(rows, {'slots': [{'slot': 'LB'}]})}))`);
+  assert.equal(d.Arnalot, 'sell', '£92K/wk backup behind Luiz');
+  assert.equal(d.Slatina, 'loan', 'PA 189 at 19: develops on loan, not as the third');
+});
