@@ -143,7 +143,11 @@ export const incomingOffer = {
     }
     // Days to the window's close: late in the window a listed player goes at his minimum.
     { const {windowEnd, daysBetween} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = daysBetween(day, windowEnd(day)); }
-    const decision = decideSale(offer);
+    let decision = decideSale(offer);
+    // A free move for a prospect we loan out is not a sale (Benítez, PA 130, on the loan list: accepted at
+    // £0 because his value read 0, 2036-06-22): reject; he develops on loan.
+    if (decision.action === 'accept' && !(offer.guaranteed > 0) && (await import('../../capabilities/sell/loanlist.mjs')).has(offer.player))
+      decision = {action: 'reject', reason: 'free move for a loan-listed prospect: he goes on loan, not for nothing'};
     // A chosen up-front ask (fm answer --upfront, to probe how far a buyer goes): a counter at that fee.
     // It's a counter even when the rule would accept (Hülsmann, 2032-01-01: --upfront 15m was ignored
     // and Stuttgart's first offer accepted).

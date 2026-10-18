@@ -68,3 +68,9 @@ test('"<Player> transfer battle intensifies" (Lawrence, 2035-01-30): open the hi
     assert.deepEqual(bestBattleOffer(s), {club: 'Udinese', fee: 10500000}, 'Udinese £10.5M+ beats Lincoln £10.25M+; Las Palmas has no View button');
   }
 });
+
+test('"<Player> close to joining <Club>" is an outgoing confirmation (Alejandro to Wolves U21, 2036-06-24)', async () => {
+  const {HANDLERS: ADMIN_HANDLERS} = await import('../game/screens/admin/handlers.mjs');
+  const s = loadScreen('confirm-outgoing-close-to-joining');
+  assert.equal(ADMIN_HANDLERS.find(h => h.match(s))?.name, 'confirm-outgoing');
+});

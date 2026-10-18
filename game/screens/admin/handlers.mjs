@@ -46,7 +46,8 @@ const delegate = (name, pattern, describe) => ({
 
 // Loans: "Valdimarsson set to move on loan to Strasbourg"; sales: "Yarmoliuk close to signing for
 // Newcastle" (2026-07-07, with a "Delegate 'Finalizing player sales…'" button).
-const OUTGOING = /^(.+?) (?:set to (?:move|join|leave)|close to signing for) /;
+// Also "<Player> close to joining <Club>" (Alejandro to Wolves Under 21s, 2036-06-24).
+const OUTGOING = /^(.+?) (?:set to (?:move|join|leave)|close to (?:signing for|joining|moving to)) /;
 // An agreed outgoing deal asks for a final "Confirm Transfer" (Accept / Delay Transfer / Cancel):
 // "<Player> set to move on loan to <Club>". Accept only deals our log shows we agreed to; anything
 // else (e.g. a deal agreed before this tooling, or by staff) stops for a decision.
