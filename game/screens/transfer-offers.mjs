@@ -367,7 +367,9 @@ async function loanVerdict({player, age, wageShare, playingTime, fees = 0, date,
   const {decideLoanOffer, playerType} = await import('../../capabilities/sell/loan-table.mjs');
   const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
   const depth = depthOf(player), type = playerType(depth, {age});
-  const listed = loanListed(player) || !!pricebook.lookup(player);
+  // A promise entry (a sale price the game holds us to: Miceli at £81M, 2036-06) is not a listing: loan
+  // offers for him are judged as for any unlisted player.
+  const book = pricebook.lookup(player), listed = loanListed(player) || !!(book && !book.promise);
   const {wageCost} = type === 'senior' && listed ? await loanContext(player, date, duration) : {};
   return {...decideLoanOffer({type, listed, playingTime, wageShare, fees, wageCost, optionFee}), type, listed, role: depth?.role ?? null};
 }
