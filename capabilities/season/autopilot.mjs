@@ -101,6 +101,10 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
             const {onArrivals} = await import('../sell/arrival.mjs');
             decisions.push(...await onArrivals([...new Set(arrived)], club || (await import('../data.mjs')).club().club));
           }
+          // Contract talks still open (Continue: "Negotiate Contract"; Ortiz 2035-08-18): a signing at
+          // 'contract' missing from Transfer Activity is in those talks, not collapsed. The talks go on.
+          if (/^Negotiate Contract/.test((await Screen.read()).continueLabel() || ''))
+            for (const x of r.alerts) if (x.kind === 'vanished' && x.dir === 'in' && x.from === 'contract') { x.stop = false; x.resolved = 'contract talks open'; }
           // A signing nobody approved (a staff bid): withdraw it, don't stop (capabilities/buy/unapproved.mjs).
           decisions.push(...await (await import('../buy/unapproved.mjs')).handleUnapproved(r.alerts.filter(x => x.stop)));
           // Priority bids flatly rejected yesterday: bid the asking price today (capabilities/buy/rebids.mjs).
