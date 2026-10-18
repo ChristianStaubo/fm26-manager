@@ -250,13 +250,15 @@ async function answerLoan(player, label, read = readLoan) {
 export const loanOffer = {
   name: 'loan-offer',
   match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readLoan(s),
-  async run(s, {dryRun = false} = {}) {
-    const loan = readLoan(s), book = pricebook.lookup(loan.player);
+  async run(s, {dryRun = false, facts = {}} = {}) {
+    const read = readLoan(s), book = pricebook.lookup(read.player);
+    // `facts`: what the autopilot's fallback read from this screen when we couldn't (season/fallback.mjs).
+    const loan = {...read, ...(facts.duration ? {duration: facts.duration.replace(/End Of Season/i, 'End of season')} : {}), ...(facts.playingTime ? {playingTime: facts.playingTime} : {})};
     // A youth player's loan approach (Wellington for Sullivan, 2030-07-21): the youth rule, not the
     // first-team plain-loan escalation.
     // No obligation to buy: the loan table decides (an option to buy is recorded only; user, 2033-09-01).
     if (!loan.obligationFee) {
-      const date = isoDate(s.date()), wageShare = Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
+      const date = isoDate(s.date()), wageShare = facts.wageShare ?? Number(/(\d+)%/.exec(loan.salaryPct || '')?.[1] ?? NaN) / 100;
       // The loan table decides on these: a missing one is a page still loading, not a "no" (2035-07-10).
       need({wageShare, duration: loan.duration, playingTime: loan.playingTime}, ['wageShare', 'duration', 'playingTime'], `Loan approach for ${loan.player}`);
       const v = await loanVerdict({player: loan.player, age: loan.age, wageShare, playingTime: loan.playingTime, fees: (loan.loanFee || 0) + (loan.monthlyFee || 0) * (loan.months || 0), date, duration: loan.duration, optionFee: loan.optionFee});
@@ -443,8 +445,10 @@ export function readPlainLoanPage(s) {
 export const plainLoanPage = {
   name: 'plain-loan-page',
   match: s => s.buttons('Accept Offer').length === 1 && s.buttons('Reject Offer').length === 1 && !!readPlainLoanPage(s)?.player,
-  async run(s, {dryRun = false} = {}) {
-    const l = readPlainLoanPage(s), date = isoDate(s.date());
+  async run(s, {dryRun = false, facts = {}} = {}) {
+    // `facts`: what the autopilot's fallback read from this screen when we couldn't (season/fallback.mjs).
+    const l = {...readPlainLoanPage(s), ...facts}, date = isoDate(s.date());
+    if (l.duration) l.duration = l.duration.replace(/End Of Season/i, 'End of season');   // as the page reader writes it
     // Stevenage, Northampton for Cousins (2035-07-10): read before the page loaded, rejected as "wage
     // share unreadable". Missing facts are an error, never a decision.
     need(l, ['wageShare', 'duration', 'playingTime'], `Loan offer for ${l.player} (${l.club})`);

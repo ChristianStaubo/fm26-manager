@@ -4,8 +4,11 @@
 // Stop reasons: 'until' (date reached), 'window-closed', 'needs-analyst' (no handler, or a
 // handler escalated), 'unfamiliar-state', 'decision-limit', 'error' (do not retry blindly).
 import {getState} from '../../game/bridge/client.mjs';
-import {Screen, NeedsAnalyst, Unreadable, isoDate, settle, click} from '../../game/ui/index.mjs';
+import {Screen, NeedsAnalyst, Unreadable, isoDate, settle, click, clickWhere} from '../../game/ui/index.mjs';
 import {fingerprint, Progress} from './progress.mjs';
+import {makeFallback} from './fallback.mjs';
+import {log as logDecision} from '../log.mjs';
+import {record as recordIntervention} from '../interventions.mjs';
 import {samePlayer} from '../../game/ui/navigate.mjs';
 import {control, withLock} from './continue.mjs';
 import {loadRules} from '../sell/decide.mjs';
@@ -56,6 +59,8 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
     // handler repeating itself with no effect used to reset the clock.
     let progressAt = Date.now(), lastDate = null;
     const progress = new Progress(), unreadableTries = new Map();
+    // Before a stop, a cheap model may look (fallback.mjs, policy autopilot.fallback): logged, limited per run.
+    const fallback = makeFallback({policy: loadRules(), log: logDecision, ledger: recordIntervention});
     const limitMs = (loadRules().autopilot?.watchdog_minutes ?? 5) * 60e3;
     // A step that hangs inside the loop (a wait that never returns) is caught by a timer beside it.
     const hard = setInterval(async () => {
@@ -183,7 +188,13 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
       // The action can clear by itself before a handler sees it (a news task read, 2033-01-05: the game
       // was back at CanContinue): carry on, once per game day, instead of stopping for nothing.
       if (!handler && (await getState()).stateName !== 'NeedAction' && clearedOn !== lastDate) { clearedOn = lastDate; continue; }
-      if (!handler) return stop('needs-analyst', {why: 'no handler for this screen', screen: summarize(screen)});
+      if (!handler) {
+        // No handler: the fallback may press one allowed button (or none) before we stop.
+        const sfp = fingerprint(screen);
+        const f = await fallback.pressSafe(screen, {fp: sfp, dryRun, press: label => clickWhere(x => x.buttons(label).find(b => b.bounds[0] > 480), label, {recoverOnOcclusion: false})});
+        if (f.pressed) { decisions.push(f.entry); progress.acted(sfp, 'fallback', lastDate); await settle(1500); continue; }
+        return stop('needs-analyst', {why: `no handler for this screen (fallback: ${f.why})`, screen: summarize(screen)});
+      }
       // Progress monitor: this handler already ran on this very screen today and the screen is back,
       // so its action had no effect. Stop now, not after the watchdog (progress.mjs).
       const fp = fingerprint(screen), day = isoDate(screen.date()) || lastDate, key = handler.name + '|' + fp;
@@ -210,6 +221,23 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
         if (e instanceof Unreadable && (unreadableTries.get(tries) || 0) < 2) {
           unreadableTries.set(tries, (unreadableTries.get(tries) || 0) + 1);
           await settle(2500); continue;
+        }
+        // Still unreadable after reading again: the fallback reads just the missing facts (they must be on
+        // the screen), and the handler runs again with them; its decision table decides.
+        if (e instanceof Unreadable) {
+          const fresh = await Screen.read(), ffp = fingerprint(fresh);
+          if (handler.match(fresh)) {
+            const f = await fallback.readFacts(fresh, e.missing, e.facts, {fp: ffp});
+            if (f.facts) {
+              try {
+                const done = await handler.run(fresh, {dryRun, facts: f.facts});
+                progress.acted(ffp, handler.name, isoDate(fresh.date()) || lastDate); decisions.push({...done, factsFrom: 'fallback'}); await settle(1000); continue;
+              } catch (e2) {
+                return stop(e2 instanceof NeedsAnalyst ? 'needs-analyst' : 'error', {handler: handler.name, why: e2.message, error: e2.message, stack: e2.stack, details: e2.details, screen: summarize(await Screen.read())});
+              }
+            }
+            return stop('needs-analyst', {handler: handler.name, why: `${e.message} (fallback: ${f.why})`, details: e.details, screen: summarize(fresh)});
+          }
         }
         if (e instanceof NeedsAnalyst) return stop('needs-analyst', {handler: handler.name, why: e.message, details: e.details, screen: summarize(await Screen.read())});
         return stop('error', {handler: handler.name, error: e.message, stack: e.stack, doNotRetryAutomatically: true});

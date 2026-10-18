@@ -20,5 +20,10 @@ Portal tiles). A handler meeting a screen it already acted on today stops at onc
 Progress for the 5-minute watchdog is a screen not seen before today, not a decision. A handler
 that can't read a fact it needs throws `Unreadable` (`need()` in `game/ui/overlays.mjs`) before
 acting: the autopilot reads again (twice at most), then hands over; it never decides on a blank.
+**Fallback before a stop** (`fallback.mjs`, policy `autopilot.fallback`): a cheap model (`claude -p`,
+Haiku, the user's login; ~4-8 s) looks first. A fact a handler can't read: it reads only that fact, which
+must appear on the screen, and the handler's table decides. No handler: it may press one `safe_buttons`
+button that is on the screen, or none; a screen with `money_words` always stops. At most 3 per run,
+never twice on one screen; each is a `supervisor-decision` in the ledger for review. `FM_FALLBACK=off`.
 **Never:** makes a transfer or contract decision itself.
 **Screens:** `docs/screens/season.md`.

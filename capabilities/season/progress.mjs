@@ -9,17 +9,29 @@ import {overlays} from '../../game/ui/overlays.mjs';
 import {isoDate} from '../../game/ui/screen.mjs';
 
 const VOLATILE = /^(\d{1,2}:\d\d(\s?[AP]M)?|\d{1,3}(\+\d{1,2})?'|\d{1,2}\s?[-–]\s?\d{1,2}|\d{1,2}\/\d{1,2}\/\d{4}\b.*)$/;
-const MAIN = i => i.bounds[0] > 480;   // the sidebar (news, inbox list) is left of this; summarize() uses the same line
 
 // Portal tiles fold their live content into the label ("Fixture Schedule Sat 8/4 H 1 - 1…", "Matches
 // Premier League (6) …", news) and tables are unnamed buttons (standings): all change during a day.
 // Action buttons are named (SIButton, StandardButton, continue-button…). Live goals: "10' B. Díaz".
 const TILES = new Set(['layout-tile-interaction-button', 'background-button', '']);
 const LIVE = /^\d{1,3}(\+\d{1,2})?' /;
+/** What the screen is about: the main pane's texts, action buttons and dropdown values (a loan's wage
+ *  share is a dropdown), without the sidebar, tiles, tables, clocks or live scores. */
+/** Is this item what the screen is about (main pane; not tiles, tables, clocks or live scores)? */
+export function isContent(i, minX = 480) {
+  if (i.bounds[0] <= minX || !i.label || i.label.length < 2 || VOLATILE.test(i.label)) return false;
+  if (i.kind === 'button') return i.enabled && !TILES.has(i.name || '') && i.name !== 'NewsItemButton' && !LIVE.test(i.label);
+  return i.kind === 'text' || i.kind === 'dropdown';
+}
+export function mainItems(s) {
+  const items = s.items.filter(isContent);
+  const texts = items.filter(i => i.kind === 'text').map(i => i.label).slice(0, 80);
+  const buttons = [...new Set(items.filter(i => i.kind === 'button').map(i => i.label))].slice(0, 40);
+  const dropdowns = items.filter(i => i.kind === 'dropdown').map(i => i.label).slice(0, 20);
+  return {texts, buttons, dropdowns};
+}
 export function fingerprint(s) {
-  const keep = i => MAIN(i) && i.label && i.label.length > 1 && !VOLATILE.test(i.label);
-  const texts = s.items.filter(i => i.kind === 'text' && keep(i)).map(i => i.label).slice(0, 80);
-  const buttons = [...new Set(s.items.filter(i => i.kind === 'button' && i.enabled && keep(i) && !TILES.has(i.name || '') && !LIVE.test(i.label)).map(i => i.label))].slice(0, 40);
+  const {texts, buttons} = mainItems(s);
   const dialog = overlays(s).find(o => o.kind === 'dialog');
   const parts = [isoDate(s.date()) || '', s.continueLabel() || '', dialog ? `${dialog.title}|${dialog.description}` : '', ...texts, '|', ...buttons];
   return createHash('sha1').update(parts.join('\n')).digest('hex').slice(0, 12);

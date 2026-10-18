@@ -195,6 +195,10 @@ A cycle, not a one-off: buy cheap, develop away, then play or sell.
 - Now (user, 2026-10-14): **buying, selling and taking bids need approval**; contracts, agent
   payoffs, the season (Continue, holiday, popups), scouting and the XI run alone. Countering a bid
   at our sell price (above) is automatic; so is accepting a bid at or above it.
+- **Before stopping on a screen** (user, 2026-10-18): a cheap model looks at it first. It may read a fact
+  a handler couldn't (the decision tables still decide), or press one safe button (`policy.json`
+  `autopilot.fallback.safe_buttons`) on a screen with no money involved; anything about fees, wages,
+  contracts or offers stops for us. Each such call is logged for review.
 - An approval is one player, one action and a price: buy up to a maximum, sell from a minimum.
   The manager proposes (`fm buy … --dry-run` prices it); the user approves in chat; the main
   session records it (`fm approve`). The tools refuse anything outside it.
