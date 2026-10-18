@@ -22,10 +22,11 @@ These are the user's rules (decided 2026-10-09).
   It is the simple version for this experiment ("super good scouting, not a super good data analyst"),
   so the checkpoints, decision tables and state machines can be made reliable first.
   - On CA/PA already: the depth chart, the buy table (backup level = squad average CA - 25), the sell
-    table, bargains, wonderkids (PA 175+), newgens, the final-year table.
+    table, bargains, wonderkids (PA 175+), newgens, the final-year table, free agents (2026-10-18: worth
+    = what players of his CA and age cost; a free wonderkid is always a buy).
   - Still on the earlier Moneyball measures (to switch, or keep, when they disagree with CA/PA): the
-    squad step's "upgrade" need and the suggested XI (match output vs the league), free-agent worth (role
-    attributes and age), the summer `fm plan` / `fm window` scores (attributes + stats).
+    squad step's "upgrade" need and the suggested XI (match output vs the league), the summer
+    `fm plan` / `fm window` scores (attributes + stats).
 - **Later: a Moneyball variant.** Once the whole season runs unsupervised on CA/PA, a second variant
   plays without access to CA or PA: it judges players from their match stats in the context of our
   tactic, and their role attributes, as at the start of the experiment (`docs/analysis/`). Same
@@ -37,7 +38,10 @@ checkpoint and runs every step, writing one report (`local/reports/checkpoints/`
 report. Checkpoints: **january** (01-02), **newgen** (05-01), **season_end** (05-28), **summer** (07-02).
 The rules behind them:
 - **Free agents first** (user, 2031-05-28): a free player, or one whose contract ends by 30 June
-  (pre-contract from January), worth £30M+ on attributes is always a buy: no fee, pure resale.
+  (pre-contract from January), worth £30M+ (what players of his CA and age cost) is always a buy: no fee,
+  pure resale; so is a **free wonderkid** (PA 175+, 23 or younger; user, 2026-10-18, after Holmbjerg left
+  for Roma). An expiring player on any list (wonderkids, bargains) is a pre-contract, never a bid. Every
+  checkpoint lists them, newgen included; foreign under-18s are not listed (they won't join).
   January is when they're won; by May they've agreed moves (Mbappé → Monaco, Fortea → Bayern).
   Every one gets an answer: a pre-contract/bid, or a recorded pass (the judge asks).
 - **Contracts ending in June:** ours: renew or sell (renewal test), never let value walk out free.

@@ -118,7 +118,7 @@ export function checkCheckpoints({today, cycle, reports = [], decisions = [], in
   const latest = reports.filter(r => r.report?.steps?.free_agents?.ok).at(-1);
   for (const p of latest?.report.steps.free_agents.data.players || [])
     if (p.always_buy && !answered(p.name) && (!stillFree || stillFree.some(n => norm(n) === norm(p.name))))
-      decide.push(`free agent ${p.name} (${p.age}, ${p.slot}) worth ${m(p.worth)}, ${p.contract_club || 'free'} to ${p.contract_until || '-'} (${latest.name} ${latest.date}): fm precontract / fm buy, or record a pass (fm intervene free_agents rejected --proposed "${p.name}" --decided "why")`);
+      decide.push(`free agent ${p.name} (${p.age}, ${p.slot ?? p.positions}) worth ${m(p.worth)}, ${p.contract_club || 'free'} to ${p.contract_until || '-'} (${latest.name} ${latest.date}): fm precontract / fm buy, or record a pass (fm intervene free_agents rejected --proposed "${p.name}" --decided "why")`);
   // Every row of the latest checkpoint gets the manager's verdict (user, 2026-10-18: "pause, assess, then auto").
   const fail = [], last = reports.filter(r => r.report?.verdicts).at(-1);
   if (last && missingVerdicts) {

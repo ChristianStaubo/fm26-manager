@@ -22,6 +22,8 @@ export function nextCheckpoint(date, cycle = loadCycle()) {
 export const seasonOf = date => { const y = Number(date.slice(0, 4)), s = date.slice(5) >= '07-01' ? y : y - 1; return `${s}/${String(s + 1).slice(2)}`; };
 
 const money = v => v == null ? '-' : `£${(v / 1e6).toFixed(1)}M`;
+// The 30 June a contract must end by to be signed free this summer (a pre-contract from January).
+const freeBy = date => `${Number(date.slice(0, 4)) + (date.slice(5) >= '07-01' ? 1 : 0)}-06-30`;
 
 // Each step: (ctx) → {data, md: [lines]}. ctx caches the squad call (contracts and squad share it).
 export const STEPS = {
@@ -94,12 +96,13 @@ export const STEPS = {
   },
   async free_agents(ctx) {
     const d = ctx.freeAgents = analysis('free_agents.py', ['--top', '25'], {date: ctx.date});
-    const md = d.players.map(c => `${c.watch ? '**WATCH** ' : ''}${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.homegrown ? '**HG** ' : ''}${c.name} (${c.age}, ${c.slot}, attrs ${c.attributes}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
+    const md = d.players.map(c => `${c.watch ? '**WATCH** ' : ''}${c.always_buy ? '**ALWAYS BUY** ' : ''}${c.homegrown ? '**HG** ' : ''}${c.name} (${c.age}, ${c.slot ?? c.positions}, CA ${c.ca}/PA ${c.pa}: ${c.why}) worth ${money(c.worth)} (FM now ${money(c.value_now)}), ${c.contract_club || 'free'}${c.on_loan ? ` (on loan at ${c.playing_at})` : ''}, to ${c.contract_until || '-'}: ${c.route}`);
     return {data: d, md: md.length ? md : [`none worth ${money(5e6)}+ ending by ${d.free_by}`]};
   },
   async wonderkids(ctx) {
     const d = analysis('wonderkids.py', [], {date: ctx.date});
-    return {data: d, md: d.players.length ? d.players.map(x => `${x.homegrown ? '**HG** ' : ''}${x.name} (${x.age}, ${x.positions}, ${x.nation}) ${x.club} PA ${x.pa} CA ${x.ca} ${money(x.value)} to ${x.contract_until || '-'}`)
+    const june = freeBy(ctx.date);
+    return {data: d, md: d.players.length ? d.players.map(x => `${x.homegrown ? '**HG** ' : ''}${x.name} (${x.age}, ${x.positions}, ${x.nation}) ${x.club} PA ${x.pa} CA ${x.ca} ${money(x.value)} to ${x.contract_until || '-'}${x.contract_until && x.contract_until <= june ? ' → contract ends by June: a free pre-contract, never a bid (free_agents)' : ''}`)
       : [`none at PA ${d.rule.min_pa}+, age ${d.rule.max_age} or under, ${money(d.rule.max_value)} or less`]};
   },
   async newgens(ctx) {

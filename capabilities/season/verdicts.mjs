@@ -24,7 +24,7 @@ export function rowsOf(report) {
   const add = (step, item, detail) => item && out.push({step, item: String(item), detail});
   for (const p of data('contracts')?.expiring || []) add('contracts', p.name, `${p.issue} (to ${p.expires}), ${money(p.value)}: ${p.do}`);
   for (const p of data('final_year')?.players || []) add('final_year', p.name, `final year, ${money(p.value)}: ${p.decision?.action ?? '?'}${p.decision?.reason ? ' (' + p.decision.reason + ')' : ''}`);
-  for (const p of data('free_agents')?.players || []) add('free_agents', p.name, `${p.age}, ${p.slot}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}`);
+  for (const p of data('free_agents')?.players || []) add('free_agents', p.name, `${p.age}, ${p.slot ?? p.positions}${p.ca ? `, CA ${p.ca}/PA ${p.pa}` : ''}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}: ${p.route ?? ''}`);
   for (const p of data('wonderkids')?.players || []) add('wonderkids', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   for (const p of data('newgens')?.signable_now || []) add('newgens', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   const sq = data('squad');

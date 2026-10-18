@@ -26,17 +26,30 @@ def value(p):
     return float(p['value'] or 0)
 
 
-def scan(rows, squad_avg=None):
+def priced_pool(rows):
     iv = m.intval
-    pool = [p for p in rows if 0 < value(p) < 1e9 and iv(p, 'ca') >= 100 and 16 <= iv(p, 'age') <= 34
+    return [p for p in rows if 0 < value(p) < 1e9 and iv(p, 'ca') >= 100 and 16 <= iv(p, 'age') <= 34
             and not (p['club'] or '').startswith('club#')]
-    cells = {}
-    for p in pool:
+
+
+def typical_values(rows, pool=None):
+    """typical(p): the median value of players within +-3 CA and +-1 year of age (None when fewer than
+    min_cell of them): what a player of his quality and age costs, whatever his own contract (an expiring
+    player's FM value collapses: Rusnák £4.3M vs typical £25.2M, 2036). Shared with free_agents.py."""
+    iv, cells = m.intval, {}
+    for p in (pool if pool is not None else priced_pool(rows)):
         cells.setdefault((iv(p, 'ca') // 3, iv(p, 'age')), []).append(value(p))
 
     def typical(p):
         vs = [v for dc in (-1, 0, 1) for da in (-1, 0, 1) for v in cells.get((iv(p, 'ca') // 3 + dc, iv(p, 'age') + da), [])]
         return st.median(vs) if len(vs) >= B['min_cell'] else None
+    return typical
+
+
+def scan(rows, squad_avg=None):
+    iv = m.intval
+    pool = priced_pool(rows)
+    typical = typical_values(rows, pool)
 
     ours = sorted((iv(p, 'ca') for p in rows if p['contract_club'] == m.CLUB), reverse=True)
     squad_avg = squad_avg or (round(sum(ours[:22]) / max(1, len(ours[:22]))) if ours else 140)

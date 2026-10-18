@@ -21,10 +21,11 @@
   {
    "name": "newgen",
    "on": "05-01",
-   "why": "95% of the youth intakes land in March-April: shortlist the new class.",
+   "why": "95% of the youth intakes land in March-April: shortlist the new class. Free agents too (user, 2026-10-18: Rusnák and Holmbjerg were missed): every free or expiring player we'd want gets a verdict.",
    "steps": [
     "ledger",
-    "newgens"
+    "newgens",
+    "free_agents"
    ]
   },
   {
