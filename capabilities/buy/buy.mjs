@@ -121,6 +121,12 @@ async function removeAllClauses({keepLoanBack = false} = {}) {
     await waitFor(x => removable(x, keepLoanBack).length < n, {what: 'clause removed'});
   }
 }
+// Bids never exceed the fee we chose: the Fee box steps £0.25M, and 'nearest' turned Pepper's £11.47M max into
+// £11.5M; Forest accepted and the walk-away guard withdrew (2036-06-04). A release clause keeps 'nearest'.
+const BID = {mode: 'atMost'};
+/** Talks we cancelled today, reopened by Make An Offer: a dead form (Pepper, 2036-06-04). */
+export const talksCancelled = x => (x.hasText(/have cancelled the deal/i) || x.buttons(/have cancelled the deal/i).length > 0) && x.buttons('Exit Talks').length > 0;   // the GM line is a button's label
+
 // Pay the release clause: no clauses, fee = the clause, Suggest Terms (or Make Offer), finalize.
 export async function payReleaseClause(fee, {keepLoanBack = false} = {}) {
   await removeAllClauses({keepLoanBack});
@@ -214,7 +220,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
   for (let round = 1; round <= rounds; round++) {
     let reply = offerState(await Screen.read());
     if (reply.state === 'editing') {
-      const set = await setFee('Fee', fee);
+      const set = await setFee('Fee', fee, BID);
       reply = await suggest();
       history.push({round, offered: set.set, ...reply});
     } else history.push({round, ...reply});
@@ -234,7 +240,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
       if (capRelease && (fee == null || fee + step >= release)) return payClause(history);
       if (finalOffer || fee == null) break;
       fee = fee + step >= max ? (finalOffer = true, max) : fee + step;
-      await setFee('Fee', fee);
+      await setFee('Fee', fee, BID);
       if (await nextStep() === 'make') return makeOffer(history);
       continue;
     }
@@ -250,7 +256,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
       history.at(-1).sellOnRemoved = sellOnRow(await Screen.read()).pct;
       await removeSellOn();
       fee = Math.min(reply.upfront ?? fee, max);
-      await setFee('Fee', fee);
+      await setFee('Fee', fee, BID);
       if (await nextStep() === 'make') return makeOffer(history);
       continue;
     }
@@ -279,7 +285,7 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     if (fee == null || next + addons * loadRules().valuation.addon_weight >= max) { fee = Math.max(0, Math.round(max - addons * loadRules().valuation.addon_weight)); finalOffer = true; }
     else fee = next;
     // Editing any field brings back Suggest Terms.
-    await setFee('Fee', fee);
+    await setFee('Fee', fee, BID);
     if (await nextStep() === 'make') return makeOffer(history);
   }
   // After a counter we withdraw; after a flat rejection there is no offer to withdraw: just leave.
@@ -329,7 +335,16 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   // brings Suggest Terms back.
   // "Cannot sign <name>: on loan with a future fee clause in place" (Zukic, Schreiber, 2032-01): no bid possible.
   const cannot = x => overlays(x).find(o => o.kind === 'dialog' && /^Cannot sign /.test(o.title || ''));
-  const s = await waitFor(x => x.buttons('Suggest Terms').length === 1 || x.buttons('Make Offer').length === 1 || cannot(x), {what: 'offer screen'});
+  // Talks we cancelled today reopen as a dead form: "<club> have cancelled the deal.", Exit Talks, no Suggest
+  // Terms or Make Offer (Pepper, 2036-06-04). Leave; FM takes a new bid another day.
+  const cancelled = talksCancelled;
+  const s = await waitFor(x => x.buttons('Suggest Terms').length === 1 || x.buttons('Make Offer').length === 1 || cannot(x) || cancelled(x), {what: 'offer screen'});
+  if (cancelled(s) && !s.buttons('Suggest Terms').length && !s.buttons('Make Offer').length) {
+    await click('Exit Talks', {name: 'StandardButton'});
+    const r = {action: 'buy', name, club, date: isoDate(s.date() || new Date()), outcome: 'talks-cancelled', why: 'we cancelled these talks today; bid again on a later game day'};
+    await log(r);
+    return r;
+  }
   if (cannot(s)) {
     const why = cannot(s).description;
     await recover();
@@ -353,10 +368,13 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   const extras = st.total != null && feeBox != null ? Math.max(0, st.total - feeBox) : 0;
   const prefilled = extras > 0 || !s.buttons('Suggest Terms').length;
   if (extras) fee = Math.max(0, fee - extras);
-  const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway, ...(prefilled ? {prefilled: {fee: feeBox, total: st.total, extras}} : {})};
+  // A dry run can't ask the agent (one-time per player): its price comes from the profile's range, which
+  // can be stale (Pepper: £17-20M on the profile, £9.4-11.5M from his agent, 2036-06-04).
+  const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway, rangeFrom: agent?.feeRange ? 'agent' : 'profile (agent not asked: may be stale)',
+    ...(prefilled ? {prefilled: {fee: feeBox, total: st.total, extras}} : {})};
   if (dryRun) {
     // Fresh screen: fill the fee to check it, then Cancel. Pre-filled screen: change nothing.
-    if (!prefilled) await setFee('Fee', fee);
+    if (!prefilled) await setFee('Fee', fee, BID);
     await leave();
     await waitFor(x => !x.buttons('Suggest Terms').length && !x.buttons('Make Offer').length, {what: 'offer screen closed'});
     return {...base, dryRun: true, wouldOpenAt: fee};
@@ -369,7 +387,7 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
     await log({...base, ...r});
     return {...base, ...r};
   }
-  if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
+  if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee, BID); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
   const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras, keepLoanBack: loanBack});
   // A priority target flatly rejected: FM takes a new bid the next day; bid his asking price then.
   if (priority && r.outcome === 'walked-away' && r.history?.at(-1)?.state === 'rejected') {

@@ -91,6 +91,10 @@ export async function choose(select, optionText, {what = 'dropdown'} = {}) {
 // step with + / −. Step sizes grow with the amount (e.g. £100 at £1K, £1M at £60M).
 //   mode 'atMost'  never exceed the amount (asking prices)
 //   mode 'nearest' closest value
+/** A +/- step that crossed the target: keep it? 'atMost' never ends above the target (bids: Pepper's £11.47M
+ *  max became £11.5M under 'nearest', 2036-06-04); 'nearest' keeps the closer of the two. */
+export const keepStep = (before, after, target, mode) => mode === 'atMost' ? after <= target : Math.abs(after - target) <= Math.abs(before - target);
+
 export async function setFee(anchor, amount, {mode = 'nearest', maxSteps = 60} = {}) {
   const ctl = x => x.after(anchor, i => (i.kind === 'button' && (parseMoney(i.label) !== null || i.label === 'Unspecified')) || i.kind === 'number-field');
   const value = x => { const c = ctl(x); return c?.kind === 'number-field' ? c.value : parseMoney(c?.label); };
@@ -119,7 +123,7 @@ export async function setFee(anchor, amount, {mode = 'nearest', maxSteps = 60} =
     await clickWhere(y => step(y, sign), `${anchor} ${sign}`);
     const nv = value(await waitFor(z => value(z) !== v, {what: `${anchor} step`}));
     if ((v < amount && nv > amount) || (v > amount && nv < amount)) {   // crossed the target
-      const keep = mode === 'atMost' ? nv <= amount : Math.abs(nv - amount) <= Math.abs(v - amount);
+      const keep = keepStep(v, nv, amount, mode);
       if (!keep) { await clickWhere(z => step(z, sign === '+' ? '-' : '+'), `${anchor} undo`); await waitFor(z => value(z) === v, {what: `${anchor} back`}); }
       break;
     }
