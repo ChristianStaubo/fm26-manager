@@ -11,3 +11,10 @@ test('ESC place: matched; the slot goes to a depth-chart player or a wonderkid o
   assert.equal(escDecision({role: 'surplus', pa: 180}), 'allocate');
   assert.equal(escDecision({}), 'keep');
 });
+
+test('mid-season "Choose <Club> captain" (Savinho left, 2035-08-18) → holiday handler', async () => {
+  const {chooseCaptain, HANDLERS} = await import('../game/screens/admin/handlers.mjs');
+  const s = loadScreen('choose-captain-savinho-left');
+  assert.equal(chooseCaptain.match(s), true);
+  assert.equal(HANDLERS.filter(h => h.match(s))[0].name, 'choose-captain-holiday');
+});

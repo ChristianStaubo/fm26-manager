@@ -138,6 +138,22 @@ export const escPlace = {
   },
 };
 
+// "Choose <Club> captain" mid-season ("As Savinho has left the team, you need to select a new captain",
+// 2035-08-18): Review Captaincy / Confirm Captain with "Captain to be selected". The user: a holiday lets
+// the assistant settle it. One day of holiday; if it is still there, the loop guard stops us.
+export const chooseCaptain = {
+  name: 'choose-captain-holiday',
+  match: s => s.hasText(/^Choose .+ captain$/) && s.buttons('Confirm Captain').length === 1,
+  async run(s, {dryRun = false} = {}) {
+    const entry = {action: 'choose-captain', date: isoDate(s.date()), via: 'holiday (assistant settles it)'};
+    if (dryRun) return {...entry, dryRun: true};
+    const {holiday} = await import('../../../capabilities/season/holiday.mjs');
+    await holiday({days: 1});
+    await log(entry);
+    return entry;
+  },
+};
+
 // A signing refuses to complete without a work permit ("Ablaß unwilling to join without work permit",
 // 2030-07-28): Persuade <X> to Complete Transfer (a chat) / Cancel Transfer; it blocks Continue.
 // Supervisor rule (logged for the user's review): one honest persuasion ("…a good chance of getting a
@@ -172,7 +188,7 @@ export const unwillingWithoutPermit = {
   },
 };
 
-export const HANDLERS = [unwillingWithoutPermit, workPermitRejected, escPlace, escPlace, 
+export const HANDLERS = [unwillingWithoutPermit, workPermitRejected, escPlace, chooseCaptain, escPlace, 
   squadNumbers,
   // "<Club> squad to be decided": register every eligible 21+ player, then submit (registration.mjs).
   registrationHandler,
