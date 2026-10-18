@@ -3,7 +3,10 @@
 candidates for each (JSON on stdout).
 
 Per position, from our depth chart (depth.py; U21s count, loanees back within 60 days too):
-  replace  a starter is leaving: like-for-like, CA >= his CA - replace_within
+  replace  a starter is leaving (user, 2026-10-19: like-for-like only ever buys elite players as the squad
+           gets elite): CA >= the position's starters' average (the leaver included) - replace_range, or 23
+           or under with PA >= the leaver's CA and CA within another replace_range; up to soft_max_fee first
+           (user: "ideally not above £50M"); ranked by (CA + PA) / 2: now and the ceiling
   upgrade  CA >= our weakest starter + upgrade_by; a buy only if age <= upgrade_max_age, fee at value,
            wage within the ceiling and the season's net spend stays positive; when the surplus can't pay,
            the best one is a buy once a player at that position is sold (buy_if_sold: the displaced
@@ -27,7 +30,7 @@ import depth
 
 RULES = m.POLICY.get('buying', {}).get('table', {})
 R = {'replace_within': 3, 'upgrade_by': 8, 'backup_within': 25, 'backup_aim_fee': 10e6, 'backup_max_fee': 20e6,
-     'old_from_age': 29, 'min_age': 18, 'top': 3, 'backup_max_wage': 80000, 'upgrade_max_age': 25, 'squad_size': 22, 'backup_ca_spread': 10, 'wonderkid_min_pa': 175, 'wonderkid_min_age': 16, 'wonderkid_max_age': 20, 'wonderkid_max_fee': 15e6, 'wonderkids_per_window': 4, **RULES}
+     'old_from_age': 29, 'min_age': 18, 'top': 3, 'replace_range': 10, 'soft_max_fee': 50e6, 'backup_max_wage': 80000, 'upgrade_max_age': 25, 'squad_size': 22, 'backup_ca_spread': 10, 'wonderkid_min_pa': 175, 'wonderkid_min_age': 16, 'wonderkid_max_age': 20, 'wonderkid_max_fee': 15e6, 'wonderkids_per_window': 4, **RULES}
 
 
 def candidates(rows, slot, min_ca, max_fee=None, n=R['top'], max_wage=None, best=False):
@@ -60,6 +63,32 @@ def candidates(rows, slot, min_ca, max_fee=None, n=R['top'], max_wage=None, best
         out.sort(key=lambda c: (c['value'], -c['ca'], c['age']))
     else:
         out.sort(key=lambda c: (round(c['value'] / 1e6), c['age'], -c['ca']))
+    return out[:n]
+
+
+def replacements(rows, slot, leaver_ca, pos_avg, n=8):
+    """Candidates to replace a departing starter (user, 2026-10-19: "take the average CA we have of this
+    position and have a range... a younger player who has a lower CA but super high potential also makes
+    sense"). Loanees back at their club within 60 days count (they can be bought then)."""
+    today, rng, cap = m.today_of(rows), R['replace_range'], R['soft_max_fee']
+    bar, young_bar = pos_avg - rng, pos_avg - 2 * rng
+    out = []
+    for p in rows:
+        if p.get('on_loan_at') and not m.back_by(p, today):
+            continue
+        free = p['club'] == 'Free agent'
+        if p['contract_club'] == m.CLUB or (p['contract_club'] == '' and not free) or (p['club'] or '').startswith('club#'):
+            continue
+        age, ca, pa, value = m.intval(p, 'age'), m.intval(p, 'ca'), m.intval(p, 'pa'), float(p['value'] or 0)
+        if age < R['min_age'] or depth.best_rating(p, slot) < 18 or not 0 < value < 1e9 or (age >= R['old_from_age'] + (3 if slot == 'GK' else 0) and not free):
+            continue
+        young = age <= 23 and pa >= leaver_ca and ca >= young_bar
+        if ca < bar and not young:
+            continue
+        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': ca, 'pa': pa, 'value': int(value), 'wage': int(float(p['wage'] or 0)),
+                    'contract_until': (p.get('contract_expires') or '')[:10], 'free_agent': free, 'over_cap': value > cap,
+                    'why': f'young: PA {pa} >= {leaver_ca}' if ca < bar else f'CA {ca} >= {bar}', **({'back_from_loan': p['on_loan_at']} if p.get('on_loan_at') else {})})
+    out.sort(key=lambda c: (c['over_cap'], -(c['ca'] + c['pa']) / 2, c['value']))
     return out[:n]
 
 
@@ -141,8 +170,11 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
         row = {'position': pos, 'weakest': weakest, '_sellers': sellers, 'starters': [f"{x['name']} {x['ca']}" for x in starters],
                'backup': ', '.join(f"{b['name']} {b['ca']}{'' if b['natural'] else ' (cover)'}" for b in found) or None, 'needs': []}
         for x in left.get(pos, []):
-            rb = x['ca'] - R['replace_within']
-            row['needs'].append({'kind': 'replace', 'for': x['name'], 'min_ca': rb, 'candidates': candidates(rows_now, slot, rb),
+            # The starters before he left: the leavers plus the best of those still here (not the backup who moved up).
+            kept = sorted(starters, key=lambda s: -s['ca'])[:max(0, n - len(left[pos]))]
+            pos_avg = round(sum([s['ca'] for s in kept] + [y['ca'] for y in left[pos]]) / max(1, len(kept) + len(left[pos])))
+            rb = pos_avg - R['replace_range']
+            row['needs'].append({'kind': 'replace', 'for': x['name'], 'min_ca': rb, 'position_avg': pos_avg, 'candidates': replacements(rows_now, slot, x['ca'], pos_avg),
                                  **({'if_sold': x['name']} if x['name'] in selling else {})})
         if len(starters) < n or any(not x['natural'] for x in starters):
             row['needs'].append({'kind': 'starter', 'min_ca': weakest, 'candidates': candidates(rows_now, slot, weakest)})

@@ -112,3 +112,14 @@ print(json.dumps({'portfolio': t['portfolio']['room'], 'kids': [(c['name'], c.ge
   assert.equal(d.portfolio, 0);
   assert.deepEqual(d.kids, [['Pepper', 'Kid0'], ['Meh', 'Kid1']], 'PA 186 and 181 beat PA 172 by 5+: each replaces the weakest left (lowest CA first)');
 });
+
+test('a departing starter is replaced within a range of the position average, or by a young player whose PA reaches his CA (user, 2026-10-19)', () => {
+  const d = run(setup + `young = p('YoungLB', 'Y', 136, lb=20, age=20, value=8e6); young['pa'] = '175'
+weak = p('TooWeak', 'W', 130, lb=20, age=20, value=2e6); weak['pa'] = '180'
+t = bt.table(ours + market + [young, weak], tactic, season_surplus=0, window='summer', selling=['Brown'])
+n = next(n for x in t['positions'] if x['position'] == 'LB' for n in x['needs'] if n['kind'] == 'replace')
+print(json.dumps({'bar': n['min_ca'], 'avg': n['position_avg'], 'names': [c['name'] for c in n['candidates']], 'over': [c['name'] for c in n['candidates'] if c['over_cap']]}))`);
+  assert.deepEqual([d.avg, d.bar], [154, 144], 'Brown 154 is the position: bar 144');
+  assert.deepEqual(d.names, ['Upgrade', 'YoungLB', 'Costly'], 'by (CA + PA) / 2, the £90M one last (over the £50M soft cap); TooWeak (CA 130) is below the young bar 134');
+  assert.deepEqual(d.over, ['Costly']);
+});

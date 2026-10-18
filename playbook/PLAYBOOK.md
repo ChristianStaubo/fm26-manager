@@ -130,6 +130,11 @@ The rules behind them:
   first; judge, then buy. (Last time 12 signings in one window broke the team.)
 - **Needs first:** buy for a position that is short (below two) or where a starter is
   underperforming. The signing must be **at least as good** as the player he replaces.
+- **Replacing a starter is not like-for-like** (user, 2026-10-19: "as our team becomes elite... we would
+  only ever be able to replace them with elite players, which would cost a lot of money"). A replacement
+  is within 10 CA of the position's starters' average, or 23 or under with PA at least the leaver's CA
+  (develop him, keep the level, sell later). Ranked by (CA + PA) / 2. **Fees ideally up to £50M**
+  (policy `soft_max_fee`); above it only when nothing cheaper qualifies or as a stated exception.
 - **An upgrade comes with a sale at its position** (user, 2026-10-18: "if we buy an upgrade to a
   position, we also need to sell that position... if Froholdt sells, it might make sense to get this
   guy"). A clear upgrade (+8 CA on our weakest starter there, 25 or under) is bought from the season's
