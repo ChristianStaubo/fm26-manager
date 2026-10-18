@@ -24,3 +24,9 @@ test('a staff-agreed loan confirmation ("Duarte set to move on loan to Preston")
   const s = loadScreen('loan-confirm-duarte');
   assert.equal(HANDLERS.find(h => h.match(s))?.name, 'confirm-outgoing');
 });
+
+test('a loan confirmation with the youth-loan Delegate button (Taylor to Wolves, incident 2026-10-18T02-24-02) is confirm-outgoing', async () => {
+  const {HANDLERS} = await import('../game/screens/admin/handlers.mjs');
+  const s = loadScreen('confirm-outgoing-youth-delegate-taylor');
+  assert.equal(HANDLERS.find(h => h.match(s))?.name, 'confirm-outgoing');
+});
