@@ -38,6 +38,7 @@ before anything else (details: `config/README.md`):
   `bridge/` (Frida), `ui/` (screen reading, controls, overlays), `screens/` (handlers that read a
   screen, call a capability, and click).
 - `cli/fm.mjs`: the only command you need (`node cli/fm.mjs help`).
+- `telemetry/`: the flight recorder (trace, incidents, loop stats); local only, capped.
 - `analysis/`: Python data layer (save export via FM26 Scout, output ranks, market). `docs/`: method,
   screen map, UI notes.
 - `local/`: exports, reports, runs, notebook (gitignored). `notes/`: private notes (gitignored).
@@ -49,14 +50,16 @@ by rule, discovering rules with backtests, previews and mapping sessions). Read 
 ## Self-improving loop (player → fixer)
 A cheap **player** (`.claude/agents/fm-player.md`, Sonnet) plays one segment and stops with
 `fm stuck "<…>"` when the tools fall short. The **fixer** (main session) then:
-1. `fm friction` → read `local/runs/friction/<id>.json` (+ look at the live game: the player has stopped).
+1. `fm friction` → read `local/runs/friction/<id>.json`, and its incident (`fm incident <id>`: the screens,
+   requests and stack at the moment it failed; `telemetry/README.md`). Then look at the live game: the player has stopped.
 2. Fix the owning layer:
    - a missing screen handler → `game/screens/`
    - a wrong decision → its capability, or `playbook/` if the rule itself is wrong
    - an unknown route → `docs/screens/README.md`
    - a known dialog → `KNOWN_DIALOGS` (`game/ui/overlays.mjs`)
-3. Leave a guard: `fm friction fixture <id> <name>` + a test replaying it.
-4. `pnpm test`, commit (small, straight to main), `fm friction resolve <id> "<fix, commit>"`.
+3. Leave a guard: `fm friction fixture <id> <name>` (or `fm incident fixture <id> <n> <name>`) + a test replaying it.
+4. `pnpm test`, commit (small, straight to main), `fm friction resolve <id> "<fix, commit>" --cause <…>`
+   (`--repeat-of <id>` when it came back). `fm friction stats` is the loop's scoreboard: game days per stop.
 5. Spawn the next player segment.
 
 ## Rules

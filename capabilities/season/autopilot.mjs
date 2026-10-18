@@ -157,7 +157,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
         if (isMatchDay(st, label) && !dryRun && lastMatchDay !== matchKey) {
           lastMatchDay = matchKey;   // a second match-day stop at the same point: no progress, stop
           const {matchDay} = await import('./holiday.mjs');
-          try { const h = await matchDay(); lastReturn = h.returns; decisions.push({...h, state: st.stateName, continueLabel: label}); } catch (e) { return stop('error', {handler: 'match-day', error: e.message, doNotRetryAutomatically: true}); }
+          try { const h = await matchDay(); lastReturn = h.returns; decisions.push({...h, state: st.stateName, continueLabel: label}); } catch (e) { return stop('error', {handler: 'match-day', error: e.message, stack: e.stack, doNotRetryAutomatically: true}); }
           handoffs = 0; continue;
         }
         return stop('unfamiliar-state', {state: st.stateName, automation: st.automationState, actionReady: st.actionReady, continueLabel: label,
@@ -199,7 +199,7 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           await settle(2000); lastAction = null; continue;
         }
         if (e instanceof NeedsAnalyst) return stop('needs-analyst', {handler: handler.name, why: e.message, details: e.details, screen: summarize(await Screen.read())});
-        return stop('error', {handler: handler.name, error: e.message, doNotRetryAutomatically: true});
+        return stop('error', {handler: handler.name, error: e.message, stack: e.stack, doNotRetryAutomatically: true});
       }
     } } finally { clearInterval(hard); }   // also when a step throws
   });

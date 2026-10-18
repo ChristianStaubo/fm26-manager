@@ -29,14 +29,16 @@ export async function stuck(note) {
     screen: screen ? summarize(screen) : null,
     describe: screen ? describe(screen) : null,
     commands: await recentCommands(),
+    // What the bridge saw when it went wrong (telemetry/incidents.mjs), if a command failed lately.
+    incident: await tryOr(async () => (await import('../telemetry/incidents.mjs')).latest(), null),
   };
   await writeFile(new URL(`${id}.json`, DIR), JSON.stringify(report, null, 1));
   if (screen) await writeFile(new URL(`${id}.tree.json`, DIR), JSON.stringify(screen.tree));
-  return {saved: `local/runs/friction/${id}.json`, id, date: report.date, overlays: report.overlays,
+  return {saved: `local/runs/friction/${id}.json`, id, date: report.date, overlays: report.overlays, incident: report.incident,
     next: 'Stop here and report the friction id. Do not keep improvising.'};
 }
 
-async function reports() {
+export async function reports() {
   const files = (await readdir(DIR).catch(() => [])).filter(f => /^[\d-T]+\.json$/.test(f)).sort();
   return Promise.all(files.map(async f => JSON.parse(await readFile(new URL(f, DIR), 'utf8'))));
 }
@@ -46,12 +48,24 @@ export async function list({all = false} = {}) {
     .map(r => ({id: r.id, status: r.status, date: r.date, note: r.note, fix: r.fix}));
 }
 
-export async function resolve(id, fix) {
-  if (!id || !fix) throw new Error('fm friction resolve <id> "<what was fixed, commit>"');
+// Why the tools fell short, so `fm friction stats` can tell a long tail of new screens (expected,
+// shrinks with coverage) from failures that come back (a fix that didn't hold).
+export const CAUSES = {
+  'new-screen': 'a screen, dialog or layout variant we had not mapped',
+  timing: 'the page was loading, changed under us, or covered (occluded, timed out, stale)',
+  rule: 'a decision the playbook or a matrix did not cover, or got wrong',
+  bug: 'our code did the wrong thing on a screen it knew',
+  bridge: 'the bridge or a game hook (Continue latch, snapshot, input)',
+  data: 'the export or analysis (stale, missing, wrong numbers)',
+  fixture: 'no fix: a screen saved as a test fixture',
+};
+export async function resolve(id, fix, {cause, repeatOf} = {}) {
+  if (!id || !fix || !CAUSES[cause])
+    throw new Error(`fm friction resolve <id> "<what was fixed, commit>" --cause <${Object.keys(CAUSES).join('|')}> [--repeat-of <id>]`);
   const file = new URL(`${id}.json`, DIR), r = JSON.parse(await readFile(file, 'utf8'));
-  Object.assign(r, {status: 'resolved', fix, resolvedAt: new Date().toISOString()});
+  Object.assign(r, {status: 'resolved', fix, cause, ...(repeatOf ? {repeatOf} : {}), resolvedAt: new Date().toISOString()});
   await writeFile(file, JSON.stringify(r, null, 1));
-  return {id, status: r.status, fix};
+  return {id, status: r.status, cause, fix};
 }
 
 // Keep only visible, on-screen nodes and their ancestors: enough for Screen, overlays and

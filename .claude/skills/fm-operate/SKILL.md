@@ -55,6 +55,8 @@ Exit code 2 = it stopped for you. Read `reason`, `why`, `screen.texts`, `screen.
 ## Stuck?
 `fm stuck "<goal> | <what you tried> | <what happened>"` saves the screen, overlays and your
 recent commands to `local/runs/friction/`. As the player: run it and stop, don't improvise.
+A failed command or a stopped run already saved an incident at the moment it went wrong (its id is
+in the output: `fm incident <id>`); `fm stuck` attaches the latest one, so don't poke the screen first.
 
 ## Troubleshooting
 | Symptom | Fix |

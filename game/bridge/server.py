@@ -16,14 +16,17 @@ import json
 import os
 import socket
 import threading
+import time
 from pathlib import Path
 
 import frida
 
+from blackbox import BlackBox
+
 HERE = Path(__file__).resolve().parent
 RUNTIME = Path(os.environ.get('FM26_BRIDGE_DIR', '/tmp/fm26-bridge'))
 PROCESS = os.environ.get('FM26_PROCESS', 'Football Manager 26')
-OPS = {'status', 'inspect', 'uimetadata', 'uitree', 'ui', 'reload', 'advance', 'open-required-action'}
+OPS = {'status', 'inspect', 'uimetadata', 'uitree', 'ui', 'reload', 'advance', 'open-required-action', 'blackbox'}
 
 
 def agent_source():
@@ -43,6 +46,7 @@ def main():
         raise SystemExit('Another bridge already holds the lock')
     stopped = threading.Event()
     session = script = listener = None
+    box = BlackBox()  # the last screens and requests, for incident reports (blackbox.py)
 
     def on_detached(reason, crash):
         print(json.dumps({'kind': 'detached', 'reason': reason}), flush=True)
@@ -85,6 +89,7 @@ def main():
                 continue
             with conn:
                 conn.settimeout(5)
+                request, started, result, failure = {}, time.monotonic(), None, None
                 try:
                     raw = b''
                     while b'\n' not in raw:
@@ -99,7 +104,9 @@ def main():
                     if op not in OPS:
                         raise ValueError(f'Unsupported operation: {op}')
                     exports = script.exports_sync
-                    if op == 'reload':
+                    if op == 'blackbox':
+                        result = box.dump()
+                    elif op == 'reload':
                         # Replace the agent in the same session, keeping the manager and timer.
                         if exports.status().get('actionInFlight'):
                             raise RuntimeError('Cannot reload during a Continue action')
@@ -117,7 +124,12 @@ def main():
                         result = getattr(exports, op.replace('-', ''))()
                     response = {'ok': True, 'result': result}
                 except Exception as e:  # report every failure to the client
-                    response = {'ok': False, 'error': str(e)}
+                    response, failure = {'ok': False, 'error': str(e)}, e
+                if request.get('op') != 'blackbox':
+                    try:
+                        box.request(request, round((time.monotonic() - started) * 1000), result, failure)
+                    except Exception:  # the black box never breaks the bridge
+                        pass
                 try:
                     conn.sendall((json.dumps(response) + '\n').encode())
                 except (BrokenPipeError, ConnectionResetError):

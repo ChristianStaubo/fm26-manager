@@ -1,5 +1,6 @@
 // Read the game screen as an ordered list of items (controls and texts).
 import {inspectUI} from '../bridge/client.mjs';
+import {sawGameDate} from '../../telemetry/trace.mjs';
 
 export const clean = s => (s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 export const settle = (ms = 500) => new Promise(r => setTimeout(r, ms));
@@ -48,7 +49,11 @@ export class Screen {
   // One snapshot (retried while the tree is still being built). Acting on it is safe: the
   // agent refuses if the screen changed in between, and that refusal is retried.
   static async read() {
-    for (let i = 0; ; i++) { const t = await inspectUI(); if (!t.truncated || i >= 4) return new Screen(t); await settle(150); }
+    for (let i = 0; ; i++) {
+      const t = await inspectUI();
+      if (!t.truncated || i >= 4) { const s = new Screen(t); sawGameDate(isoDate(s.date())); return s; }
+      await settle(150);
+    }
   }
   node(id) { return this.byId.get(id); }
   texts() { return this.items.filter(i => i.kind === 'text').map(i => i.label); }

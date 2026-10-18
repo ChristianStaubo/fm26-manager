@@ -31,6 +31,8 @@ import {watch, watchRunning} from './watch.mjs';
 import * as approvals from '../capabilities/approvals.mjs';
 import * as interventions from '../capabilities/interventions.mjs';
 import {audit} from '../capabilities/audit/audit.mjs';
+import * as incidents from '../telemetry/incidents.mjs';
+import {readTrace, traceStats, loopStats, readJournal, FINISHED} from '../telemetry/stats.mjs';
 
 const HELP = `fm <command> [args] [--flags]
 
@@ -124,10 +126,18 @@ The judge and the autonomy metric (notes/loop-engineering.md)
 
 When stuck / setup
   doctor [--fix]                 check game, bridge, save, overlays; --fix starts the bridge
-  stuck "<what you tried>"       save a friction report (screen, overlays, recent commands), then STOP
+  stuck "<what you tried>"       save a friction report (screen, overlays, recent commands, latest incident), then STOP
   friction [--all]               list open friction reports
-  friction resolve <id> "<fix>"  mark a report fixed (fixer only)
+  friction resolve <id> "<fix>" --cause new-screen|timing|rule|bug|bridge|data|fixture [--repeat-of <id>]
+                                 mark a report fixed (fixer only)
   friction fixture <id> <name>   save the report's screen as test/screens/<name>.json.gz
+  friction stats                 is the loop working: game days per stop, friction by cause, repeats
+
+Telemetry (telemetry/README.md: local only, capped)
+  trace [--since YYYY-MM-DD] [--run ID] [--cmd C] [--raw [N]]   where the time went: screen reads vs actions, per command
+  incidents                      saved incidents (a failure or a stop short of the goal)
+  incident <id>                  what led up to it: the last screens, the requests between them, the error
+  incident fixture <id> <n> <name>   save the incident's screen n as test/screens/<name>.json.gz
 
 Bridge
   reload                         reload the agent after editing bridge/agent/*.js
@@ -150,6 +160,16 @@ const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
 const ACTING = new Set(['unlist', 'loanlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
+// A stop short of the goal, or an error in a command that drives the game, saves an incident at that
+// moment: the bridge's last screens and requests, the error and its stack (telemetry/incidents.mjs).
+const GAME = new Set([...ACTING, 'cycle', 'checkpoint', 'answer', 'offers', 'deal', 'dynamics', 'train-position']);
+async function incident(fields) {
+  const r = await incidents.capture({argv, ...fields});
+  if (r) outcome({incident: r.id});
+  return r?.id;
+}
+const stopFields = r => ({reason: r.reason, why: r.why, error: r.error, stack: r.stack, handler: r.handler, details: r.details});
+const shown = ({stack, ...r}) => r;   // stacks go to the incident, not the screen
 try {
   if (ACTING.has(cmd) && watchRunning()) throw new Error(`fm watch is recording (pid ${watchRunning()}): stop it before acting, or wait`);
   switch (cmd) {
@@ -175,13 +195,33 @@ try {
     case 'doctor': { const r = await doctor({fix: !!flags.fix}); out(r); process.exitCode = r.ok ? 0 : 1; break; }
     case 'stuck': out(await friction.stuck(pos.slice(1).join(' '))); break;
     case 'friction':
-      if (a1 === 'resolve') out(await friction.resolve(a2, pos.slice(3).join(' ')));
+      if (a1 === 'resolve') out(await friction.resolve(a2, pos.slice(3).join(' '), {cause: flags.cause, repeatOf: flags['repeat-of']}));
       else if (a1 === 'fixture') out(await friction.fixture(a2, pos[3]));
+      else if (a1 === 'stats') out(loopStats(readJournal(), await friction.reports()));
       else out(await friction.list({all: !!flags.all}));
       break;
-    case 'run': { const r = await run({until: flags.until, dryRun}); outcome({reason: r.reason}); out(r); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break; }
+    case 'trace': {
+      const since = flags.since || new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+      const lines = readTrace({since, run: flags.run, cmd: flags.cmd});
+      out(flags.raw ? lines.slice(-(flags.raw === true ? 50 : Number(flags.raw))) : {since, ...traceStats(lines)});
+      break;
+    }
+    case 'incidents': out(await incidents.list()); break;
+    case 'incident':
+      if (a1 === 'fixture') out(await incidents.fixture(a2, pos[3], pos[4]));
+      else out(a1 ? await incidents.show(a1) : await incidents.list());
+      break;
+    case 'run': {
+      const r = await run({until: flags.until, dryRun}); outcome({reason: r.reason});
+      if (!FINISHED.has(r.reason)) r.incident = await incident(stopFields(r));
+      out(shown(r)); process.exitCode = ['until', 'window-closed'].includes(r.reason) ? 0 : r.reason === 'error' ? 1 : 2; break;
+    }
     case 'holiday':
-      if (flags.season) { const r = await holidaySeason({until: flags.until, onLeg: l => console.error(`leg ${l.leg}: ${l.from} → ${l.to} (${l.continue})`)}); outcome({reason: r.reason}); out(r); process.exitCode = r.reason === 'returned' ? 0 : 2; }
+      if (flags.season) {
+        const r = await holidaySeason({until: flags.until, onLeg: l => console.error(`leg ${l.leg}: ${l.from} → ${l.to} (${l.continue})`)}); outcome({reason: r.reason});
+        if (!FINISHED.has(r.reason)) r.incident = await incident(stopFields(r));
+        out(r); process.exitCode = r.reason === 'returned' ? 0 : 2;
+      }
       else out(await holiday({until: flags.until, days: num(flags.days), dryRun}));
       break;
     case 'prices': out(Object.values(pricebook.load().players)); break;
@@ -223,7 +263,13 @@ try {
       // fm checkpoint <name> = run one now. Every step runs; the report is what we decide from.
       const cp = await import('../capabilities/season/checkpoint.mjs');
       const opts = {budget: flags.budget ? num(flags.budget) : undefined, lens: flags.lens, maxAge: flags['max-age'] ? Number(flags['max-age']) : undefined, save: !flags['no-save']};
-      if (cmd === 'cycle') { const r = await cp.cycle(opts); out(r.markdown ? {checkpoint: r.checkpoint, date: r.date, files: r.files, report: r.markdown} : r); break; }
+      if (cmd === 'cycle') {
+        const r = await cp.cycle(opts);
+        // Why it stopped goes in the journal (friction stats count it); a stop saves an incident.
+        outcome({reason: r.stopped ? r.stopped.reason : 'checkpoint', legs: r.legs?.map(l => l.reason)});
+        if (r.stopped) { r.incident = await incident(stopFields(r.stopped)); r.stopped = shown(r.stopped); process.exitCode = 2; }
+        out(r.markdown ? {checkpoint: r.checkpoint, date: r.date, files: r.files, report: r.markdown} : r); break;
+      }
       if (!a1) { const d = await gameDate(); out({next: cp.nextCheckpoint(d), checkpoints: cp.loadCycle().checkpoints.map(c => `${c.on} ${c.name}: ${c.steps.join(' → ')}`)}); break; }
       const r = await cp.runCheckpoint(a1, opts);
       out({checkpoint: r.checkpoint, date: r.date, files: r.files, report: r.markdown}); break;
@@ -317,6 +363,8 @@ try {
   }
 } catch (e) {
   outcome({error: e.message});
-  if (e instanceof fm.NeedsAnalyst) { out({needsAnalyst: e.message, details: e.details}); process.exitCode = 2; }
-  else { console.error(e.message); process.exitCode = 1; }
+  const id = GAME.has(cmd) && !/Bridge is not running/.test(e.message)
+    ? await incident({reason: e instanceof fm.NeedsAnalyst ? 'needs-analyst' : 'error', error: e, details: e.details}) : null;
+  if (e instanceof fm.NeedsAnalyst) { out({needsAnalyst: e.message, details: e.details, ...(id ? {incident: id} : {})}); process.exitCode = 2; }
+  else { console.error(e.message + (id ? `\n(incident saved: fm incident ${id})` : '')); process.exitCode = 1; }
 }

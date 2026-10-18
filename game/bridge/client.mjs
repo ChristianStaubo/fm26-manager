@@ -1,11 +1,19 @@
-// Node client for the bridge socket (see server.py). No dependencies.
+// Node client for the bridge socket (see server.py). No dependencies. Every request is traced
+// (telemetry/trace.mjs: local/runs/trace/).
 import net from 'node:net';
 import path from 'node:path';
+import {record} from '../../telemetry/trace.mjs';
 
 export const RUNTIME_DIR = process.env.FM26_BRIDGE_DIR || '/tmp/fm26-bridge';
 export const SOCKET = path.join(RUNTIME_DIR, 'bridge.sock');
 
-export function request(op = 'status', {timeoutMs = 5000} = {}) {
+export function request(op = 'status', opts = {}) {
+  const started = Date.now();
+  return send(op, opts).then(
+    result => { record(op, Date.now() - started, {result}); return result; },
+    error => { record(op, Date.now() - started, {error}); throw error; });
+}
+function send(op, {timeoutMs = 5000} = {}) {
   return new Promise((resolve, reject) => {
     const conn = net.createConnection(SOCKET);
     let text = '';
