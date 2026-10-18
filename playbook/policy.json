@@ -197,6 +197,7 @@
     "consecutive_unchanged": 5,
     "_about": "A capability on 'approve' is eligible for 'auto' after this many proposals in a row the user approved unchanged (fm autonomy). The user flips it in policy.autonomy."
   },
+  "approval_tolerance": {"pct": 0.02, "min": 250000, "_about": "User, 2026-10-19 (\"we canceled a deal over 30k? ... that's pretty crazy\": Forest accepted Pepper at £11.5M against an £11.47M approval and the walk-away guard withdrew the bid): a price within this of an approved limit (2%, at least one £0.25M fee step) counts as within it. Beyond it a deal the club accepts is never cancelled: it is left unmade and the user is asked."},
   "autonomy": {
     "_section": "10",
     "_about": "Which capabilities act on their own ('auto') and which need the user's sign-off per action and price ('approve'). Promote one to 'auto' once its tests pass consistently (user, 2026-10-14: start with buying and selling on approval).",

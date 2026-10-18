@@ -54,3 +54,15 @@ test('holds: the user is deciding a deal (Ortega); accents ignored; --off releas
   hold('Camilo Ortega', {off: true, file});
   assert.equal(held('Camilo Ortega', {file}), false);
 });
+
+test('a price within the approval tolerance is within the limit (user, 2026-10-19: Pepper cancelled over £30K)', async () => {
+  const {tolerance} = await import('./approvals.mjs');
+  const file = tmp();
+  approve('buy', 'Udo Pepper', {max: 11.47e6, file});
+  assert.equal(tolerance(11.47e6, policy), 250000, 'at least one £0.25M fee step');
+  assert.equal(tolerance(80e6, policy), 1.6e6, '2% of a big fee');
+  assert.ok(gate('buy', 'buy', 'Udo Pepper', {price: 11.5e6, policy, file}), '£30K over: fine');
+  assert.throws(() => gate('buy', 'buy', 'Udo Pepper', {price: 12e6, policy, file}), e => e.details?.approval === 'outside-limit');
+  approve('sell', 'Harry Gray', {min: 51.4e6, file});
+  assert.ok(gate('incoming_offers', 'sell', 'Harry Gray', {price: 51e6, policy, file}), '£400K under a £51.4M minimum: within 2%');
+});

@@ -11,7 +11,7 @@ import {Screen, waitFor, click, clickWhere, setFee, recover, openPlayer, actionP
   isoDate, parseMoney, parseRange, NeedsAnalyst, overlays} from '../../game/ui/index.mjs';
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
-import {gate} from '../approvals.mjs';
+import {gate, tolerance} from '../approvals.mjs';
 import {askAgent} from './ask.mjs';
 import {classify, saveReplyScreen} from '../deals/replies.mjs';
 
@@ -225,8 +225,14 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
       history.push({round, offered: set.set, ...reply});
     } else history.push({round, ...reply});
     // Never commit above the walk-away, whatever the club says (Ribeiro was 'acceptable' at £35M
-    // total against a £30M max, 2026-07-13): leave instead.
-    if (reply.state === 'accepted' && dealValue(reply) > max) break;
+    // total against a £30M max, 2026-07-13). Within the approval tolerance it IS within (user, 2026-10-19:
+    // Pepper's accepted £11.5M was cancelled against £11.47M). Beyond it, the accepted deal is left unmade
+    // (not withdrawn: a withdrawal cancels the talks for the day) and the user is asked.
+    if (reply.state === 'accepted' && dealValue(reply) > max + tolerance(max)) {
+      await recover().then(() => click('Portal'));
+      throw new NeedsAnalyst(`The club accepts at ${(dealValue(reply) / 1e6).toFixed(2)}M, above the ${(max / 1e6).toFixed(2)}M walk-away: ask the user to approve the higher price (offer left unmade, talks not cancelled)`,
+        {approval: 'accepted-above-max', price: dealValue(reply), max, history});
+    }
     if (reply.state === 'accepted') { await finalize(); return {outcome: 'agreed', history}; }
     if (reply.state === 'made') return {outcome: 'agreed', history};
     // A flat "the offer is unacceptable": walk away, no raising or retrying (user, 2026-10-08:

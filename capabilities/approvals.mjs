@@ -63,12 +63,20 @@ export const find = (kind, player, {file = FILE} = {}) =>
  * 'auto' → null. 'approve' → the approval, or NeedsAnalyst naming what to ask the user.
  * buy: price (our --max) must be at or under the approved limit; sell: at or over it.
  */
+/** The slack around an approved limit (policy approval_tolerance: 2%, at least £250K, one Fee-box step).
+ *  User, 2026-10-19: an accepted Pepper deal was cancelled over £30K. */
+export function tolerance(limit, policy) {
+  const t = (policy || loadPolicy()).approval_tolerance || {pct: 0.02, min: 250000};
+  return Number.isFinite(limit) ? Math.max(t.min, t.pct * limit) : 0;
+}
+
 export function gate(capability, kind, player, {price, what, policy, file = FILE} = {}) {
   if (mode(capability, policy) === 'auto') return null;
   const a = find(kind, player, {file});
   const ask = `Needs the user's approval: ${what || `${kind} ${player}`}. Stop and report it; the main session records it with fm approve ${kind} "${player}" --${kind === 'buy' ? 'max' : 'min'} <amount>.`;
   if (!a) throw new NeedsAnalyst(ask, {approval: 'missing', capability, kind, player, price: price ?? null});
-  if (Number.isFinite(price) && (kind === 'buy' ? price > a.limit : price < a.limit))
+  const slack = tolerance(a.limit, policy);
+  if (Number.isFinite(price) && (kind === 'buy' ? price > a.limit + slack : price < a.limit - slack))
     throw new NeedsAnalyst(`${ask} Approved ${kind === 'buy' ? 'up to' : 'from'} ${m(a.limit)}, this is ${m(price)}.`,
       {approval: 'outside-limit', capability, kind, player, price, limit: a.limit});
   return a;

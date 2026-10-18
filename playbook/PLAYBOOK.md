@@ -245,6 +245,9 @@ sold), and buys only fill the room that leaves.
 - Lessons the user confirms move into this playbook.
 
 ## 10. Autonomy: what the manager does alone
+- **Approved prices have slack** (user, 2026-10-19: "we canceled a deal over 30k? ... that's pretty crazy"):
+  within 2% of an approved limit (at least one £0.25M fee step) is within it. A deal the club accepts is
+  never cancelled over a price: beyond the slack it is left unmade and the user is asked.
 - Each capability either acts on its own or needs the user's sign-off per action and price
   (`policy.json` `autonomy`). It starts on approval and is promoted to auto once its tests pass
   consistently: the agent earns autonomy one capability at a time.
