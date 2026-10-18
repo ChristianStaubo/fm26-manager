@@ -107,14 +107,18 @@ export async function registerDepth({dryRun = false} = {}) {
 // The "<Club> squad to be decided" message (2030-07-26) has a Respond button that opens the list; so does
 // "<Club> to register players for latter stages" (Champions League, 2035-09-04; mapped with the user: Respond,
 // Ask Assistant to Pick, Confirm, Confirm; the depth rule added no one, the pick already had them).
-const squadMessage = s => s.buttons('Respond').length === 1 && s.hasText(/( squad to be decided| to register players for latter stages)$/);
+const squadMessage = s => (s.buttons('Respond').length === 1 && s.hasText(/( squad to be decided| to register players for latter stages)$/))
+  // "Transfer deadline passed" (2035-09-04): the league list's final chance, with Confirm Selection and
+  // Team Registration. Our rule, not a blind Confirm Selection: open the list and run it like the others.
+  || (s.buttons('Team Registration').length === 1 && s.hasText('Transfer deadline passed'));
+const OPEN_LIST = ['Respond', 'Team Registration'];
 export const registrationHandler = {
   name: 'squad-registration',
   match: s => onRegistration(s) || squadMessage(s),
   async run(s, {dryRun = false} = {}) {
     const {click, waitFor, Screen, recover} = await import('../../ui/index.mjs');
     if (!onRegistration(s)) {
-      await click('Respond');
+      await click(OPEN_LIST.find(l => s.buttons(l).length === 1));
       // Already submitted (2032-07-30, done by hand with the scroll): Respond no longer opens the list.
       if (!await waitFor(onRegistrationPage, {what: 'squad registration list', timeout: 8000}).catch(() => null))
         return {action: 'squad-registration', date: isoDate(s.date()), detail: 'already submitted'};

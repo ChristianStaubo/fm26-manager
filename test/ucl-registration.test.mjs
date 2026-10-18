@@ -27,3 +27,8 @@ test("after the assistant's pick our depth rule adds no one; an on-loan depth pl
   const roles = Object.fromEntries(list.map(p => [p.name, ['X', p.name === 'Sebastian Ablaß' ? 'surplus' : 'backup']]));
   assert.deepEqual(registrationPlan(list, roles, 4), {add: [], drop: [], short: 0});
 });
+
+test('"Transfer deadline passed" (league list, final chance) is squad registration: Team Registration opens the list', () => {
+  const s = loadScreen('registration-deadline-passed');
+  assert.equal(HANDLERS.find(h => h.match(s))?.name, 'squad-registration');
+});
