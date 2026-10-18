@@ -119,6 +119,15 @@ The rules behind them:
   A flat "the offer is unacceptable" means walk away.
 - Wages are **not a filter** for quality signings (user, 2026-10-10): pay what a better player costs, within the club's **wage budget** (`fm offers`: payroll available). Personal terms stop only above 2.5× our first-team median (a runaway demand). A swap that lowers the bill is always fine.
 
+### Bidding (user, 2035-06-18)
+- **Bid at the season-end checkpoint (28 May), not in July.** FM accepts bids while the window is closed;
+  by 2 July Wark, Baldé and Quenda had gone elsewhere. Never advance the game with an open buy list.
+- **Don't lowball a player worth far more to us than his price** (wonderkids, bargains, upgrades,
+  replacements): open at his asking price or pay the release clause at once.
+- **A flat rejection ends that day only:** FM takes a new bid the next day. For those targets, bid the
+  asking price the next game day (the autopilot does it).
+- **Final year of his contract: open at 0.7x his value** (Yılmaz went for 0.69x); the agent's range runs high.
+
 ### Wonderkids (user, 2034-09)
 A cycle, not a one-off: buy cheap, develop away, then play or sell.
 1. **Buy** (summer buy table): PA >= 175, aged 16-20 (18+ unless British/Irish), <= £15M, up to 4 a

@@ -103,6 +103,11 @@ export function run({until, maxDecisions = 30, dryRun = false} = {}) {
           }
           // A signing nobody approved (a staff bid): withdraw it, don't stop (capabilities/buy/unapproved.mjs).
           decisions.push(...await (await import('../buy/unapproved.mjs')).handleUnapproved(r.alerts.filter(x => x.stop)));
+          // Priority bids flatly rejected yesterday: bid the asking price today (capabilities/buy/rebids.mjs).
+          for (const bid of (await import('../buy/rebids.mjs')).takeDue(dealsDay)) {
+            try { decisions.push(await (await import('../buy/buy.mjs')).buyPlayer(bid.name, bid.club, {open: bid.open, max: bid.max, ask: false})); }
+            catch (e) { decisions.push({action: 'rebid', name: bid.name, error: e.message}); }
+          }
           const stops = r.alerts.filter(x => x.stop);
           if (stops.length) return stop('needs-analyst', {handler: 'deals', why: stops.map(x => `${x.kind}: ${x.player || x.stage}${x.from ? ' from ' + x.from : ''}${x.state ? ' (' + x.state + ', ' + x.days + ' days)' : ''}`).join('; '), alerts: r.alerts});
         } catch (e) { decisions.push({action: 'deals-observe', error: e.message}); }

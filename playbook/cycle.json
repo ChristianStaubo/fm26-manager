@@ -30,11 +30,15 @@
   {
    "name": "season_end",
    "on": "05-28",
-   "why": "After the last league match: the season's scoreboard. Players at English clubs whose contracts end in June become approachable now (no in-season pre-contract between English clubs): the watch list first (Monga, Burton, user 2032-01-01).",
+   "why": "After the last league match: the season's scoreboard. Players at English clubs whose contracts end in June become approachable now (no in-season pre-contract between English clubs): the watch list first (Monga, Burton, user 2032-01-01). Bid now (user, 2035-06-18: Wark, Baldé and Quenda were gone by 2 July; FM accepts bids while the window is closed): the buy and sell tables run here, every target gets its bid today, and the summer checkpoint is the second pass with full-season stats.",
    "steps": [
     "ledger",
     "results",
     "free_agents",
+    "squad",
+    "sells",
+    "buys",
+    "bargains",
     "audit"
    ]
   },

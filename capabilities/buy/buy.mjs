@@ -17,9 +17,22 @@ import {classify, saveReplyScreen} from '../deals/replies.mjs';
 
 // Opening bid: rules.buying.open_at × FM's value, the middle of the range (lower if the club wants
 // to sell). Bids well below value get a flat "unacceptable", which ends the deal.
-export function openingBid(facts, {keenToSell = false} = {}) {
+export function openingBid(facts, {keenToSell = false, priority = false, finalYear = false} = {}) {
   const b = loadRules().buying, mid = (facts.valueRange[0] + facts.valueRange[1]) / 2;
+  // A priority target: his asking price, not a lowball that gets flatly rejected (user, 2035-06-18).
+  if (priority) return Math.round(facts.askingPrice ?? facts.valueRange[1]);
+  // Last year of his contract: the club takes much less (Yılmaz at 0.69x, 2035-06-18). Profile value,
+  // not the agent's range (the agent quoted £12.5-15M).
+  if (finalYear) { const r = facts.valueRangeProfile || facts.valueRange; return Math.round((r[0] + r[1]) / 2 * (b.final_year_open_at ?? 0.7)); }
   return Math.round(mid * (keenToSell ? b.open_at_if_club_keen_to_sell : b.open_at));
+}
+/** A priority target: the approval's note says why we want him badly (policy buying.priority_notes). */
+export const isPriority = (approved, b = loadRules().buying) => !!approved?.note && new RegExp(b.priority_notes || 'wonderkid', 'i').test(approved.note);
+/** His contract ends within a year of `date` ("£79K p/w 6/30/2040"). */
+export function inFinalYear(contract, date) {
+  const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(contract || '');
+  if (!m || !date) return false;
+  return (Date.UTC(+m[3], +m[1] - 1, +m[2]) - Date.parse(date)) / 864e5 <= 366;
 }
 export const defaultMax = facts => Math.round(facts.valueRange[1] * loadRules().buying.default_max);
 
@@ -324,7 +337,8 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (!facts.valueRange && (open === undefined || max === undefined)) { await leave(); throw new NeedsAnalyst(`No valuation for ${name}; pass --open and --max`, facts); }
   const keenToSell = s.hasText(/keen to offload|looking to sell|placed him on the transfer list/i);
   const walkAway = Math.min(max ?? defaultMax(facts), approved?.limit ?? Infinity);
-  let fee = Math.min(open ?? openingBid(facts, {keenToSell}), walkAway);
+  const priority = isPriority(approved ?? (await import('../approvals.mjs')).find('buy', name)), finalYear = inFinalYear(facts.contract, isoDate(profile.date()));
+  let fee = Math.min(open ?? openingBid(facts, {keenToSell, priority, finalYear}), walkAway);
   // Pre-filled extras stay in the offer: set the fee so the TOTAL is our opening bid. Measure them
   // on every screen (total − fee): the pre-filled page sometimes shows Suggest Terms too, and
   // taking it for a fresh one turned an £18.9M opening into ~£35M (Ribeiro, 2026-07-13).
@@ -342,8 +356,13 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   }
   if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
   const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras, keepLoanBack: loanBack});
-  await log({...base, ...r});
-  return {...base, ...r};
+  // A priority target flatly rejected: FM takes a new bid the next day; bid his asking price then.
+  if (priority && r.outcome === 'walked-away' && r.history?.at(-1)?.state === 'rejected') {
+    const again = Math.min(Math.round(facts.askingPrice ?? facts.valueRange[1]), walkAway);
+    if (again > fee) { (await import('./rebids.mjs')).add({name, club, open: again, max: walkAway, after: base.date}); r.rebid = again; }
+  }
+  await log({...base, ...r, priority, finalYear});
+  return {...base, ...r, priority, finalYear};
 }
 
 // Valuation shown on an offer screen ("Transfer Value": a range, or one exact amount).
