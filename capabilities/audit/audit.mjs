@@ -128,7 +128,9 @@ export function checkCheckpoints({today, cycle, reports = [], decisions = [], in
   return {fail, decide, warn};
 }
 
-export async function audit({alerts, position, since, stillFree} = {}) {
+// running: the checkpoint calling this (its own audit step runs before its report is written: season_end
+// 2036-06-04 warned that season_end had no report).
+export async function audit({alerts, position, since, stillFree, running} = {}) {
   const policy = loadPolicy(), rules = policy.scoreboard;
   const tactic = JSON.parse(readFileSync(`${ROOT}config/tactic.json`, 'utf8'));
   // Undated entries are kept: the judge never drops evidence silently (Gaitán's resumed buy had no date).
@@ -137,14 +139,15 @@ export async function audit({alerts, position, since, stillFree} = {}) {
   const median = decisions.filter(d => d.firstTeamMedian).at(-1)?.firstTeamMedian;
   const cap = median ? median * policy.contracts.max_salary_vs_first_team_median : null;
   const parts = [checkSquad({alerts, tactic, released: loadApprovals().released || [], moved: decisions.filter(d => d.action === 'move' && d.to === 'senior' && d.moved !== false).map(d => d.name)}), checkDeals({decisions, approvals: loadApprovals().approvals, cap, rules}),
-    checkMoney({club: clubRow(), ledger, position: position ?? lastPosition(), rules}), await cycleCheck(decisions, stillFree)];
+    checkMoney({club: clubRow(), ledger, position: position ?? lastPosition(), rules}), await cycleCheck(decisions, stillFree, running)];
   const fail = parts.flatMap(p => p.fail), warn = parts.flatMap(p => p.warn), decide = parts.flatMap(p => p.decide || []);
   return {ok: fail.length === 0, score: parts[2].score, fail, decide, warn, since: since || null};
 }
 
-async function cycleCheck(decisions, stillFree) {
+async function cycleCheck(decisions, stillFree, running) {
   const [{gameDate}, cp, iv] = await Promise.all([import('../data.mjs'), import('../season/checkpoint.mjs'), import('../interventions.mjs')]);
   const v = await import('../season/verdicts.mjs');
   const missingVerdicts = r => v.review(r.file.replace(/\.json$/, ''), r.report).missing;
-  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports: cp.reports(), decisions, interventions: iv.all(), stillFree, missingVerdicts});
+  const reports = [...cp.reports(), ...(running ? [{name: running.name, date: running.date, report: {checkpoint: running.name}, file: ''}] : [])];
+  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports, decisions, interventions: iv.all(), stillFree, missingVerdicts});
 }

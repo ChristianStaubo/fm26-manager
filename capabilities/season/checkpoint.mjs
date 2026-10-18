@@ -121,7 +121,7 @@ export const STEPS = {
   async audit(ctx) {
     const {audit} = await import('../audit/audit.mjs');
     const sq = ctx.squad ?? (() => { try { return analysis('manager.py', ['squad'], {date: ctx.date}); } catch { return {}; } })();
-    const r = await audit({alerts: sq.alerts || [], stillFree: ctx.freeAgents?.players?.map(p => p.name), since: `${seasonOf(ctx.date).slice(0, 4)}-07-01`});   // this season's deals, as fm audit
+    const r = await audit({alerts: sq.alerts || [], stillFree: ctx.freeAgents?.players?.map(p => p.name), since: `${seasonOf(ctx.date).slice(0, 4)}-07-01`, running: {name: ctx.name, date: ctx.date}});   // this season's deals, as fm audit
     return {data: r, md: [`ok ${r.ok} · net transfer profit ${money(r.score?.netTransferProfit)}`, ...r.fail.map(x => `FAIL ${x}`), ...r.decide.map(x => `DECIDE ${x}`), ...r.warn.map(x => `warn ${x}`)]};
   },
 };
