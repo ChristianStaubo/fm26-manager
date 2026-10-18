@@ -90,9 +90,13 @@ The rules behind them:
   accept it when he's surplus and the wage relief is real.
 - Never sell without knowing who replaces him (already in the squad, or a target we can afford).
 
-- **Youth-squad deals are delegated** (user, 2026-10-15): offers and loans for players registered in
-  our U21/U18 squads are handled by the staff member the user set in the game; we don't propose or act
-  on them (Chase Sullivan's two loan offers, 2030-07).
+- **No sale or loan is delegated to staff** (user, 2026-10-18; replaces the youth-squad delegation of
+  2026-10-15). Staff accepted five bids for Awudu (20, PA 180, value £14M) at £6.75-8.5M up front while he
+  was in the U21 squad; he was nearly gone to Barcelona. In the game, every sales responsibility (first
+  team, U21, U18: initiating, negotiating, finalizing) and youth loan offers are the manager's: offers for
+  any squad come to us and the sell matrix and loan table decide. Staff keep only what `policy.json`
+  `delegate_to_staff` lists (contract negotiations, finalizing signings, code of conduct, matches).
+  A staff bid for a signing nobody approved is withdrawn (Ebertz, 2036-01).
 
 ## 5. Buying
 - **First season of a new save: no signings** (user, 2026-10-10), except to keep a position at two

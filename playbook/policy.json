@@ -230,6 +230,7 @@
     "never_tick": ["Use team selection where possible"],
     "_never_tick": "Changed by the user 2026-10-10 for the 2028/29 season: UNTICK it, the assistant picks the XI (setting the XI is not automated). Earlier, 2026-10-09: TICK 'Use team selection where possible' so the XI we pick (new signings) plays; before, it was never ticked because forcing the XI stops rotation and risked injuries. Watch injuries in the season report; revert if they pile up."
   },
+  "_delegate_to_staff": "Only these go to staff (Staff Responsibilities in the game). Never sales or loan offers, for any squad (user, 2026-10-18, Awudu): those come to us.",
   "delegate_to_staff": [
     "contract negotiations",
     "finalizing signings",
