@@ -19,6 +19,7 @@ When a fix teaches us a screen, add or update its row here in the same commit.
 |---|---|---|---|
 | Portal | date button, or `fm click Portal` | `goTo('Portal')` | verified 2026-10 |
 | Player profile | Portal → Search → name → result row | `fm player "<name>" --club <club>` | verified 2026-10 |
+| Withdraw our bid | Recruitment → Transfer Activity → the deal's toggle → tick the box by "N Active Offers" at the foot of the pane (Withdraw Offer is disabled until then) → Withdraw Offer. No confirmation; the list shows "Offer Made" until the next day (mapped by the user with fm record/fm watch, Pepper 2036-06-04). The profile's Actions menu had no Withdraw Transfer Offer for this offer | `fm withdraw "<player>"` (records local/runs/withdrawn.json) | verified 2036-06-04 |
 | Transfer arranged | profile header: text "Transfer arranged" then "Joining <club> on M/D/YYYY" (an agreed pre-contract or deal; Luiz, 2036-06-04). The save export can't tell it from a pending offer | `profileFacts().arranged`; `fm player` records ours in `local/runs/arranged.json`; `fm buy`/`fm precontract` stop on it | verified 2036-06-04 |
 | Player Actions menu | profile → `Actions` menu → hover submenus | `actionPath([...])`, `fm player` peeks `Transfer` | verified 2026-10 |
 | Set transfer status / asking price | profile → Actions → Transfer → Set Transfer Status | `fm sell` | verified 2026-10 |

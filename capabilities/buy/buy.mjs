@@ -12,6 +12,7 @@ import {Screen, waitFor, click, clickWhere, setFee, recover, openPlayer, actionP
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {gate, tolerance} from '../approvals.mjs';
+import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {askAgent} from './ask.mjs';
 import {classify, saveReplyScreen} from '../deals/replies.mjs';
 
@@ -124,6 +125,19 @@ async function removeAllClauses({keepLoanBack = false} = {}) {
 // Bids never exceed the fee we chose: the Fee box steps £0.25M, and 'nearest' turned Pepper's £11.47M max into
 // £11.5M; Forest accepted and the walk-away guard withdrew (2036-06-04). A release clause keeps 'nearest'.
 const BID = {mode: 'atMost'};
+// Talks we cancelled (Withdraw Offer on the offer screen) stay dead that game day: Make An Offer reopens them
+// pre-filled, and a £17.25M offer for Pepper went live from that dead form (2036-06-04). Not reopened until
+// the next game day (local/runs/talks-cancelled.json).
+const CANCELLED = new URL('../../local/runs/talks-cancelled.json', import.meta.url);
+const cancelledTalks = () => { try { return JSON.parse(readFileSync(CANCELLED, 'utf8')); } catch { return {}; } };
+function recordCancelled(name, date) { const all = cancelledTalks(); all[name.toLowerCase()] = date; mkdirSync(new URL('.', CANCELLED), {recursive: true}); writeFileSync(CANCELLED, JSON.stringify(all, null, 1)); }
+/** After a bid that made no deal, no offer for him may be live (the stray Pepper offer, 2036-06-04). */
+async function noStrayOffer(name, date) {
+  const {transferActivity, withdrawn} = await import('../../game/screens/transfer-activity.mjs');
+  const live = (await transferActivity()).rows.find(r => (r.player || '').toLowerCase() === name.toLowerCase() && /Offer Made/i.test(r.stage || ''));
+  const w = withdrawn()[name.toLowerCase()];
+  if (live && !(w && w.date === date)) throw new NeedsAnalyst(`Unexpected live offer for ${name} after a bid that made no deal: check it, and \`fm withdraw "${name}"\` if it isn't ours to keep`, {stray: live});
+}
 /** Talks we cancelled today, reopened by Make An Offer: a dead form (Pepper, 2036-06-04). */
 export const talksCancelled = x => (x.hasText(/have cancelled the deal/i) || x.buttons(/have cancelled the deal/i).length > 0) && x.buttons('Exit Talks').length > 0;   // the GM line is a button's label
 
@@ -295,9 +309,10 @@ export async function negotiate({firstFee, max, step, rounds = 6, extras = 0, fi
     if (await nextStep() === 'make') return makeOffer(history);
   }
   // After a counter we withdraw; after a flat rejection there is no offer to withdraw: just leave.
-  if ((await Screen.read()).buttons('Withdraw Offer').length) await click('Withdraw Offer');
+  const withdrew = (await Screen.read()).buttons('Withdraw Offer').length > 0;
+  if (withdrew) await click('Withdraw Offer');
   else await recover().then(() => click('Portal'));
-  return {outcome: 'walked-away', history};
+  return {outcome: 'walked-away', withdrew, history};
 }
 
 /**
@@ -332,6 +347,8 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (approved && facts.valueRange && facts.valueRange[0] > approved.limit)
     throw new NeedsAnalyst(`${name}: his range starts at £${(facts.valueRange[0] / 1e6).toFixed(2)}M, above the approved £${(approved.limit / 1e6).toFixed(2)}M. Ask the user for a higher limit (formula walk-away £${(defaultMax(facts) / 1e6).toFixed(2)}M) or drop him.`,
       {approval: 'below-range', valueRange: facts.valueRange, approved: approved.limit, formulaMax: defaultMax(facts), agent});
+  if (!dryRun && cancelledTalks()[name.toLowerCase()] === isoDate(profile.date()))
+    return {action: 'buy', name, club, outcome: 'talks-cancelled', why: 'we cancelled these talks today: bid again on a later game day (reopening them made a stray offer, 2036-06-04)'};
   if (top.includes('Make An Offer')) await actionPath(['Make An Offer']);
   else if (sub.includes('Make An Offer')) await actionPath(['Transfer', 'Make An Offer']);
   else throw new NeedsAnalyst(`No "Make An Offer" for ${name}`, {top, transfer: sub});
@@ -348,7 +365,9 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (cancelled(s) && !s.buttons('Suggest Terms').length && !s.buttons('Make Offer').length) {
     await click('Exit Talks', {name: 'StandardButton'});
     const r = {action: 'buy', name, club, date: isoDate(s.date() || new Date()), outcome: 'talks-cancelled', why: 'we cancelled these talks today; bid again on a later game day'};
+    recordCancelled(name, r.date);
     await log(r);
+    await noStrayOffer(name, r.date);
     return r;
   }
   if (cannot(s)) {
@@ -400,7 +419,9 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
     const again = Math.min(Math.round(facts.askingPrice ?? facts.valueRange[1]), walkAway);
     if (again > fee) { (await import('./rebids.mjs')).add({name, club, open: again, max: walkAway, after: base.date}); r.rebid = again; }
   }
+  if (r.withdrew) recordCancelled(name, base.date);
   await log({...base, ...r, priority, finalYear});
+  if (!['agreed', 'accepted-demands', 'release-clause', 'bid-made'].includes(r.outcome)) await noStrayOffer(name, base.date);
   return {...base, ...r, priority, finalYear};
 }
 
