@@ -1,4 +1,5 @@
 // Friction 2026-10-14T23-23-41: Adelaide's loan offer for Sullivan (19, U18 GK) blocked fm run.
+import './isolate-state.mjs';   // never the live loan list
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadScreen} from './screens.mjs';

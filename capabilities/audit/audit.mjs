@@ -99,7 +99,7 @@ function lastPosition() {
 // (2031) and Jesús Fortea were free, worth £30M+, and nobody looked: no report, no question.
 // `stillFree`: today's free-agent list, when known. A player who has since renewed (Odobert, Villa to
 // 2036, still flagged in 2033-01 from the summer report) needs no answer.
-export function checkCheckpoints({today, cycle, reports = [], decisions = [], interventions = [], stillFree = null, missingVerdicts = null}) {
+export function checkCheckpoints({today, cycle, reports = [], decisions = [], interventions = [], stillFree = null, missingVerdicts = null, arranged = []}) {
   const decide = [], warn = [];
   if (!today || !cycle) return {fail: [], decide, warn};
   const season = (d => { const y = Number(d.slice(0, 4)); return d.slice(5) >= '07-01' ? y : y - 1; })(today);
@@ -113,7 +113,8 @@ export function checkCheckpoints({today, cycle, reports = [], decisions = [], in
     const ran = reports.some(r => r.name === c.name && r.date >= early && r.date <= new Date(Date.parse(due) + 60 * 86400000).toISOString().slice(0, 10));
     if (!ran) (['january', 'summer'].includes(c.name) ? decide : warn).push(`${c.name} checkpoint (${due}) has no report: fm checkpoint ${c.name}`);
   }
-  const answered = name => decisions.some(d => norm(d.name || d.player) === norm(name) && /precontract|buy|ask/.test(d.action || ''))
+  // A transfer arranged (seen on his profile: Luiz, Rusnák, 2036-06) is answered.
+  const answered = name => arranged.some(n => norm(n) === norm(name)) || decisions.some(d => norm(d.name || d.player) === norm(name) && /precontract|buy|ask/.test(d.action || ''))
     || interventions.some(i => i.capability === 'free_agents' && norm(i.proposed).includes(norm(name)));
   const latest = reports.filter(r => r.report?.steps?.free_agents?.ok).at(-1);
   for (const p of latest?.report.steps.free_agents.data.players || [])
@@ -149,5 +150,6 @@ async function cycleCheck(decisions, stillFree, running) {
   const v = await import('../season/verdicts.mjs');
   const missingVerdicts = r => v.review(r.file.replace(/\.json$/, ''), r.report).missing;
   const reports = [...cp.reports(), ...(running ? [{name: running.name, date: running.date, report: {checkpoint: running.name}, file: ''}] : [])];
-  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports, decisions, interventions: iv.all(), stillFree, missingVerdicts});
+  const arranged = Object.values((await import('../buy/arranged.mjs')).load().players).map(p => p.name);
+  return checkCheckpoints({today: await gameDate(), cycle: cp.loadCycle(), reports, decisions, interventions: iv.all(), stillFree, missingVerdicts, arranged});
 }

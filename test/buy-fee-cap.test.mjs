@@ -17,3 +17,11 @@ test('the dead form of cancelled talks is recognised (Pepper)', () => {
   assert.ok(talksCancelled(loadScreen('buy-talks-cancelled-pepper')));
   assert.ok(!talksCancelled(loadScreen('profile-transfer-arranged')));
 });
+
+test('a later bid uses the agent\'s last quote (one ask per player), if recent (Pepper: agent £9.4-11.5M, profile £19-23M)', async () => {
+  const {lastQuote} = await import('../capabilities/buy/buy.mjs');
+  const rows = [{action: 'ask-agent', name: 'Udo Pepper', date: '2036-06-04', feeRange: [9.4e6, 11.5e6]}, {action: 'buy', name: 'Udo Pepper', date: '2036-06-04'}];
+  assert.deepEqual(await lastQuote('udo pepper', '2036-06-09', rows), {range: [9.4e6, 11.5e6], from: 'agent (2036-06-04)'});
+  assert.equal(await lastQuote('Udo Pepper', '2036-09-01', rows), null, 'older than 60 days: not trusted');
+  assert.equal(await lastQuote('Someone Else', '2036-06-09', rows), null);
+});

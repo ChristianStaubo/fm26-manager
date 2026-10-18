@@ -10,7 +10,7 @@
 import {Screen, waitFor, click, clickWhere, setFee, recover, openPlayer, actionPath, peekActions, profileFacts,
   isoDate, parseMoney, parseRange, NeedsAnalyst, overlays} from '../../game/ui/index.mjs';
 import {loadRules} from '../sell/decide.mjs';
-import {log} from '../log.mjs';
+import {log, history} from '../log.mjs';
 import {gate, tolerance} from '../approvals.mjs';
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {askAgent} from './ask.mjs';
@@ -125,6 +125,13 @@ async function removeAllClauses({keepLoanBack = false} = {}) {
 // Bids never exceed the fee we chose: the Fee box steps £0.25M, and 'nearest' turned Pepper's £11.47M max into
 // £11.5M; Forest accepted and the walk-away guard withdrew (2036-06-04). A release clause keeps 'nearest'.
 const BID = {mode: 'atMost'};
+const QUOTE_DAYS = 60;
+/** The agent's last fee quote for him (decisions log), if within QUOTE_DAYS game days of `date`. */
+export async function lastQuote(name, date, rows) {
+  const q = (rows || await history()).filter(r => r.action === 'ask-agent' && (r.name || '').toLowerCase() === name.toLowerCase() && r.feeRange?.every?.(Number.isFinite)).at(-1);
+  if (!q || !date || !q.date || (Date.parse(date) - Date.parse(q.date)) / 864e5 > QUOTE_DAYS) return null;
+  return {range: q.feeRange, from: `agent (${q.date})`};
+}
 // Talks we cancelled (Withdraw Offer on the offer screen) stay dead that game day: Make An Offer reopens them
 // pre-filled, and a £17.25M offer for Pepper went live from that dead form (2036-06-04). Not reopened until
 // the next game day (local/runs/talks-cancelled.json).
@@ -339,7 +346,11 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   }
   // The agent's fee range is what the club will accept: use it, not the profile's range, which can
   // lag (Meïté 2030-07-21: agent £16-20M, profile still higher → we opened at £21.5M).
-  if (agent?.feeRange?.every(Number.isFinite)) { facts.valueRangeProfile = facts.valueRange; facts.valueRange = agent.feeRange; }
+  // The agent can be asked once per player: a later bid uses his last quote (within QUOTE_DAYS), not the
+  // profile, which can read far higher (Pepper: agent £9.4-11.5M and Forest accepted £11.5M on 06-04; the
+  // profile read £19-23M on 06-09 and the bid was refused as above the approval).
+  const quote = agent?.feeRange?.every(Number.isFinite) ? {range: agent.feeRange, from: 'agent'} : await lastQuote(name, isoDate(profile.date()));
+  if (quote) { facts.valueRangeProfile = facts.valueRange; facts.valueRange = quote.range; }
   const {top, sub} = await peekActions('Transfer');
   if (sub.includes('Withdraw Transfer Offer')) return {action: 'buy', name, club, alreadyPending: true};
   // His price starts above what the user approved (Gadou listed at £63M vs £58M approved, 2030-07):
@@ -386,6 +397,9 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   const walkAway = Math.min(max ?? defaultMax(facts), approved?.limit ?? Infinity);
   const priority = isPriority(approved ?? (await import('../approvals.mjs')).find('buy', name)), finalYear = inFinalYear(facts.contract, isoDate(profile.date()));
   let fee = Math.min(open ?? openingBid(facts, {keenToSell, priority, finalYear}), walkAway);
+  // Never open below what the club told us it accepts (Zare: agent £1.8M, opened £1.5M, flatly rejected:
+  // a lost day for £0.3M, 2036-06-09).
+  if (open === undefined && quote && !finalYear) fee = Math.min(Math.max(fee, quote.range[0]), walkAway);
   // Pre-filled extras stay in the offer: set the fee so the TOTAL is our opening bid. Measure them
   // on every screen (total − fee): the pre-filled page sometimes shows Suggest Terms too, and
   // taking it for a fresh one turned an £18.9M opening into ~£35M (Ribeiro, 2026-07-13).
@@ -395,7 +409,7 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (extras) fee = Math.max(0, fee - extras);
   // A dry run can't ask the agent (one-time per player): its price comes from the profile's range, which
   // can be stale (Pepper: £17-20M on the profile, £9.4-11.5M from his agent, 2036-06-04).
-  const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway, rangeFrom: agent?.feeRange ? 'agent' : 'profile (agent not asked: may be stale)',
+  const base = {action: 'buy', name, club, date: isoDate(profile.date()), facts, max: walkAway, rangeFrom: quote ? quote.from : 'profile (agent not asked: may be stale)',
     ...(prefilled ? {prefilled: {fee: feeBox, total: st.total, extras}} : {})};
   if (dryRun) {
     // Fresh screen: fill the fee to check it, then Cancel. Pre-filled screen: change nothing.

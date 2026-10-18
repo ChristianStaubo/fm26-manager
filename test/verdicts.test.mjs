@@ -107,3 +107,10 @@ test('a free agent whose transfer to us is arranged is answered as done (Luiz, R
   const row = review(base, r).rows.find(x => x.item === 'Alexandre Luiz');
   assert.equal(row.verdict, 'act'); assert.equal(row.auto, true); assert.match(row.why, /joining Brentford on 2036-07-01/);
 });
+
+test('an arranged signing counts as answered in the audit (Luiz and Rusnák stayed on the decide list, 2036-06)', () => {
+  const cycle = {checkpoints: []};
+  const fa = {name: 'season_end', date: '2036-06-04', file: 'x/2036-06-04-season_end.json', report: {checkpoint: 'season_end', steps: {free_agents: {ok: true, data: {players: [{name: 'Alexandre Luiz', always_buy: true, age: 24, slot: 'LB', worth: 89e6}]}}}}};
+  assert.equal(checkCheckpoints({today: '2036-06-09', cycle, reports: [fa]}).decide.length, 1);
+  assert.equal(checkCheckpoints({today: '2036-06-09', cycle, reports: [fa], arranged: ['Alexandre Luiz']}).decide.length, 0);
+});
