@@ -354,6 +354,14 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
     await waitFor(x => !x.buttons('Suggest Terms').length && !x.buttons('Make Offer').length, {what: 'offer screen closed'});
     return {...base, dryRun: true, wouldOpenAt: fee};
   }
+  // Pre-filled at his release clause with only Make Offer ("Offer must be accepted as it meets an active
+  // release fee", Ortiz 2035-08-19): editing never brings Suggest Terms back. Make the offer as it is.
+  const clause = releaseClause(s);
+  if (prefilled && !s.buttons('Suggest Terms').length && clause != null && clause <= walkAway && feeBox === clause) {
+    const r = {...await makeOffer([]), outcome: 'release-clause', fee: clause};
+    await log({...base, ...r});
+    return {...base, ...r};
+  }
   if (prefilled && !s.buttons('Suggest Terms').length) { await setFee('Fee', fee); await waitFor(x => x.buttons('Suggest Terms').length === 1, {what: 'Suggest Terms after editing'}); }
   const r = await negotiate({firstFee: fee, max: walkAway, step: buyStep(facts), rounds, extras, keepLoanBack: loanBack});
   // A priority target flatly rejected: FM takes a new bid the next day; bid his asking price then.
