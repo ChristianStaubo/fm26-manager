@@ -17,6 +17,20 @@ These are the user's rules (decided 2026-10-09).
 - Baseline (claude-2): 2025/26 finished **9th, 55 points**. Over ~3 seasons, finish higher than
   that with a positive transfer balance.
 
+## 1a. How we judge players: CA and PA for now (user, 2026-10-16 and 2026-10-18)
+- **Now:** FM's **current ability (CA)** is the measure of quality and **potential ability (PA)** of growth.
+  It is the simple version for this experiment ("super good scouting, not a super good data analyst"),
+  so the checkpoints, decision tables and state machines can be made reliable first.
+  - On CA/PA already: the depth chart, the buy table (backup level = squad average CA - 25), the sell
+    table, bargains, wonderkids (PA 175+), newgens, the final-year table.
+  - Still on the earlier Moneyball measures (to switch, or keep, when they disagree with CA/PA): the
+    squad step's "upgrade" need and the suggested XI (match output vs the league), free-agent worth (role
+    attributes and age), the summer `fm plan` / `fm window` scores (attributes + stats).
+- **Later: a Moneyball variant.** Once the whole season runs unsupervised on CA/PA, a second variant
+  plays without access to CA or PA: it judges players from their match stats in the context of our
+  tactic, and their role attributes, as at the start of the experiment (`docs/analysis/`). Same
+  checkpoints, tables and state machines; only the measure changes (docs/next-steps.md).
+
 ## 1b. The season cycle (user, 2026-10-15; as code 2031-05-28)
 The order of steps lives in **`playbook/cycle.json`** and runs as code: `fm cycle` holidays to the next
 checkpoint and runs every step, writing one report (`local/reports/checkpoints/`). Decide from the

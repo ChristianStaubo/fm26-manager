@@ -49,8 +49,9 @@ Why each checkpoint exists: playbook §1b.
    - **blended** = role attributes (the prediction: attributes travel between clubs) + core stats
    - **moneyball** = the core stats alone (the job in numbers, league-adjusted)
    - **★ Chabot profile** = elite on both over a full season in a strong league: the safest buy.
-   FM's current ability (CA) is never a ranking (user). Stats from a few games or a weaker league
-   don't travel (Franculino, Katić); attributes did.
+   For now FM's CA (quality) and PA (growth) are the measure (PLAYBOOK §1a, user 2026-10-16/18); these
+   two scores are context, and a Moneyball variant without CA/PA comes later. Stats from a few games or a
+   weaker league don't travel (Franculino, Katić); attributes did.
 Buying, selling and taking bids need the user's approval (playbook §10, `fm approvals`): propose
 each move with its price (buy: player, club, open, max; sell: player, minimum, why), then stop for
 the user. `fm buy`/`fm sell` refuse anything not approved, and `fm run` stops on bids it would take.

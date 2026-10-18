@@ -34,5 +34,12 @@
    `exceptions: 'propagate'` (FM crashed). Next candidates, by the trace: reading Transfer Activity, the
    Actions menu paths, fee entry (`setFee` steps +/- with 3 full reads per step).
 
+7. **The Moneyball variant (after a season runs unsupervised on CA/PA; user, 2026-10-18).** The same
+   checkpoints, tables and state machines, but the manager cannot see CA or PA: quality from match stats
+   in the context of our tactic (role stats vs the league, minutes-shrunk: `analysis/squad_report.py`)
+   plus role attributes; growth from age, attributes and minutes. Needs: a switch (`policy.json`
+   `evaluation.lens: ca_pa | moneyball`) that every table reads, CA/PA hidden from the exports in that
+   mode, and a backtest of both lenses on our past signings (who would each have bought, and the profit).
+
 ## Audit items still to address
 See the audit's top 10; summarised in the conversation of 2026-10-17.

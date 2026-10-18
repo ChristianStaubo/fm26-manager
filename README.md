@@ -25,6 +25,11 @@ Same club (Brentford), same £30M starting balance, three runs:
 
 Write-up: _[article link]_. Every rule in `playbook/` came from a failure we watched happen.
 
+Run 3 now judges players by FM's current and potential ability (CA/PA), the simple version, while the
+checkpoints and decision tables are made to run a whole season unsupervised. A **Moneyball variant**
+(no access to CA/PA: match stats in the context of the tactic, and role attributes) comes after that
+(`playbook/PLAYBOOK.md` §1a).
+
 ## What's inside
 | Folder | What |
 |---|---|
