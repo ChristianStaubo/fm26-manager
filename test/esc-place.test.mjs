@@ -30,3 +30,10 @@ test('a loan confirmation with the youth-loan Delegate button (Taylor to Wolves,
   const s = loadScreen('confirm-outgoing-youth-delegate-taylor');
   assert.equal(HANDLERS.find(h => h.match(s))?.name, 'confirm-outgoing');
 });
+
+test('"Replace Casadó as vice-captain" (2035-09-04) is the captain holiday handler; its info box is a known dialog', async () => {
+  const {HANDLERS} = await import('../game/screens/admin/handlers.mjs');
+  const {dialogAnswer} = await import('../game/ui/overlays.mjs');
+  assert.equal(HANDLERS.find(h => h.match(loadScreen('replace-vice-captain-casado')))?.name, 'choose-captain-holiday');
+  assert.equal(dialogAnswer({title: 'Review Captaincy', description: 'You must select a vice captain before confirming.'}), 'Ok');
+});

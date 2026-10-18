@@ -157,7 +157,9 @@ export const escPlace = {
 // the assistant settle it. One day of holiday; if it is still there, the loop guard stops us.
 export const chooseCaptain = {
   name: 'choose-captain-holiday',
-  match: s => s.hasText(/^Choose .+ captain$/) && s.buttons('Confirm Captain').length === 1,
+  // Also "Replace Casadó as vice-captain" (2035-09-04; the fallback's Confirm Captain only drew "You must
+  // select a vice captain before confirming"): the same one-day holiday settles it.
+  match: s => s.hasText(/^(Choose .+ captain|Replace .+ as (vice-)?captain)$/) && s.buttons('Confirm Captain').length === 1,
   async run(s, {dryRun = false} = {}) {
     const entry = {action: 'choose-captain', date: isoDate(s.date()), via: 'holiday (assistant settles it)'};
     if (dryRun) return {...entry, dryRun: true};

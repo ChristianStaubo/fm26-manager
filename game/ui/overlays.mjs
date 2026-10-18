@@ -26,6 +26,7 @@ export const KNOWN_DIALOGS = {
   'Enter contract negotiations?': 'Yes',   // renewing ourselves without the agent chat first (Franculino, 2030-07-17)
   'Cancel Negotiations': 'Cancel',   // never drop a deal by accident: keep talking (2028-06-27, Tanaka)
   'Loan Recall': 'Ok',   // "<player> will return to his club shortly" after Recall From Loan (Gallardo, 2032-01-29)
+  'You must select a vice captain before confirming.': 'Ok',   // "Review Captaincy" info box after Confirm Captain with no vice-captain (2035-09-04)
 };
 // Titles that carry a name: [pattern, button].
 export const KNOWN_DIALOG_PATTERNS = [
