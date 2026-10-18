@@ -65,6 +65,19 @@ const outgoingConfirm = {
     // Agreed = we accepted their bid, or they accepted our counter on the spot (Güreler, 2032-02-02).
     const agreed = player && (await history()).some(e => (e.accepted === true || /accept/i.test(JSON.stringify([e.decision, e.label, e.action]))) && JSON.stringify(e).includes(player));
     const entry = {action: 'confirm-outgoing', date: isoDate(s.date()), headline, player, agreed: !!agreed};
+    // A loan our staff agreed for a player outside the depth chart (Duarte to Preston, Awudu to Bristol
+    // City, 2035): he develops, we lose nothing. Accept. A depth player's loan still stops.
+    if (!agreed && /on loan/i.test(headline) && player) {
+      let role = null;
+      try { role = (await import('../../../capabilities/data.mjs')).analysis('depth.py', ['--player', player]).role; } catch { /* unknown: stop */ }
+      if (role === 'surplus') {
+        Object.assign(entry, {agreed: 'staff loan, outside the depth chart', role});
+        if (dryRun) return {...entry, dryRun: true};
+        await clickWhere(x => x.buttons('Accept')[0], 'Accept transfer');
+        await log(entry);
+        return entry;
+      }
+    }
     if (!agreed) throw new NeedsAnalyst(`Confirm Transfer for ${player || 'unknown player'}: no record of us agreeing this deal. Read it (fm deal "${player}") and decide: fm click Accept / Cancel`, entry);
     if (dryRun) return {...entry, dryRun: true};
     await clickWhere(x => x.buttons('Accept')[0], 'Accept transfer');

@@ -18,3 +18,9 @@ test('mid-season "Choose <Club> captain" (Savinho left, 2035-08-18) → holiday 
   assert.equal(chooseCaptain.match(s), true);
   assert.equal(HANDLERS.filter(h => h.match(s))[0].name, 'choose-captain-holiday');
 });
+
+test('a staff-agreed loan confirmation ("Duarte set to move on loan to Preston") is matched by confirm-outgoing', async () => {
+  const {HANDLERS} = await import('../game/screens/admin/handlers.mjs');
+  const s = loadScreen('loan-confirm-duarte');
+  assert.equal(HANDLERS.find(h => h.match(s))?.name, 'confirm-outgoing');
+});
