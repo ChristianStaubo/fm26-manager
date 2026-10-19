@@ -34,7 +34,10 @@ def chart(rows, tactic):
     for pos, slots in positions.items():
         slot = slots[0]
         # The user's calls (config/tactic.json "plays"): he is a natural there whatever FM rates him.
-        rate = lambda p: 20 if tactic.get('plays', {}).get(p['name']) == pos else best_rating(p, slot)
+        # ...and only there: he can cover elsewhere but starts where the user plays him (2038-01-01: Luiz, a
+        # natural LB, plays DM; the chart kept him at LB where he was "most needed").
+        plays = tactic.get('plays', {})
+        rate = lambda p: 20 if plays.get(p['name']) == pos else min(best_rating(p, slot), 17) if p['name'] in plays else best_rating(p, slot)
         able = [p for p in ours if rate(p) >= 15]
         ranked = sorted(able, key=lambda p: (rate(p) < 18, -m.intval(p, 'ca')))
         out[pos] = {'slots': len(slots), 'players': [
