@@ -181,3 +181,10 @@ test('a release clause caps our price: counter at the clause, not above (Stringf
   assert.equal(r.action, 'counter'); assert.equal(r.totalAsk, 82e6);
   assert.equal(sale({...bayern, guaranteed: 82e6, total: 82e6}).action, 'accept', 'a bid at the clause is accepted');
 });
+
+test('a non-negotiable bid for a starter must reach our sell price, not his minimum (Wark, CA 184, 2036-07-10)', () => {
+  // Value £68-83M, a 25-year-old starter: sell price 1.5 x £83M = £124.5M. A £90M non-negotiable bid is rejected.
+  const o = {vLow: 68e6, vHigh: 83e6, minimum: 72e6, monthsLeft: 47, negotiable: false, age: 25, importance: 'key starter', depth: {role: 'starter', position: 'LW'}};
+  assert.equal(sale({...o, guaranteed: 90e6}).action, 'reject');
+  assert.equal(sale({...o, guaranteed: 125e6}).action, 'accept');
+});

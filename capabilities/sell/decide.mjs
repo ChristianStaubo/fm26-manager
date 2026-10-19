@@ -95,9 +95,11 @@ export function decideSale(offer, policy = loadRules()) {
   // 2026-10-19: P. Đukić, final year, Hoffenheim £22.6M, was "countered" at £42M = rejected): accept at our
   // minimum or more; in his final year, at final_year_floor x the bottom of his value (he walks free next summer).
   if (o.negotiable === false) {
-    const floor = expiring ? o.vLow * (p.final_year_floor ?? 0.5) : Math.max(Number.isFinite(o.minimum) ? o.minimum : sellAt, paidFloor);
-    return o.guaranteed >= floor ? {action: 'accept', reason: `non-negotiable, >= ${expiring ? 'the final-year floor' : 'our minimum'} ${tidy(floor)}`, ...tag}
-      : {action: 'reject', reason: `non-negotiable, below ${expiring ? 'the final-year floor' : 'our minimum'} ${tidy(floor)}`, ...tag};
+    // Not the minimum: a non-negotiable bid at a starter's value would take our best player at his value
+    // (Wark, CA 184, 2036-07-10). The line is the price we'd counter at (sellAt: role x age x the top of his value).
+    const floor = expiring ? o.vLow * (p.final_year_floor ?? 0.5) : Math.max(sellAt, paidFloor);
+    return o.guaranteed >= floor ? {action: 'accept', reason: `non-negotiable, >= ${expiring ? 'the final-year floor' : 'our sell price'} ${tidy(floor)}`, ...tag}
+      : {action: 'reject', reason: `non-negotiable, below ${expiring ? 'the final-year floor' : 'our sell price'} ${tidy(floor)}`, ...tag};
   }
   if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
   return {action: 'reject', reason: `below our sell price ${sellAt} (${need}), counters spent`, ...tag};
