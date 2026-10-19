@@ -102,3 +102,10 @@ test('"Arsenal offer job interview": Decline Interview, always (2033-06-22)', as
   const s = loadScreen('job-interview-arsenal');
   assert.deepEqual(handlerFor(s), ['decline-job-interview']);
 });
+
+test('Agent chat with Agree / Stall but no Contest (Holbem, 2038-05-30): the Agree reply is found, so the card gets closed', async () => {
+  const {agreeTarget, contestTarget} = await import('../capabilities/buy/ask.mjs');
+  const s = loadScreen('ask-agree-only');
+  assert.equal(contestTarget(s), null);
+  assert.ok(agreeTarget(s), 'an Agree reply to click');
+});

@@ -90,6 +90,13 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
     const s2 = await Screen.read(), agree = agreeTarget(s2);
     if (agree) { await ui.click(s2.tree, agree); await new Promise(res => setTimeout(res, 2000)); transcript.push({we: 'Agree'}); contested.agreed = true; }
   }
+  else {
+    // No Contest offered, only Agree / Stall (Holbem's agent, 2038-05-30: "a lower salary offer won't
+    // affect…"): Agree, as after a Contest. Left open, the chat card covers the profile and the next
+    // Actions menu is "occluded by CardContainer". The wage is still negotiated in the contract talks.
+    const agree = agreeTarget(s1);
+    if (agree) { const {ui} = await import('../../game/bridge/client.mjs'); await ui.click(s1.tree, agree); await new Promise(res => setTimeout(res, 2000)); transcript.push({we: 'Agree (no Contest offered)'}); }
+  }
   const s = await Screen.read();
   const reply = readReply(chat(s));
   const entry = {action: 'ask-agent', date: isoDate(s.date()), name, club, asked: true, ...reply, contested, transcript, valueRangeBefore: facts.valueRange};
