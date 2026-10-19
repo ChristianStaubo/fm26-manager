@@ -108,7 +108,7 @@ Transfers
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
   judge bids [--last N] [--model M]   a stronger model reviews our logged bid decisions (agree / what it would do); local/runs/judge.jsonl
   bench <workflow> [--check "<fm args>"] -- <fm args>   time one workflow (reads, actions), check the game after; local/runs/bench.jsonl
-  activity [accept|reject|stall "<player>" [--club C]]   Transfer Activity in one pass: every deal and offer (terms, stage, buttons); act on one offer from its row
+  activity [loans [--dry-run] | accept|reject|stall "<player>" [--club C]]   Transfer Activity in one pass: every deal and offer (terms, stage, buttons); act on one offer from its row
   withdraw "<player>"            withdraw our bid for him (Transfer Activity; no confirmation, gone the next day)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
   answer "<player>" [--club C] [--upfront N] [--dry-run]   answer his (or club C's) open bid now (incoming-offer handler; no Continue)
@@ -386,6 +386,7 @@ try {
       // accept|reject|stall "<player>" [--club C] acts on one offer from its row, staying on the tab.
       const act = await import('../game/screens/activity.mjs'), {gate} = await import('../capabilities/approvals.mjs');
       if (!a1) { out(await act.readActivity()); break; }
+      if (a1 === 'loans') { out(await act.answerLoans({dryRun})); break; }
       // Taking money for a player needs the approval: checked on the row's figures before the click.
       const check = a1 === 'accept' ? row => row.kind === 'transfer' && gate('incoming_offers', 'sell', a2, {price: row.total ?? row.upfront, what: `accept ${row.club}'s ${row.stage} for ${a2}`}) : null;
       out(await act.actOnOffer(a2, flags.club, a1, {dryRun, check})); break;

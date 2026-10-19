@@ -369,7 +369,7 @@ export function readLoanPage(s) {
 // depth lookup (a test hook: the live one reads the save export).
 let depthOf = name => pricebook.depthRole(name);
 export const setDepthSource = fn => { depthOf = fn; };
-async function loanVerdict({player, age, wageShare, playingTime, fees = 0, date, duration, optionFee}) {
+export async function loanVerdict({player, age, wageShare, playingTime, fees = 0, date, duration, optionFee}) {
   const {decideLoanOffer, playerType} = await import('../../capabilities/sell/loan-table.mjs');
   const {has: loanListed} = await import('../../capabilities/sell/loanlist.mjs');
   const depth = depthOf(player), type = playerType(depth, {age});

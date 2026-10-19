@@ -8,7 +8,7 @@
 //     loans "Offer Made £7K (£9.75K) p/m Wages: 50% (60%)"), then accept / stall / cancel-reject buttons.
 //   A reject takes effect at once, with no dialog (Arsenal for Rosete: the budget impact fell by £62M).
 // One `fm answer` per offer took 7-13 s and re-navigated each time; a deal here reads in ~1.7 s.
-import {Screen, toggle, waitFor, settle, clickWhere, scrollWithin, parseMoney} from '../ui/index.mjs';
+import {Screen, toggle, waitFor, settle, clickWhere, scrollWithin, parseMoney, isoDate} from '../ui/index.mjs';
 import {transferActivity} from './transfer-activity.mjs';
 
 const onPage = s => s.hasText('Potential Transfer Budget Impact') && s.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
@@ -94,4 +94,22 @@ export async function actOnOffer(player, club, action, {dryRun = false, check = 
   await settle(900);
   const after = await Screen.read();
   return {action, player, club: row.club, offer: row, budgetImpact: {before, after: budgetImpact(after)}};
+}
+
+// Loan offers answered from their rows (2026-10-19: the loan pages' wage share could not be read for Slatina,
+// Dunne, Collins, Schmitt, while the rows show it): each open loan goes through the loan table
+// (transfer-offers.mjs loanVerdict: player type, listed, playing time, wage share, no option on a prospect).
+export async function answerLoans({dryRun = false} = {}) {
+  const {loanVerdict} = await import('./transfer-offers.mjs');
+  const {deals} = await readActivity(), out = [];
+  const date = isoDate((await Screen.read()).date());
+  for (const d of deals) for (const o of d.offers || []) {
+    if (o.kind !== 'loan' || o.status !== 'Offer Made' || !o.actions.accept) continue;
+    const optionFee = parseMoney(/option[^£]*?(£[\d.,]+[KM]?)/i.exec(o.terms || '')?.[1] ?? '') ?? 0;
+    const v = await loanVerdict({player: d.player, wageShare: o.wageShare, playingTime: o.playingTime, optionFee, date});
+    const act = ['accept', 'reject'].includes(v.action) ? v.action : null;
+    if (act && !dryRun) await actOnOffer(d.player, o.club, act);
+    out.push({player: d.player, club: o.club, wageShare: o.wageShare, playingTime: o.playingTime, decision: v.action, reason: v.reason, done: !!act && !dryRun});
+  }
+  return {loans: out};
 }
