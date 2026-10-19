@@ -25,7 +25,7 @@ export function bench(workflow, args, {check} = {}) {
     reads: reads.length, readMs: reads.reduce((a, r) => a + (r.ms || 0), 0), actions: rows.filter(r => r.op === 'ui' || r.op === 'direct').length,
     game: rows.at(-1)?.game ?? null, outcome: out?.outcome ?? out?.action ?? null,
     error: run.status === 0 ? null : (run.stderr || run.stdout).trim().split('\n')[0].slice(0, 200),
-    ...(verify ? {check: check.join(' '), checkOutput: (verify.stdout || '').slice(0, 2000)} : {})};
+    ...(verify ? {check: check.join(' '), checkOutput: (verify.stdout || '').slice(0, 50000)} : {})};
   mkdirSync(`${ROOT}local/runs`, {recursive: true});
   appendFileSync(FILE, JSON.stringify(entry) + '\n');
   return {...entry, result: out ?? run.stdout.slice(0, 1500)};
