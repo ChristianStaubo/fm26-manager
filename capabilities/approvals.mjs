@@ -22,13 +22,14 @@ function save(data, file) { mkdirSync(new URL('.', file), {recursive: true}); wr
 // facts: what the approval assumed about him ({club, until, value}, from the save export at approval time).
 // The tools check them against his live profile before acting (factsChanged): Jiménez was approved as a free
 // agent from the June export and had signed for Valencia to 2041 by 10 July (user, 2026-10-19).
-export function approve(kind, player, {max, min, note, facts = null, file = FILE} = {}) {
+export function approve(kind, player, {max, min, note, role = null, facts = null, file = FILE} = {}) {
   if (!['buy', 'sell'].includes(kind)) throw new Error(`approve buy|sell, not ${kind}`);
   const limit = kind === 'buy' ? max : min;
   if (!Number.isFinite(limit)) throw new Error(kind === 'buy' ? 'approve buy needs --max' : 'approve sell needs --min');
   const data = load(file);
   data.approvals = data.approvals.filter(a => !(a.kind === kind && norm(a.player) === norm(player)));
-  const entry = {kind, player, limit, note: note || null, at: new Date().toISOString(), ...(facts ? {facts} : {})};
+  // role: what we buy him for (starter / backup / third / prospect): the wage model's role (contracts.wage_model).
+  const entry = {kind, player, limit, note: note || null, ...(role ? {role} : {}), at: new Date().toISOString(), ...(facts ? {facts} : {})};
   data.approvals.push(entry);
   save(data, file);
   return entry;

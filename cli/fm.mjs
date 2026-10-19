@@ -117,7 +117,7 @@ Transfers
 
 Approvals (policy.json autonomy: buying and selling need the user's sign-off)
   approvals                      autonomy per capability + the approvals on record
-  approve buy "<name>" --max N | approve sell "<name>" --min N [--note "…"]
+  approve buy "<name>" --max N [--role starter|backup|third|prospect] | approve sell "<name>" --min N [--note "…"]
                                  record the USER's approval (main session only; never the player agent)
   approve revoke buy|sell "<name>"
      [--proposed N]             with approve: the agent's proposed price, so the ledger knows if the user changed it
@@ -348,7 +348,7 @@ try {
       else {
         // The facts this approval rests on, from the save export (checked against his profile before acting).
         const {exportFacts} = await import('../capabilities/data.mjs');
-        const e = approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note, facts: exportFacts(a2)});
+        const e = approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note, role: flags.role, facts: exportFacts(a2)});
         // The ledger: approved as the agent proposed it, or changed by the user.
         if (flags.proposed) interventions.record({capability: a1, kind: Math.abs(num(flags.proposed) - e.limit) < 1 ? 'approved-unchanged' : 'approved-changed',
           proposed: `${a2} at ${num(flags.proposed)}`, decided: `${a2} at ${e.limit}`, date: await gameDate()});

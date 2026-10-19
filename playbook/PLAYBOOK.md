@@ -218,6 +218,13 @@ sold), and buys only fill the room that leaves.
   - a **minimum fee release clause** caps our resale profit: if we must include one, try to raise
     it; leave it when the agent has locked it (Ortega, £82M, 2030-07).
 
+- **What we pay a signing** (user, 2038-05-30, after Holbem, a CA 151 backup, was heading for £150K/wk as an
+  "Important Player"): the going rate in our league for his ability (median wage of league players within 4
+  CA) x his role: **starter 1.0, backup 0.6, third or prospect 0.4**; at least 1.1x what he earns now; at most
+  £90K for a backup and £60K for a third or prospect. His playing-time promise matches the role (a backup is a
+  **Squad Player**). A demand over 1.3x our offer: walk away. The approval says the role we buy him for
+  (`fm approve buy … --role backup`). `analysis/wage_model.py`.
+
 - **Renewals** (user, 2026-10-15): a contracted player is a sellable asset; a final-year player is
   an asset losing value. Look **two seasons ahead** every window: regulars and players worth £5M+
   with ≤ 2 years left get a decision while there is leverage. **The renewal test:** renew when his

@@ -14,7 +14,8 @@ import {Screen, waitFor, click, clickWhere, setFee, setNumber, settle, parseMone
 import {loadRules} from '../sell/decide.mjs';
 import {log} from '../log.mjs';
 import {wageException} from './wage-exceptions.mjs';
-import {held} from '../approvals.mjs';
+import {held, find as findApproval} from '../approvals.mjs';
+import {recordCancelled} from '../deals/cancelled.mjs';
 import {execFileSync} from 'node:child_process';
 
 // First-team wage bands (analysis/wage_bands.py): the contract screen's "Avg." includes youth.
@@ -27,6 +28,14 @@ export function wageCeiling({peerMedian, currentWage}, wc) {
 }
 function peerBand(player, within) {
   try { return JSON.parse(execFileSync('python3', ['analysis/wage_bands.py', '--player', player, '--within', String(within)], {cwd: new URL('../..', import.meta.url).pathname, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000})); }
+  catch { return null; }
+}
+// The wage model (analysis/wage_model.py, user 2038-05-30 after Holbem): the league's rate for his CA x the
+// role we buy him for (the approval's role, else where the depth chart puts him), a floor over his current
+// wage, a cap per role, a walk-away line and the playing time that matches the role.
+export function wageModel(player) {
+  const role = findApproval('buy', player)?.role;
+  try { return JSON.parse(execFileSync('python3', ['analysis/wage_model.py', '--player', player, ...(role ? ['--role', role] : [])], {cwd: new URL('../..', import.meta.url).pathname, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000}).toString().trim().split('\n').pop()); }
   catch { return null; }
 }
 function firstTeamBands() {
@@ -149,7 +158,18 @@ export function lowerPromise(current, options) {
   const next = options.map((o, i) => ({o, i, rank: PLAYING_TIME.indexOf(plain(o))})).filter(x => x.rank > a).sort((x, y) => x.rank - y.rank)[0];
   return next ? {from: current, to: plain(next.o), option: next.o, index: next.i} : null;
 }
-async function lowerPlayingTime() {
+// The playing time that matches the role (wage model): a backup is a Squad Player, never Important Player
+// (Holbem asked Important Player, 2038-05-30). Only ever lower than what he asked: the target if offered,
+// else the offered option nearest to it.
+export function pickPromise(current, options, target) {
+  const plain = o => o.replace(/ \(Recommended\)$/, '');
+  const a = PLAYING_TIME.indexOf(current), t = PLAYING_TIME.indexOf(target);
+  if (a < 0 || t < 0 || t <= a) return null;
+  const lower = options.map((o, i) => ({o, i, rank: PLAYING_TIME.indexOf(plain(o))})).filter(x => x.rank > a);
+  const best = lower.sort((x, y) => Math.abs(x.rank - t) - Math.abs(y.rank - t) || x.rank - y.rank)[0];
+  return best ? {from: current, to: plain(best.o), option: best.o, index: best.i, target} : null;
+}
+async function lowerPlayingTime(target = null) {
   const {ui} = await import('../../game/bridge/client.mjs');
   const pt = x => x.after('Playing Time', i => i.kind === 'dropdown');
   const s0 = await Screen.read(), current = pt(s0)?.label;
@@ -157,7 +177,7 @@ async function lowerPlayingTime() {
   await ui.dropdown(s0.tree, s0.node(pt(s0).id), 'open').catch(() => null);
   const s1 = await waitFor(x => (x.floatingItems() || []).some(i => i.kind === 'row'), {what: 'playing time options', timeout: 4000}).catch(() => null);
   const options = s1 ? s1.floatingItems().filter(i => i.kind === 'row').map(i => i.label) : [];
-  const pick = lowerPromise(current, options);
+  const pick = target ? pickPromise(current, options, target) : lowerPromise(current, options);
   if (!pick) { await ui.closeDropdowns().catch(() => null); return {kept: current, options}; }
   const s2 = await Screen.read();
   await ui.dropdown(s2.tree, s2.node(pt(s2).id), 'select', pick.index);
@@ -247,6 +267,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     await log({action: 'personal-terms', player, date: isoDate(s.date()), outcome: 'handed-over'});
     return {action: 'personal-terms', player, outcome: 'handed-over', to: handOver.label.replace(/^Hand Over to /, '')};
   }
+  const wm = renewal ? null : wageModel(player);
   let promise = null, promiseNote = null;   // logged once the entry exists
   if (s.buttons('Finalize Promises').length) {
     // A promise to play him in a set position/role we can't keep (user, 2033-07-04: Germany, "play as an
@@ -266,7 +287,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
     }
     // Lower his playing time once, on the first look only: after we've suggested promises and the agent
     // is happy to move on, changing anything again reopens the talks (user, 2034-06-16, Froholdt).
-    if (!promiseNote && !promisesAccepted(s)) promise = await lowerPlayingTime().catch(e => ({error: e.message}));
+    if (!promiseNote && !promisesAccepted(s)) promise = await lowerPlayingTime(wm?.promise).catch(e => ({error: e.message}));
     await click('Finalize Promises'); s = await waitFor(x => form(x) || !!negotiateButton(x), {what: 'promises accepted'});
   }
   if (!form(s)) { await clickWhere(negotiateButton, 'Negotiate Contract (talks)'); s = await waitFor(form, {what: 'contract form'}); }
@@ -277,6 +298,17 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   const demand = salaryOf(s);
   const avg = parseMoney(s.after('Avg.', i => i.kind === 'text' && parseMoney(i.label) !== null)?.label);
   const entry = {action: 'personal-terms', player, date: isoDate(s.date()), demand, squadAverage: avg, demanded: contractTerms(s), ...(promise ? {promise} : {}), ...(promiseNote ? {promisesRemoved: promiseNote} : {}), tries: []};
+  if (wm) entry.wageModel = wm;
+  // Far above what the role is worth: no talks (user, 2038-05-30: "160K is a starter's wages" for a backup).
+  if (wm?.walk_away_above && demand > wm.walk_away_above && !wageException(player)) {
+    await click('Cancel Negotiations', {name: 'StandardButton'});
+    await waitFor(x => x.buttons('Confirm').length > 0, {what: 'cancel negotiations confirmation', timeout: 5000});
+    await click('Confirm');
+    const e = {...entry, outcome: 'walked-away-wage', why: `demand £${demand}/wk > £${wm.walk_away_above} (${wm.role}: offer £${wm.offer}, league rate £${wm.market} at CA ${wm.ca})`};
+    recordCancelled(player, entry.date, 'offer-screen');
+    await log(e);
+    return e;
+  }
   // Cap: first-team median × max_salary_vs_first_team_median (user, 2026-10-08). Above it: stop
   // with the form open for a decision (Cancel Negotiations asks to confirm; its Cancel keeps talks).
   const bands = firstTeamBands();
@@ -313,7 +345,7 @@ export async function negotiatePersonalTerms({player = '?', ticks, entered = fal
   // A signing's own ceiling (policy contracts.wage_ceiling): what we pay players of his level, and a
   // multiple of what he earns now. Renewals keep the renewal test instead.
   const wc = rules.wage_ceiling;
-  const ceiling = !renewal && wc ? wageCeiling({peerMedian: peerBand(player, wc.peer_within_ca)?.peer_median, currentWage: wc.current_factor ? current : null}, wc) : null;
+  const ceiling = renewal ? null : wm?.offer ?? (wc ? wageCeiling({peerMedian: peerBand(player, wc.peer_within_ca)?.peer_median, currentWage: wc.current_factor ? current : null}, wc) : null);
   const limit = Math.min(Number.isFinite(cap) ? cap : Infinity, ceiling ?? Infinity);
   if (ceiling) entry.ceiling = ceiling;
   const atMost = (salary, k) => Number.isFinite(limit) && salary - k * step > limit ? Math.ceil((salary - limit) / step) : k;
