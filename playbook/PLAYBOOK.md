@@ -177,8 +177,10 @@ A cycle, not a one-off: buy cheap, develop away, then play or sell. **We hold be
 2026-10-18: "if we accumulate six new wonderkids every season and only sell one a season, that sucks"):
 the prospects we own are reviewed first (the sell table: loan again, promoted into the depth chart, or
 sold), and buys only fill the room that leaves.
-1. **Buy** (summer buy table): PA >= **180**, aged 16-20 (18+ unless British/Irish), <= £15M, at most **2 a
-   window**, and at most **6 in the portfolio** (every prospect we own: <= 23, PA >= 170, outside the
+1. **Buy** (summer buy table): PA >= **180**, aged 16-21 (18+ unless British/Irish), <= £30M, at most **3 a
+   window**, and at most **10 in the portfolio** (user, 2026-10-19: "we want to have more wonderkids... to keep
+   in our pipeline"). PA **195+** at any fee is a stated exception for the user (van Eijden, 18, 152/198, £72M).
+   Every PA 180+ prospect is listed for the user at each checkpoint (`wonderkid_watch`), whatever the fee (every prospect we own: <= 23, PA >= 170, outside the
    depth chart, on loan or not). A free one at PA 175+ is always a buy (§1b free agents). A full
    portfolio still takes a prospect 5+ PA better than our weakest: he replaces him (Pepper, PA 186, for
    Collins, CA 119/PA 172). Over the limit, the sell table sells the weakest.

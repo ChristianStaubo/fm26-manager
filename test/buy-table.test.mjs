@@ -41,14 +41,14 @@ print(json.dumps([c['name'] for c in bt.table(ours + market + kids, tactic, seas
   assert.deepEqual(d, ['Pepper', 'Awudu'], 'foreign 16-year-old and the £44M one excluded');
 });
 
-test('wonderkid portfolio (user, 2034-09; 2026-10-18: max 6 at PA 170+): the summer list fills only the room left; on_arrival loan vs squad', () => {
-  const d = run(setup + `held = [p(f'Kid{i}', C, 100, age=19) for i in range(5)]
+test('wonderkid portfolio (user, 2034-09; 2026-10-18: max 10 at PA 170+, 2026-10-19): the summer list fills only the room left; on_arrival loan vs squad', () => {
+  const d = run(setup + `held = [p(f'Kid{i}', C, 100, age=19) for i in range(9)]
 for k in held: k['pa'] = '180'
 kids = [p('Awudu', 'Hoff', 95, age=18, value=0.4e6), p('Ready', 'Gent', 140, age=19, value=5e6)]
 for k, pa in zip(kids, (181, 180)): k['pa'] = str(pa); k['nation'] = 'Germany'
 t = bt.table(ours + market + held + kids, tactic, season_surplus=0, window='summer')
 print(json.dumps({'portfolio': t['portfolio'], 'kids': [(c['name'], c['on_arrival']) for c in t['wonderkids']]}))`);
-  assert.deepEqual(d.portfolio, {held: 5, room: 1, weakest: ['Kid0', 'Kid1']});
+  assert.deepEqual(d.portfolio, {held: 9, room: 1, weakest: ['Kid0', 'Kid1']});
   assert.deepEqual(d.kids, [['Awudu', 'loan']], 'one slot left: the best PA; CA 95 is below the backup level');
 });
 
@@ -62,11 +62,11 @@ print(json.dumps([k(a), k(b), k(c)]))`);
   assert.deepEqual(d, [['replace'], [], []], 'Brown 154 < 167 → replace; a 150 leaver is covered by Brown; Brown still ours → nothing');
 });
 
-test('bought wonderkids (user, 2026-10-18): PA 180+ and two a window, best PA first', () => {
+test('bought wonderkids (user, 2026-10-18): PA 180+ and three a window (2026-10-19), best PA first', () => {
   const d = run(setup + `kids = [p(f'K{pa}', 'Club', 100, age=18, value=5e6) for pa in (176, 179, 180, 183, 186)]
 for k in kids: k['pa'] = k['name'][1:]; k['nation'] = 'Germany'
 print(json.dumps([c['name'] for c in bt.table(ours + market + kids, tactic, season_surplus=0, window='summer')['wonderkids']]))`);
-  assert.deepEqual(d, ['K186', 'K183']);
+  assert.deepEqual(d, ['K186', 'K183', 'K180']);
 });
 
 test('a loanee back within 60 days is in the depth chart: no backup bought for him (Awudu, 2036-06-04)', () => {
@@ -103,7 +103,7 @@ print(json.dumps([(n['kind'], n.get('for'), n.get('if_sold')) for n in lb['needs
 });
 
 test('a full portfolio takes a clearly better prospect, who replaces the weakest (user, 2026-10-19: Pepper for Collins)', () => {
-  const d = run(setup + `held = [p(f'Kid{i}', C, 100 + i, age=20) for i in range(6)]
+  const d = run(setup + `held = [p(f'Kid{i}', C, 100 + i, age=20) for i in range(10)]
 for k in held: k['pa'] = '172'
 kids = [p('Pepper', 'Forest', 118, age=18, value=9.5e6), p('Meh', 'X', 110, age=18, value=5e6)]
 for k, pa in zip(kids, (186, 181)): k['pa'] = str(pa); k['nation'] = 'Republic of Ireland'

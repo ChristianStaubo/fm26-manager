@@ -111,12 +111,31 @@ def wonderkids(rows):
             continue
         if age < 18 and p.get('nation') not in BRITISH_IRISH:
             continue
-        if not 0 < value <= R['wonderkid_max_fee'] or float(p['wage'] or 0) > R['backup_max_wage']:
+        # A generational one (PA >= wonderkid_exceptional_pa: van Eijden, 18, 152/198, £72M) at any fee: a stated exception.
+        exceptional = pa >= R.get('wonderkid_exceptional_pa', 999)
+        if not 0 < value or not exceptional and (value > R['wonderkid_max_fee'] or float(p['wage'] or 0) > R['backup_max_wage']):
             continue
         out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p.get('positions', ''),
-                    'nation': p.get('nation'), 'value': int(value), 'wage': int(float(p['wage'] or 0))})
+                    'nation': p.get('nation'), 'value': int(value), 'wage': int(float(p['wage'] or 0)), **({'exceptional': True} if exceptional else {})})
     out.sort(key=lambda c: (-c['pa'], c['value']))
     return out[:R['wonderkids_per_window']]
+
+
+def wonderkid_watch(rows, top=20):
+    """Every prospect at buy_min_pa+ (16-21; 18+ unless British/Irish) at any fee, best PA first: the user picks
+    from it (2026-10-19: "anyone over like 180 PA we should consider"; van Eijden was outside the fee cap)."""
+    min_pa = m.POLICY.get('wonderkids', {}).get('buy_min_pa', R['wonderkid_min_pa'])
+    out = []
+    for p in rows:
+        if p['contract_club'] in (m.CLUB, '') or (p['club'] or '').startswith('club#'):
+            continue
+        age, pa = m.intval(p, 'age'), m.intval(p, 'pa')
+        if pa < min_pa or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age'] or (age < 18 and p.get('nation') not in BRITISH_IRISH):
+            continue
+        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p.get('positions', ''),
+                    'nation': p.get('nation'), 'value': int(float(p['value'] or 0)), 'wage': int(float(p['wage'] or 0))})
+    out.sort(key=lambda c: (-c['pa'], -c['ca']))
+    return out[:top]
 
 
 def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=(), selling=()):
@@ -240,7 +259,7 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
             kids.append(c)
         elif (w := next(weakest, None)) and c['pa'] >= m.intval(w, 'pa') + W.get('swap_min_pa_gain', 5):
             kids.append({**c, 'replaces': w['name']})
-    return {'wonderkids': kids if window == 'summer' else [], 'portfolio': {'held': held, 'room': room, 'weakest': [p['name'] for p in held_list[:2]]}, 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
+    return {'wonderkids': kids if window == 'summer' else [], 'wonderkid_watch': wonderkid_watch(rows_now), 'portfolio': {'held': held, 'room': room, 'weakest': [p['name'] for p in held_list[:2]]}, 'window': window, 'squad_avg': squad_avg, 'season_surplus': season_surplus, 'after_buys': left_money, 'positions': out}
 
 
 if __name__ == '__main__':
