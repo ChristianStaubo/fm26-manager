@@ -47,6 +47,18 @@ Buying, selling and releasing need the user. When you have the proposals (each w
 and why, from `fm plan`, `fm price`, `fm buy --dry-run`), stop with outcome `approval`. Never run
 `fm approve` or `fm intervene`.
 
+## Transfer Activity and bids (2026-10-19)
+- Read every bid, offer and deal in one pass: `fm activity` (~15 s). Never one `fm answer --dry-run` per offer.
+- Answer one offer from its row: `fm activity accept|reject|stall "<player>" --club "<club>"` (~2 s). Accepting a
+  sale is gated by the approval (2% slack). The autopilot answers bids by the rules; use this for decisions.
+- Non-negotiable bids can't be countered: they are accepted at our minimum (final year: half the bottom of his
+  value) or rejected. Add-ons count at full value. A value that reads £0 is never decided: report it.
+- `fm buy` types the fee, reuses the agent's last quote, retries pre-filled forms, and checks for stray offers;
+  `fm withdraw "<player>"` takes back a bid (no confirmation; gone the next day).
+- An arranged transfer ("Transfer arranged" on the profile) is done: never re-offer.
+- Renewals: `fm renew` asks the agent first (keen → Contest → Agree), then negotiates inside his range.
+- Prospects with PA 10+ above CA start for us or go on loan, never on the bench.
+
 ## Listing for sale
 `fm sell "<name>" --club <club> --min <approved minimum>`: the asking price stays **Unspecified** (user rule);
 our minimum and target live in the price book and bids are answered against them. Never `--price`.
