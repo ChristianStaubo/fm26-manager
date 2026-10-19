@@ -50,7 +50,8 @@ export function checkDeals({decisions = [], approvals = [], cap, rules}) {
     else if (total > lim) warn.push(`${d.name}: ${m(upfront)} up front but ${m(total)} with add-ons, above the approved ${m(lim)}`);
   }
   for (const t of decisions.filter(d => d.action === 'personal-terms' && ['agreed', 'accepted-pending'].includes(d.outcome))) {
-    if (cap && t.salary > cap) fail.push(`${t.player}: £${t.salary}/wk, above the wage cap £${Math.round(cap)}`);
+    // A renewal that passed the renewal test may go above the cap (PLAYBOOK §6: "even above the wage cap"; Espino, £250K, 2038-05).
+    if (cap && t.salary > cap && t.renewal?.verdict !== 'renew') fail.push(`${t.player}: £${t.salary}/wk, above the wage cap £${Math.round(cap)}`);
     const terms = t.demanded || {}, fee = paid[norm(t.player)];
     if (terms.playerSellOnPct > 0) warn.push(`${t.player}: the player takes ${terms.playerSellOnPct}% of a future sale (resale profit)`);
     if (terms.releaseClause && fee && terms.releaseClause < rules.release_clause_min_x_fee * fee)
