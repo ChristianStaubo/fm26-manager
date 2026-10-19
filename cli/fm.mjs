@@ -106,6 +106,7 @@ Transfers
   train-position "<name>" --club <club> --pos DM [--dry-run]   train him in a new position (the user's calls: config/tactic.json plays)
   renew "<name>" --club <club> [--preview] [--dof] [--dry-run]   we negotiate (--preview: stop before Suggest Terms); a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
+  judge bids [--last N] [--model M]   a stronger model reviews our logged bid decisions (agree / what it would do); local/runs/judge.jsonl
   bench <workflow> [--check "<fm args>"] -- <fm args>   time one workflow (reads, actions), check the game after; local/runs/bench.jsonl
   activity [accept|reject|stall "<player>" [--club C]]   Transfer Activity in one pass: every deal and offer (terms, stage, buttons); act on one offer from its row
   withdraw "<player>"            withdraw our bid for him (Transfer Activity; no confirmation, gone the next day)
@@ -367,6 +368,11 @@ try {
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'precontract': out(await preContract(a1, flags.club, {preview: !!flags.preview, dryRun})); break;
     case 'offers': out(await transferActivity()); break;
+    case 'judge': {   // fm judge bids [--last N] [--model opus]: a stronger model checks our logged decisions
+      const {judgeBids} = await import('../telemetry/judge.mjs');
+      if (a1 !== 'bids') throw new Error('fm judge bids [--last N] [--model M]');
+      out(await judgeBids({last: Number(flags.last) || 12, model: flags.model || 'opus', recompute: !!flags.recompute})); break;
+    }
     case 'bench': {
       // fm bench <workflow> [--check "<fm args>"] -- <fm args…>: time one workflow, count reads, check the result.
       const i = process.argv.indexOf('--'), args = i < 0 ? [] : process.argv.slice(i + 1);

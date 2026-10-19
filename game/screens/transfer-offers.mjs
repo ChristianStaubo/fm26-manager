@@ -141,6 +141,8 @@ export const incomingOffer = {
       Object.assign(offer, {minimum: p.minimum, target: p.target, moneyball: p.why, keep: p.keep,
         importance: p.importance, blockers: p.blockers, age: p.age, depth: p.depth, paid: paidFor(offer.player, await history())});
     }
+    // A value read as £0 (Alejandro, Benítez, 2036-06-22): the export's value instead; decideSale stops if still blank.
+    if (!(offer.vHigh > 0)) { const {renewalContext} = await import('../../capabilities/contracts/renew.mjs'); const v = (await renewalContext(offer.player))?.value; if (v > 0) Object.assign(offer, {vLow: v * 0.9, vHigh: v * 1.1, valueFrom: 'export'}); }
     // Days to the window's close: late in the window a listed player goes at his minimum.
     { const {windowEnd, daysBetween} = await import('../../capabilities/season/season.mjs'); const day = d.date(); if (day) offer.daysToClose = daysBetween(day, windowEnd(day)); }
     let decision = decideSale(offer);

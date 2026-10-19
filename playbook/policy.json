@@ -66,6 +66,8 @@
     "_late_window_days": "Listed players (user, 2032-01-04, Fresneda): accept outright only at the target; counter negotiable bids from sell_ask x value down; a non-negotiable bid below the target is turned down (more bids come) until this many days before the window closes, then anything at the minimum is taken.",
     "_sell_ask": "User, 2031-07-22: never just reject a bid; counter at the price we'd sell for (Kislyak value £39M, bid £34M → counter £50-55M; Kayode, a player we want to keep → £95M). A player who isn't listed is for sale at sell_ask x the top of his value (above our own minimum x min_raise_over_offer); a counter or accept at that price needs no further approval. Contract in its last year: the bottom of his range. Listed players: their price book (target, then towards the minimum). Reject only once max_counters are spent.",
     "min_raise_over_offer": 1.1,
+    "final_year_floor": 0.5,
+    "_final_year_floor": "Judge review 2026-10-19 (P. Đukić, final year, non-negotiable £22.6M rejected at a £42M ask): a non-negotiable bid for a player in his last year is accepted at this x the bottom of his value; he leaves free next summer otherwise.",
     "_counters": "Ask x v_high on the up-front fee, but at least min_raise_over_offer x their offer. Never accept a first negotiable offer.",
     "max_counters": 3,
     "sell_on_pct_for_age_under": 23,

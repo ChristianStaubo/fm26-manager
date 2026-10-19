@@ -9,20 +9,33 @@ const sale = o => decideSale({negotiable: true, countersSoFar: 0, monthsLeft: 24
 // Not listed: for sale only at our price, sell_ask (1.3) x the top of his value (user, 2031-07-22:
 // "we should not reject bids, we should counter them at prices we want to sell our players at").
 test('Kislyak (value £36-39M) bid £34M → counter at our sell price 1.5 x £39M = £58.5M (core)', () => {
-  const r = sale({guaranteed: 34e6, upfront: 26.75e6, vLow: 36e6, vHigh: 39e6, minimum: 36e6, negotiable: false});
+  const r = sale({guaranteed: 34e6, upfront: 26.75e6, vLow: 36e6, vHigh: 39e6, minimum: 36e6});
   assert.equal(r.action, 'counter');
   assert.equal(r.guaranteedAsk, 58.5e6);
   assert.equal(r.upfront, 58.5e6 - 7.25e6);
+  // Non-negotiable, it can't be countered (judge review, 2026-10-19): decided outright, £34M < our £36M minimum.
+  assert.equal(sale({guaranteed: 34e6, upfront: 26.75e6, vLow: 36e6, vHigh: 39e6, minimum: 36e6, negotiable: false}).action, 'reject');
 });
 test('Kayode (value £63-75M, a player we want to keep) bid £61.5M → counter 1.5 x £75M = £112.5M', () => {
-  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, negotiable: false, importance: 'key starter'});
+  const r = sale({guaranteed: 61.5e6, upfront: 33e6, total: 72e6, vLow: 63e6, vHigh: 75e6, minimum: 64.8e6, importance: 'key starter'});
   assert.equal(r.action, 'counter');
   assert.equal(r.totalAsk, 112.5e6, 'a total, add-ons included');
   assert.equal(r.need, 'core'); assert.equal(r.replace, true);
 });
 test('a bid at or above our sell price is accepted; lowballs are countered, not rejected', () => {
   assert.equal(sale({guaranteed: 59e6, vLow: 36e6, vHigh: 39e6}).action, 'accept');
-  assert.equal(sale({guaranteed: 1000, vLow: 63e6, vHigh: 63e6, negotiable: false}).action, 'counter');
+  assert.equal(sale({guaranteed: 1000, vLow: 63e6, vHigh: 63e6}).action, 'counter');
+  assert.equal(sale({guaranteed: 1000, vLow: 63e6, vHigh: 63e6, negotiable: false}).action, 'reject', 'non-negotiable: no counter possible');
+});
+test('non-negotiable bids are decided outright (judge review, 2026-10-19): final year at half the bottom of his value', () => {
+  // P. Đukić: 11 months left, value £42M, Hoffenheim £20.1M + £2.5M add-ons, non-negotiable → accept (floor £21M).
+  assert.equal(sale({guaranteed: 22.6e6, vLow: 42e6, vHigh: 42e6, minimum: 42e6, monthsLeft: 11, negotiable: false}).action, 'accept');
+  assert.equal(sale({guaranteed: 18e6, vLow: 42e6, vHigh: 42e6, minimum: 42e6, monthsLeft: 11, negotiable: false}).action, 'reject');
+  // Rosete: Arsenal £89M total vs our £96.1M minimum, 35 months left → reject.
+  assert.equal(sale({guaranteed: 89e6, vLow: 92e6, vHigh: 92e6, minimum: 96.14e6, monthsLeft: 35, negotiable: false, releaseClause: 92e6}).action, 'reject');
+});
+test('a value that reads £0 is never decided (Alejandro, Benítez: "sold" at £0)', () => {
+  assert.equal(sale({guaranteed: 0, vLow: 0, vHigh: 0}).action, 'escalate');
 });
 test('reject only once the counters are spent', () => {
   assert.equal(sale({guaranteed: 40e6, vLow: 36e6, vHigh: 39e6, countersSoFar: 2}).action, 'counter');

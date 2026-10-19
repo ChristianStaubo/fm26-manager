@@ -20,6 +20,9 @@ export function decideSale(offer, policy = loadRules()) {
   let o = offer;
   const p = policy.selling;
   if (![o.guaranteed, o.vLow, o.vHigh].every(Number.isFinite)) return {action: 'escalate', reason: 'offer or valuation unreadable'};
+  // A blank value is a failed read, not a worthless player (judge review, 2026-10-19: Alejandro and Benítez
+  // were "sold" at £0 because their value read 0). The handler falls back to the export's value first.
+  if (!(o.vHigh > 0) && !o.priceBook) return {action: 'escalate', reason: 'his value reads £0: read again, never decide on a blank value'};
   // Judge the offer on its value: guaranteed money plus add-ons at addon_weight (o.total is the
   // offer page's "Future & Potential Total Cost with Additional Fees").
   const w = policy.valuation?.addon_weight ?? 1;
@@ -88,6 +91,14 @@ export function decideSale(offer, policy = loadRules()) {
   const sellAt = Math.min(tidy(gross(expiring ? o.vLow : Math.max(o.vHigh * mult, paidFloor, ourFloor))), clause);
   const tag = {sellAt, need, rising, ...(role ? {role, band} : {}), replace: need === 'core'};
   if (o.guaranteed >= sellAt) return {action: 'accept', reason: `>= our sell price ${sellAt} (${need})${need === 'core' ? ': replacement needed' : ''}`, ...tag};
+  // A non-negotiable bid can't be countered: a counter is a rejection. Decide it outright (judge review,
+  // 2026-10-19: P. Đukić, final year, Hoffenheim £22.6M, was "countered" at £42M = rejected): accept at our
+  // minimum or more; in his final year, at final_year_floor x the bottom of his value (he walks free next summer).
+  if (o.negotiable === false) {
+    const floor = expiring ? o.vLow * (p.final_year_floor ?? 0.5) : Math.max(Number.isFinite(o.minimum) ? o.minimum : sellAt, paidFloor);
+    return o.guaranteed >= floor ? {action: 'accept', reason: `non-negotiable, >= ${expiring ? 'the final-year floor' : 'our minimum'} ${tidy(floor)}`, ...tag}
+      : {action: 'reject', reason: `non-negotiable, below ${expiring ? 'the final-year floor' : 'our minimum'} ${tidy(floor)}`, ...tag};
+  }
   if (o.countersSoFar < counters) return {...counter(sellAt, p.min_raise_over_offer), reason: `not for sale below ${sellAt} (${need}): counter ${o.countersSoFar + 1}`, ...tag};
   return {action: 'reject', reason: `below our sell price ${sellAt} (${need}), counters spent`, ...tag};
 }
