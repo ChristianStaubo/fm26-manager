@@ -44,6 +44,7 @@ rpc.exports = {
   advance() { if (inFlight) throw Error('A Continue request is already in flight'); return queueJob('advance', doContinue, {action: true}); },
   openrequiredaction() { return queueJob('open-required-action', doOpenRequiredAction, {action: true}); },
   uitree() { return queueJob('uitree', uiTree); },
+  uiversion() { return queueJob('uiversion', uiVersion); },
   ui(request) {
     const reading = ['inputInfo', 'recordStop'].includes(request.action);
     return queueJob('ui:' + request.action, () => uiAction(request), {action: !reading});

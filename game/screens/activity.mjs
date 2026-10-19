@@ -14,6 +14,7 @@ import {transferActivity} from './transfer-activity.mjs';
 const onPage = s => s.hasText('Potential Transfer Budget Impact') && s.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
 const dealToggles = s => s.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
 const LIST_BOTTOM = 760;   // rows below this sit behind the pane's footer (Rosete at y 803, 2036-07-06)
+const LIST_TOP = 250;      // ...and above this behind the header, once the list is scrolled (Omondi, 2026-10-19)
 
 /** The offer rows of the selected deal. */
 export function offerRows(s) {
@@ -35,27 +36,30 @@ async function open() {
   if (!onPage(await Screen.read())) await transferActivity();
 }
 
-/** Select one deal (scrolling it into view first). */
+/** Select one deal (scrolling it into view first); returns the screen with it selected. Three reads a deal
+ *  (find, click, confirm + rows): it was ~9.5 (86 for 9 deals, 2026-10-19). */
 export async function selectDeal(player) {
-  await open();
   const pick = x => dealToggles(x).find(i => i.label.toLowerCase().startsWith(player.toLowerCase()));
-  for (let k = 0; k < 4; k++) {
-    if (!onPage(await Screen.read())) await transferActivity();   // the game can pull us to Messages (a required action)
-    const t = pick(await Screen.read());
-    if (!t) throw new Error(`No deal for "${player}": ${dealToggles(await Screen.read()).map(i => i.label).join(' | ')}`);
-    if (t.bounds[1] + t.bounds[3] <= LIST_BOTTOM) break;
-    // Scroll the list from a deal that is fully in view (the hidden one's own box is occluded).
-    await scrollWithin(x => dealToggles(x).find(i => i.bounds[1] + i.bounds[3] <= LIST_BOTTOM), 250, 'deal list'); await settle(300);
-  }
-  // The list re-renders after every action: wait for his row, and retry a click that lands mid-render.
-  await waitFor(x => onPage(x) && pick(x), {what: `deal ${player} in the list`, timeout: 8000});
+  let s = await Screen.read();
   for (let k = 0; ; k++) {
-    try { await toggle(pick, true, `deal ${player}`); break; }
-    catch (e) { if (k >= 2 || !/UI content changed|occluded/.test(e.message)) throw e; await settle(500); }
+    if (!onPage(s) || !pick(s)) {   // pulled away (a required action → Messages), or the list is mid-render
+      if (k >= 4) throw new Error(`No deal for "${player}": ${dealToggles(s).map(i => i.label).join(' | ')}`);
+      if (!onPage(s)) await transferActivity(); else await settle(400);
+      s = await Screen.read(); continue;
+    }
+    if (pick(s).checked && offerRows(s).some(r => r.club && r.stage)) return s;
+    const top = pick(s).bounds[1], bottom = top + pick(s).bounds[3];
+    if (bottom > LIST_BOTTOM || top < LIST_TOP) {
+      const shown = x => dealToggles(x).find(i => i.bounds[1] >= LIST_TOP && i.bounds[1] + i.bounds[3] <= LIST_BOTTOM);
+      await scrollWithin(shown, bottom > LIST_BOTTOM ? 250 : -250, 'deal list');
+      await settle(300); s = await Screen.read(); continue;
+    }
+    try { await toggle(pick, true, `deal ${player}`); }
+    catch (e) { if (k >= 4 || !/UI content changed|occluded/.test(e.message)) throw e; }
+    // Wait for the pane to show him (cheap polls between reads: screen.mjs waitFor).
+    // ...filled in, not just laid out (the row's club and stage arrive a moment later: Omondi read empty).
+    s = await waitFor(x => pick(x)?.checked && offerRows(x).some(r => r.club && r.stage), {what: `deal ${player} selected`, timeout: 5000}).catch(() => Screen.read());
   }
-  await waitFor(x => pick(x)?.checked, {what: `deal ${player} selected`});
-  await settle(350);
-  return pick(await Screen.read()).label;
 }
 
 /** Every deal with its offer rows, in one pass on the tab. */
@@ -65,9 +69,9 @@ export async function readActivity() {
   const deals = [];
   for (const label of names) {
     const player = label.replace(/ (Offer Made|\d+ Offers|Contract|Work Permit|Confirmation|Medical|Negotiat\w*)$/, '');
+    const t0 = Date.now();
     try {
-      await selectDeal(player);
-      deals.push({player, deal: label, offers: offerRows(await Screen.read())});
+      deals.push({player, deal: label, offers: offerRows(await selectDeal(player)), ms: Date.now() - t0});
     } catch (e) { deals.push({player, deal: label, error: e.message.slice(0, 120)}); }
   }
   return {deals};
@@ -77,8 +81,7 @@ export async function readActivity() {
 export async function actOnOffer(player, club, action, {dryRun = false} = {}) {
   const name = {accept: 'accept-button', reject: 'cancel-reject-button', stall: 'stall-button'}[action];
   if (!name) throw new Error('action: accept | reject | stall');
-  await selectDeal(player);
-  const s = await Screen.read(), rows = offerRows(s);
+  const s = await selectDeal(player), rows = offerRows(s);
   const row = club ? rows.find(r => r.club?.toLowerCase() === club.toLowerCase()) : rows.length === 1 ? rows[0] : null;
   if (!row) throw new Error(`${player}: name the club (--club): ${rows.map(r => `${r.club} ${r.stage}`).join(' | ')}`);
   if (!row.actions[action]) throw new Error(`${player} / ${row.club}: ${action} is not available (${row.stage})`);

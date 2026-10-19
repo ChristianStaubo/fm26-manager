@@ -61,8 +61,14 @@ export async function renewSelf(name, club, {dryRun = false, preview = false} = 
   const profile = dryRun || !onProfile ? await openPlayer(name, club) : here;
   if (dryRun) { const {sub} = await peekActions('Contract'); return {action: 'renew-self', name, done: false, dryRun: true, options: sub}; }
   const facts = profileFacts(profile);
-  try { await actionPath(['Contract', 'Enter Contract Negotiations']); }
-  catch (e) { if (e.details?.available) return {action: 'renew-self', name, done: false, options: e.details.available, agent: chat}; throw e; }
+  // Closing the chat can hand the view to a required action a moment later (Messages): re-open him and retry.
+  const enter = () => actionPath(['Contract', 'Enter Contract Negotiations']);
+  try { await enter(); }
+  catch (e) {
+    if (e.details?.available) return {action: 'renew-self', name, done: false, options: e.details.available, agent: chat};
+    if (!/Actions menu/.test(e.message)) throw e;
+    await openPlayer(name, club); await enter();
+  }
   await answerEnterDialog();
   // The profile's wage/value can come back empty for our own players (Casadó, 2030-07-17): use the export's.
   const live = {currentWage: facts.wage ?? parseMoney(/£[\d.,]+K?/.exec(facts.contract || '')?.[0] ?? '') ?? null,

@@ -1,5 +1,5 @@
 // Read the game screen as an ordered list of items (controls and texts).
-import {inspectUI} from '../bridge/client.mjs';
+import {inspectUI, uiVersion} from '../bridge/client.mjs';
 import {sawGameDate} from '../../telemetry/trace.mjs';
 
 export const clean = s => (s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -78,13 +78,28 @@ export class Screen {
 }
 
 // Poll until pred(screen) is truthy; returns that screen.
-export async function waitFor(pred, {timeout = 8000, every = 150, what = 'condition'} = {}) {
+// The screen's change signature from the bridge's panel counters (~15 ms; a full read is ~550 ms). The main
+// panel's version climbs every frame (an animation), so it counts by its hierarchy version (elements added
+// or removed); the other panels by both. null when the bridge has no uiversion op.
+export async function signature() {
+  try { return JSON.stringify((await uiVersion()).map(([v, h], i) => i === 0 ? h : `${v}:${h}`)); } catch { return null; }
+}
+// structural: the wait is for elements to appear or go (a dialog, a button): between full reads, poll the
+// signature and read again only when it moves (or after `fullEvery` ms). Not the default: FM re-fills the
+// same elements in place for most updates (selecting a deal in Transfer Activity), which moves no hierarchy,
+// and those waits got slower (48 s → 81 s for the activity read, 2026-10-19).
+export async function waitFor(pred, {timeout = 8000, every = 150, what = 'condition', structural = false, fullEvery = 900} = {}) {
   const end = Date.now() + timeout;
   for (;;) {
+    const sig = structural ? await signature() : null, read = Date.now();
     const s = await Screen.read();
     if (pred(s)) return s;
     if (Date.now() > end) throw new Error(`Timed out waiting for ${what}`);
-    await settle(every);
+    if (sig === null) { await settle(every); continue; }
+    for (;;) {
+      await settle(60);
+      if (Date.now() > end || Date.now() - read > fullEvery || (await signature()) !== sig) break;
+    }
   }
 }
 

@@ -49,6 +49,7 @@ export const direct = (action, extra = {}) => request({op: 'direct', action, ...
 
 // ---- UI ------------------------------------------------------------------------
 export const inspectUI = () => request('uitree');
+export const uiVersion = () => send('uiversion', {timeoutMs: 2000});   // untraced: polled between reads
 const element = (tree, node) => ({snapshot: tree.snapshot, id: node.id, expectedName: node.name, expectedLabel: node.label || ''});
 export const uiAction = (action, tree, node, extra = {}) => request({op: 'ui', action, ...element(tree, node), ...extra});
 export const ui = {

@@ -106,6 +106,7 @@ Transfers
   train-position "<name>" --club <club> --pos DM [--dry-run]   train him in a new position (the user's calls: config/tactic.json plays)
   renew "<name>" --club <club> [--preview] [--dof] [--dry-run]   we negotiate (--preview: stop before Suggest Terms); a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
+  bench <workflow> [--check "<fm args>"] -- <fm args>   time one workflow (reads, actions), check the game after; local/runs/bench.jsonl
   activity [accept|reject|stall "<player>" [--club C]]   Transfer Activity in one pass: every deal and offer (terms, stage, buttons); act on one offer from its row
   withdraw "<player>"            withdraw our bid for him (Transfer Activity; no confirmation, gone the next day)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
@@ -366,6 +367,14 @@ try {
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'precontract': out(await preContract(a1, flags.club, {preview: !!flags.preview, dryRun})); break;
     case 'offers': out(await transferActivity()); break;
+    case 'bench': {
+      // fm bench <workflow> [--check "<fm args>"] -- <fm args…>: time one workflow, count reads, check the result.
+      const i = process.argv.indexOf('--'), args = i < 0 ? [] : process.argv.slice(i + 1);
+      if (!a1 || !args.length) throw new Error('fm bench <workflow> [--check "activity"] -- <fm command and args>');
+      const {bench} = await import('../telemetry/bench.mjs');
+      out(bench(a1, args, {check: typeof flags.check === 'string' ? flags.check.match(/"[^"]*"|\S+/g).map(x => x.replace(/^"|"$/g, '')) : null}));
+      break;
+    }
     case 'activity': {
       // Transfer Activity in one pass (game/screens/activity.mjs): no argument reads every deal and offer;
       // accept|reject|stall "<player>" [--club C] acts on one offer from its row, staying on the tab.
