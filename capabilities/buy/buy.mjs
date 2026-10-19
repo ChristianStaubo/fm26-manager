@@ -354,18 +354,20 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   // profile read £19-23M on 06-09 and the bid was refused as above the approval).
   const quote = agent?.feeRange?.every(Number.isFinite) ? {range: agent.feeRange, from: 'agent'} : await lastQuote(name, isoDate(profile.date()));
   if (quote) { facts.valueRangeProfile = facts.valueRange; facts.valueRange = quote.range; }
-  const {top, sub} = await peekActions('Transfer');
-  if (sub.includes('Withdraw Transfer Offer')) return {action: 'buy', name, club, alreadyPending: true};
+  const {top, sub} = await peekActions('Transfer', {keepOpen: true});
+  if (sub.includes('Withdraw Transfer Offer')) { await recover(); return {action: 'buy', name, club, alreadyPending: true}; }
   // His price starts above what the user approved (Gadou listed at £63M vs £58M approved, 2030-07):
   // a bid at our cap would be flatly rejected, which ends the deal. Ask for a new approval instead.
-  if (approved && facts.valueRange && facts.valueRange[0] > approved.limit)
+  if (approved && facts.valueRange && facts.valueRange[0] > approved.limit && await recover())
     throw new NeedsAnalyst(`${name}: his range starts at £${(facts.valueRange[0] / 1e6).toFixed(2)}M, above the approved £${(approved.limit / 1e6).toFixed(2)}M. Ask the user for a higher limit (formula walk-away £${(defaultMax(facts) / 1e6).toFixed(2)}M) or drop him.`,
       {approval: 'below-range', valueRange: facts.valueRange, approved: approved.limit, formulaMax: defaultMax(facts), agent});
-  if (!dryRun && cancelledTalks()[name.toLowerCase()] === isoDate(profile.date()))
+  if (!dryRun && cancelledTalks()[name.toLowerCase()] === isoDate(profile.date()) && await recover())
     return {action: 'buy', name, club, outcome: 'talks-cancelled', why: 'we cancelled these talks today: bid again on a later game day (reopening them made a stray offer, 2036-06-04)'};
-  if (top.includes('Make An Offer')) await actionPath(['Make An Offer']);
-  else if (sub.includes('Make An Offer')) await actionPath(['Transfer', 'Make An Offer']);
-  else throw new NeedsAnalyst(`No "Make An Offer" for ${name}`, {top, transfer: sub});
+  // The menu is still open from the peek: click the entry in it (the rightmost: the submenu's, if there).
+  const entry = x => x.items.filter(i => i.kind === 'button' && i.label === 'Make An Offer' && x.node(i.id)?.type === 'EntryElement').sort((a, b) => b.bounds[0] - a.bounds[0])[0];
+  if (!top.includes('Make An Offer') && !sub.includes('Make An Offer')) { await recover(); throw new NeedsAnalyst(`No "Make An Offer" for ${name}`, {top, transfer: sub}); }
+  if (entry(await Screen.read())) await clickWhere(entry, 'Make An Offer');
+  else { await recover(); await actionPath(top.includes('Make An Offer') ? ['Make An Offer'] : ['Transfer', 'Make An Offer']); }
   // A fresh offer screen has Suggest Terms. After an earlier negotiation for the same player the
   // screen comes back PRE-FILLED with that offer (fee, instalments, add-ons) and only Make Offer
   // (Ribeiro, 2026-07-13: £18.25M + £14.5M instalments + £155K/appearance); editing a field

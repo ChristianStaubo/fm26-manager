@@ -156,7 +156,9 @@ export async function actionPath(path) {
 }
 
 // List the Actions menu (and optionally one submenu) without choosing anything.
-export async function peekActions(sub) {
+// keepOpen: leave the menu open so the caller clicks an entry without opening it again (a bid opened the
+// Actions menu twice, ~4 s, 2026-10-19); the caller closes it (recover) if it doesn't click.
+export async function peekActions(sub, {keepOpen = false} = {}) {
   // The profile can still be rebuilding after a previous menu closed: wait for the menu.
   await waitFor(x => x.items.some(i => i.kind === 'menu' && i.label === 'Actions') && !blocking(x).length, {what: 'Actions menu button'});
   await openMenu('Actions');
@@ -171,6 +173,6 @@ export async function peekActions(sub) {
     s = await waitFor(x => entries(x).some(e => e.x > parent.x + 50), {what: `${label} submenu`});
     items = entries(s).filter(e => e.x > parent.x + 50).map(e => e.label);
   }
-  await recover();
+  if (!keepOpen) await recover();
   return {top, sub: items};
 }
