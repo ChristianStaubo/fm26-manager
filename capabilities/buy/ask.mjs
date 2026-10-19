@@ -96,3 +96,45 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
   await log(entry);
   return entry;
 }
+
+// Renewals (user, 2026-10-19: "we just immediately go into discussing the contract"): profile → Actions →
+// "Discuss New Contract With Agent" (top level) opens the same Quick Chat. Mapped on Burton, 2036-07-06:
+// answers from "We're very keen on re-signing…" to "…has come up on our radar…"; we pick the 2nd ("We're keen
+// on renewing <X>'s contract and would like to know more about what the demands would be."). The agent lists
+// "Player Demands": playing time, "a salary of between £86K per week and £105K per week", "a long term
+// contract until 6/30/2041". Contest ("I think you're asking for too much…") lowered it to £77K-£95K, then
+// Agree: the demands stand for the contract talks that follow.
+export const DISCUSS = 'Discuss New Contract With Agent';
+export function readDemands(lines) {
+  const text = lines.join(' ');
+  const wage = /salary of between (£[\d.,]+K?) per week and (£[\d.,]+K?) per week/i.exec(text);   // the first range is the current one ("now instead of …")
+  const until = /contract until (\d{1,2}\/\d{1,2}\/\d{4})/i.exec(text);
+  const role = lines.find(l => /^Will expect to be /i.test(l)) || null;
+  return {wage: wage ? [parseMoney(wage[1]), parseMoney(wage[2])] : null, until: until ? until[1] : null, role};
+}
+export async function discussContract(name, club, {dryRun = false} = {}) {
+  await openPlayer(name, club);
+  if (dryRun) return {action: 'discuss-contract', name, asked: false, dryRun: true};
+  // Straight to the menu entry (a separate peek opened the Actions menu twice, 2036-07-06); a missing
+  // entry (one-time: already discussed) comes back as NeedsAnalyst with the menu's entries.
+  try { await actionPath([DISCUSS]); }
+  catch (e) { if (e.details?.available) return {action: 'discuss-contract', name, asked: false, why: 'not offered (already discussed, or not available)'}; throw e; }
+  const s0 = await waitFor(x => options(x, name).length >= 2, {what: 'agent chat', timeout: 10000});
+  const pick = options(s0, name)[1];
+  await click(pick.label);
+  const s1 = await waitFor(x => !!contestTarget(x) || !!agreeTarget(x), {what: 'agent demands', timeout: 10000});
+  const asked = readDemands(chat(s1));
+  const {ui} = await import('../../game/bridge/client.mjs');
+  let after = asked;
+  if (contestTarget(s1)) {
+    const lines = chat(s1).join(' ');
+    await ui.click(s1.tree, contestTarget(s1));
+    const r = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
+    after = {...asked, ...Object.fromEntries(Object.entries(readDemands(chat(r))).filter(([, v]) => v))};
+  }
+  const s2 = await Screen.read();
+  if (agreeTarget(s2)) await ui.click(s2.tree, agreeTarget(s2));
+  const entry = {action: 'discuss-contract', date: isoDate(s2.date()), name, asked: true, we: pick.label, demands: after, before: asked.wage};
+  await log(entry);
+  return entry;
+}

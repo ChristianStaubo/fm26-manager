@@ -57,3 +57,12 @@ test('unreadable facts: the model reads only those, and each must be on the scre
   const unknown = await makeFallback({policy, runner: fake({})}).readFacts(s, ['transferFee'], {}, {fp: 'a'});
   assert.match(unknown.why, /no description for transferFee/);
 });
+
+test('a renewal chat\'s demands are read from the agent\'s lines, the lowered range first (Burton, 2036-07-06)', async () => {
+  const {readDemands} = await import('../capabilities/buy/ask.mjs');
+  const d = readDemands(['Will expect to be considered among the most noteworthy players at the club and play as many matches as possible.',
+    'Would want a salary of between £77K per week and £95K per week now instead of one between £86K per week and £105K per week as per the original request.',
+    'Would want a long term contract until 6/30/2041.']);
+  assert.deepEqual(d.wage, [77000, 95000]);
+  assert.equal(d.until, '6/30/2041');
+});
