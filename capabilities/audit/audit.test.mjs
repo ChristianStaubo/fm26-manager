@@ -24,12 +24,15 @@ test('deals: over the approval fails, add-ons over it warn, no approval fails; c
     {action: 'buy', name: 'Pablo Gaitán', outcome: 'release-clause', fee: 12.75e6, reply: {upfront: 12.83e6, total: 13.62e6}},
     {action: 'buy', name: 'X', outcome: 'agreed', history: [{upfront: 2e6, total: 2e6}]},
     {action: 'buy', name: 'Nobody', outcome: 'agreed', history: [{upfront: 1e6, total: 1e6}]},
+    {action: 'buy', name: 'Richard Ortiz', outcome: 'release-clause', fee: 2.5e6},
+    {action: 'manual-click', label: 'Confirm', screen: ['Bookmarks', '(Richard Ortiz)', 'Entire offer', 'Cancel Negotiations', 'Are you sure you want to cancel negotiations?']},
     {action: 'buy', name: 'Camilo Ortega', outcome: 'accepted-demands', demand: {upfront: 51e6, total: 61.25e6}},
     {action: 'personal-terms', player: 'Camilo Ortega', outcome: 'agreed', salary: 88000, demanded: {releaseClause: 82e6, playerSellOnPct: 10}},
     {action: 'personal-terms', player: 'Leo Lemaitre', outcome: 'accepted-pending', salary: 19000,
       tries: [{reply: 'My client feels these terms are acceptable'}, {reply: 'acceptable'}]}]});
   assert.ok(r.fail.some(f => /^X: £2.00M up front, above/.test(f)));
   assert.ok(r.fail.some(f => /Nobody: bought with no approval/.test(f)));
+  assert.ok(!r.fail.some(f => /Ortiz/.test(f)), 'talks cancelled after the fee: not a buy');
   assert.ok(r.warn.some(w => /Pablo Gaitán: .* with add-ons/.test(w)));
   assert.ok(r.warn.some(w => /Ortega: the player takes 10%/.test(w)));
   assert.ok(r.warn.some(w => /Ortega: release clause £82.00M is under 1.5x/.test(w)));

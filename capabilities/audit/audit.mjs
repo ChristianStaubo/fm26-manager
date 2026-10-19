@@ -34,7 +34,13 @@ export function checkDeals({decisions = [], approvals = [], cap, rules}) {
   const fail = [], warn = [];
   const limit = name => approvals.find(a => a.kind === 'buy' && norm(a.player) === norm(name))?.limit;
   const paid = {};
-  for (const d of decisions.filter(d => d.action === 'buy' && ['agreed', 'accepted-demands', 'release-clause'].includes(d.outcome))) {
+  // A fee agreed whose talks then ended (we walked away on terms, or confirmed Cancel Negotiations: Ortiz,
+  // 2036-07-10) bought nobody: no approval needed for it.
+  const ended = (name, i) => decisions.slice(i + 1).some(e =>
+    (e.action === 'personal-terms' && norm(e.player) === norm(name) && /^walked-away|cancel/.test(e.outcome || '')) ||
+    (e.action === 'manual-click' && (e.screen || []).includes('Cancel Negotiations') && (e.screen || []).some(t => norm(t) === norm(`(${name})`) || norm(t) === norm(name))));
+  for (const [i, d] of decisions.entries()) {
+    if (d.action !== 'buy' || !['agreed', 'accepted-demands', 'release-clause'].includes(d.outcome) || ended(d.name, i)) continue;
     const last = d.reply || d.demand || d.history?.at(-1) || {};
     const upfront = last.upfront ?? d.fee, total = last.total ?? upfront;
     paid[norm(d.name)] = total;   // what we may pay in all: the resale bar
