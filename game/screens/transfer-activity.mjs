@@ -55,7 +55,10 @@ export async function deal(name) {
 export async function answer(name, {club, upfront, dryRun = false} = {}) {
   // A deal can hold several clubs' rows ("Negotiated …" after our counter, "Offer Made …" still open);
   // each row is the club's button, then its stage link. --club picks one.
-  const d = await deal(name);
+  // Select him the way fm activity does (scrolls rows hidden behind the header or footer, waits out the
+  // re-render): the old deal() click hit "Element is occluded" for Gray and Finck (2036-07-10).
+  const {selectDeal} = await import('./activity.mjs');
+  const d = {deal: (await selectDeal(name)).items.find(i => i.kind === 'toggle' && i.checked && i.bounds[0] < 480)?.label, stage: null};
   const row = x => x.items.find((i, k) => i.kind === 'button' && i.name === 'transfer-link-button' && /^Offer Made/.test(i.label)
     && (!club || x.items.slice(Math.max(0, k - 4), k).some(b => b.kind === 'button' && b.label.toLowerCase() === club.toLowerCase())));
   if (!row(await Screen.read())) throw new Error(`No open offer for ${name}${club ? ' from ' + club : ''}: ${d.deal} (${d.stage || '-'})`);
