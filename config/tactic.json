@@ -62,8 +62,8 @@
   "_source": "Brentford claude-3.1.fm, Match Day > Match Squad + Tactics, 2030-07-14 (user: we play a 5-2-3). LB/RB are the wing-backs. The XI on screen had no GK and only two CBs selected.",
   "_note": "Shape only: slots and roles. Starters come from the live XI selection; names here go stale.",
   "plays": {
-    "_about": "User's calls: a player counts as a natural (20) at this position in our depth chart (user, 2035-01-19: Rosete, an MC rated 16 at DM, 'should for sure be playing, DM'). User, 2038-01-01: Alexandre Luiz plays DM.",
+    "_about": "User's calls: a player counts as a natural (20) at this position in our depth chart (user, 2035-01-19: Rosete, an MC rated 16 at DM, 'should for sure be playing, DM'). User, 2038-05-30: Mohamed Mohamed (LB) plays DM; Luiz stays LB.",
     "Jesús Rosete": "DM",
-    "Alexandre Luiz": "DM"
+    "Mohamed Mohamed": "DM"
   }
 }
