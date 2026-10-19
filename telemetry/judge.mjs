@@ -11,6 +11,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const RULES = `You review a Football Manager club's transfer decisions. The club (Brentford, 2nd in the Premier League,
 Champions League finalist) is run Moneyball style. House rules:
 - Profit is per season overall, not per window; but the XI must stay strong enough for the top 4.
+- Add-ons count as part of the fee at full value (policy valuation.addon_weight 1.0: they are usually hit).
 - Never just reject a bid: counter at the price we'd sell for. A listed player sells at our target, then minimum.
 - Price by how much we need him: a starter ~1.5x the top of his value, a backup ~1.2x, surplus ~1.0x;
   young rising players a bit more. Never below what we paid unless he is 30+ or in his final year.
