@@ -106,6 +106,7 @@ Transfers
   train-position "<name>" --club <club> --pos DM [--dry-run]   train him in a new position (the user's calls: config/tactic.json plays)
   renew "<name>" --club <club> [--preview] [--dof] [--dry-run]   we negotiate (--preview: stop before Suggest Terms); a new contract (tick rule); --dof: the DoF does
   offers                         our bids/offers in progress (Recruitment → Transfer Activity)
+  activity [accept|reject|stall "<player>" [--club C]]   Transfer Activity in one pass: every deal and offer (terms, stage, buttons); act on one offer from its row
   withdraw "<player>"            withdraw our bid for him (Transfer Activity; no confirmation, gone the next day)
   deal "<player>"                one deal's details (value, wage, actions) from Transfer Activity
   answer "<player>" [--club C] [--upfront N] [--dry-run]   answer his (or club C's) open bid now (incoming-offer handler; no Continue)
@@ -165,7 +166,7 @@ const dryRun = !!flags['dry-run'];
 const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
-const ACTING = new Set(['withdraw', 'unlist', 'loanlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
+const ACTING = new Set(['activity', 'withdraw', 'unlist', 'loanlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
 // A stop short of the goal, or an error in a command that drives the game, saves an incident at that
 // moment: the bridge's last screens and requests, the error and its stack (telemetry/incidents.mjs).
 const GAME = new Set([...ACTING, 'cycle', 'checkpoint', 'answer', 'offers', 'deal', 'dynamics', 'train-position']);
@@ -365,6 +366,17 @@ try {
     case 'ask': out(await askAgent(a1, flags.club, {dryRun})); break;
     case 'precontract': out(await preContract(a1, flags.club, {preview: !!flags.preview, dryRun})); break;
     case 'offers': out(await transferActivity()); break;
+    case 'activity': {
+      // Transfer Activity in one pass (game/screens/activity.mjs): no argument reads every deal and offer;
+      // accept|reject|stall "<player>" [--club C] acts on one offer from its row, staying on the tab.
+      const act = await import('../game/screens/activity.mjs'), {gate} = await import('../capabilities/approvals.mjs');
+      if (!a1) { out(await act.readActivity()); break; }
+      if (a1 === 'accept') {   // taking money for a player needs the approval (or his price): checked on the row's figures
+        const d = await act.actOnOffer(a2, flags.club, 'accept', {dryRun: true});
+        if (d.offer.kind === 'transfer') gate('incoming_offers', 'sell', a2, {price: d.offer.total ?? d.offer.upfront, what: `accept ${d.offer.club}'s ${d.offer.stage} for ${a2}`});
+      }
+      out(await act.actOnOffer(a2, flags.club, a1, {dryRun})); break;
+    }
     case 'withdraw': { const {withdrawBid} = await import('../game/screens/transfer-activity.mjs'); out(await withdrawBid(a1)); break; }
     case 'deal': out(await deal(a1)); break;
     case 'answer': out(await answer(a1, {club: flags.club, upfront: num(flags.upfront), dryRun})); break;
