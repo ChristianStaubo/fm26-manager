@@ -346,7 +346,9 @@ try {
     case 'approve':
       if (a1 === 'revoke') out(approvals.revoke(a2, pos[3]));
       else {
-        const e = approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note});
+        // The facts this approval rests on, from the save export (checked against his profile before acting).
+        const {exportFacts} = await import('../capabilities/data.mjs');
+        const e = approvals.approve(a1, a2, {max: num(flags.max), min: num(flags.min), note: flags.note, facts: exportFacts(a2)});
         // The ledger: approved as the agent proposed it, or changed by the user.
         if (flags.proposed) interventions.record({capability: a1, kind: Math.abs(num(flags.proposed) - e.limit) < 1 ? 'approved-unchanged' : 'approved-changed',
           proposed: `${a2} at ${num(flags.proposed)}`, decided: `${a2} at ${e.limit}`, date: await gameDate()});

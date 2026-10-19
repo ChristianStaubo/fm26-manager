@@ -123,7 +123,8 @@ export function profileFacts(s) {
   // deal already agreed. The agent couldn't see it and set out to re-offer.
   const at = s.items.findIndex(i => i.kind === 'text' && /^Transfer arranged$/i.test(i.label || ''));
   const join = at < 0 ? null : s.items.slice(at + 1, at + 4).map(i => /^Joining (.+) on (\d{1,2}\/\d{1,2}\/\d{4})$/.exec(i.label || '')).find(Boolean);
-  return {wage: parseMoney(contract), contract, valueRange: parseRange(valueText), valueText, askingPrice: asking ? parseMoney(asking.label) : null,
+  const ends = /(\d{1,2}\/\d{1,2}\/\d{4})\s*$/.exec(contract);
+  return {wage: parseMoney(contract), contract, contractEnds: ends ? isoDate(parseDate(ends[1])) : null, valueRange: parseRange(valueText), valueText, askingPrice: asking ? parseMoney(asking.label) : null,
     arranged: join ? {club: join[1], date: isoDate(parseDate(join[2]))} : at >= 0 ? {club: null, date: null} : null};
 }
 

@@ -66,3 +66,13 @@ test('a price within the approval tolerance is within the limit (user, 2026-10-1
   approve('sell', 'Harry Gray', {min: 51.4e6, file});
   assert.ok(gate('incoming_offers', 'sell', 'Harry Gray', {price: 51e6, policy, file}), '£400K under a £51.4M minimum: within 2%');
 });
+
+test('an approval keeps the facts it rests on; a later contract on his profile means they changed (Jiménez, 2036-07)', async () => {
+  const {factsChanged} = await import('./approvals.mjs');
+  const file = tmp();
+  const a = approve('buy', 'Cristian Jiménez', {max: 1e6, facts: {club: 'R. Madrid', until: '2036-06-30', value: 2e5}, file});
+  assert.deepEqual(a.facts, {club: 'R. Madrid', until: '2036-06-30', value: 2e5});
+  assert.match(factsChanged(a, {contract: '£46.6K p/w 6/30/2041', contractEnds: '2041-06-30'}), /new contract since/);
+  assert.equal(factsChanged(a, {contract: '£9K p/w 6/30/2036', contractEnds: '2036-06-30'}), null, 'same contract: go ahead');
+  assert.equal(factsChanged({kind: 'buy', limit: 1}, {contractEnds: '2041-06-30'}), null, 'older approvals without facts: no check');
+});

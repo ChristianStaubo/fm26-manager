@@ -10,3 +10,7 @@ test('a profile with a transfer arranged reads the club and date', () => {
   assert.deepEqual(f.arranged, {club: 'Brentford', date: '2036-07-01'});
   assert.equal(f.wage, 6000);
 });
+
+test('the profile gives the contract end date (for the approval facts check)', () => {
+  assert.equal(profileFacts(loadScreen('profile-transfer-arranged')).contractEnds, '2036-06-30');
+});

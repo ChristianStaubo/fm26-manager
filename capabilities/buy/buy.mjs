@@ -336,6 +336,10 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   const profile = await openPlayer(name, club);
   const facts = profileFacts(profile);
   // A transfer already arranged (to us, or elsewhere): no bid (Luiz, 2036-06-04).
+  // The facts the approval rests on still hold? (Jiménez: approved as a free agent, at Valencia to 2041 by then.)
+  const {factsChanged, find: findApproval} = await import('../approvals.mjs');
+  const changed = factsChanged(approved ?? findApproval('buy', name), facts);
+  if (changed) throw new NeedsAnalyst(`${name}: ${changed}`, {approval: 'facts-changed', contract: facts.contract});
   if (facts.arranged) {
     (await import('./arranged.mjs')).noteIfOurs(name, facts.arranged);
     return {action: 'buy', name, club, outcome: 'arranged', arranged: facts.arranged};

@@ -6,14 +6,17 @@
 import {Screen, openPlayer, peekActions, actionPath, profileFacts, NeedsAnalyst, settle, recover, parseMoney} from '../../game/ui/index.mjs';
 import {askAgent, ASK} from './ask.mjs';
 import {negotiatePersonalTerms} from '../contracts/personal-terms.mjs';
-import {gate} from '../approvals.mjs';
+import {gate, factsChanged} from '../approvals.mjs';
 import {noteIfOurs} from './arranged.mjs';
 
 export const APPROACH = 'Approach To Sign';
 
 export async function preContract(name, club, {preview = false, dryRun = false} = {}) {
-  if (!dryRun) gate('buy', 'buy', name, {price: 0, what: `pre-contract ${name} (${club})`});
+  const approved = dryRun ? null : gate('buy', 'buy', name, {price: 0, what: `pre-contract ${name} (${club})`});
   let profile = await openPlayer(name, club);
+  // The facts the approval rests on still hold? (a free agent who has since signed elsewhere: Jiménez, 2036-07)
+  const changed = factsChanged(approved, profileFacts(profile));
+  if (changed) throw new NeedsAnalyst(`${name}: ${changed}`, {approval: 'facts-changed'});
   // Already agreed (Luiz and Rusnák, 2036-06-04): nothing to offer.
   const done = profileFacts(profile).arranged;
   if (done) { noteIfOurs(name, done); return {action: 'pre-contract', name, club, outcome: 'arranged', arranged: done}; }

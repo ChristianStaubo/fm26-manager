@@ -50,3 +50,9 @@ export function note(text) {
   appendFileSync(notebook(), `- ${new Date().toISOString().slice(0, 10)}: ${text}\n`);
   return {saved: notebook().replace(ROOT, ''), text};
 }
+
+/** His club, contract end and value in the latest save export (an approval's facts), or null. */
+export function exportFacts(name) {
+  const code = 'import csv, json, sys, unicodedata\nfold = lambda t: unicodedata.normalize("NFD", t or "").encode("ascii", "ignore").decode().lower().strip()\nfor p in csv.DictReader(open(sys.argv[1], encoding="utf8")):\n    if fold(p["name"]) == fold(sys.argv[2]):\n        print(json.dumps({"club": p["contract_club"] or p["club"] or None, "until": (p["contract_expires"] or "")[:10] or None, "value": float(p["value"] or 0)})); break';
+  try { return JSON.parse(execFileSync('python3', ['-c', code, exportPath(), name], {encoding: 'utf8'}) || 'null'); } catch { return null; }
+}
