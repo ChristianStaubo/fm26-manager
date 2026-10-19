@@ -22,6 +22,10 @@ export function decideSale(offer, policy = loadRules()) {
   if (![o.guaranteed, o.vLow, o.vHigh].every(Number.isFinite)) return {action: 'escalate', reason: 'offer or valuation unreadable'};
   // A blank value is a failed read, not a worthless player (judge review, 2026-10-19: Alejandro and Benítez
   // were "sold" at £0 because their value read 0). The handler falls back to the export's value first.
+  // His contract ends this window and he's worth (or reads) under £1M: he leaves for nothing on 30 June
+  // anyway, so any offer is no loss (Arbeláez, a let-go kid, stopped the loop twice on Wolves' £0, 2038-06).
+  if (Number.isFinite(o.monthsLeft) && o.monthsLeft <= 0 && !(o.vHigh >= 1e6) && !o.priceBook)
+    return {action: 'accept', reason: 'contract ends this window and he is worth under £1M: he leaves free on 30 June anyway'};
   if (!(o.vHigh > 0) && !o.priceBook) return {action: 'escalate', reason: 'his value reads £0: read again, never decide on a blank value'};
   // Judge the offer on its value: guaranteed money plus add-ons at addon_weight (o.total is the
   // offer page's "Future & Potential Total Cost with Additional Fees").

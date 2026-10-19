@@ -60,3 +60,10 @@ test('loan back: only buys made to develop away (portfolio/wonderkid), never a s
   assert.equal(loanBackWanted({note: 'user delegated the summer 2031 window; RW starter by attributes'}, b), false);
   assert.equal(loanBackWanted(null, b), false);
 });
+
+test('a let-go kid whose contract ends now: any offer is accepted, even £0 with a blank value (Arbeláez, Wolves, 2038-06)', () => {
+  const base = {guaranteed: 0, total: 0, vLow: 0, vHigh: 0, negotiable: true, monthsLeft: 0};
+  assert.equal(decideSale(base).action, 'accept');
+  assert.equal(decideSale({...base, monthsLeft: 6}).action, 'escalate', 'a blank value with months left is still a failed read');
+  assert.notEqual(decideSale({...base, vLow: 4e6, vHigh: 6e6}).action, 'accept', 'worth £6M: not given away');
+});
