@@ -21,14 +21,6 @@ function classify(node, c, o) {
   if (isA(c, classes.get('TextField'))) { node.textField = true; node.value = readString(call(c, 'get_value', o)); }
 }
 
-// The panels' change counters (Unity's Panel.version: any style, layout, hierarchy or repaint change bumps it;
-// hierarchyVersion: children added or removed). Reading them costs ~1 ms against ~550 ms for a full uiTree:
-// waits poll this and read the tree only when it moves (2026-10-19: two thirds of every flow was tree reads).
-function uiVersion() {
-  const panels = readList(call(cls('UIElementsRuntimeUtility'), 'GetSortedPlayerPanels', ptr(0)));
-  return panels.map(p => [A.unbox(call(cls('Panel'), 'get_version', p)).readU32(), A.unbox(call(cls('Panel'), 'get_hierarchyVersion', p)).readU32()]);
-}
-
 function uiTree(capture = true) {
   const started = Date.now(), ve = cls('VisualElement'), text = cls('TextElement');
   const panels = readList(call(cls('UIElementsRuntimeUtility'), 'GetSortedPlayerPanels', ptr(0)));

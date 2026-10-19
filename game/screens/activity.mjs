@@ -13,6 +13,7 @@ import {transferActivity} from './transfer-activity.mjs';
 
 const onPage = s => s.hasText('Potential Transfer Budget Impact') && s.items.some(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
 const dealToggles = s => s.items.filter(i => i.kind === 'toggle' && i.bounds[0] < 480 && i.label);
+const budgetImpact = s => { const t = s.texts(); return t[t.indexOf('Potential Transfer Budget Impact') + 1]; };
 const LIST_BOTTOM = 760;   // rows below this sit behind the pane's footer (Rosete at y 803, 2036-07-06)
 const LIST_TOP = 250;      // ...and above this behind the header, once the list is scrolled (Omondi, 2026-10-19)
 
@@ -69,27 +70,28 @@ export async function readActivity() {
   const deals = [];
   for (const label of names) {
     const player = label.replace(/ (Offer Made|\d+ Offers|Contract|Work Permit|Confirmation|Medical|Negotiat\w*)$/, '');
-    const t0 = Date.now();
     try {
-      deals.push({player, deal: label, offers: offerRows(await selectDeal(player)), ms: Date.now() - t0});
+      deals.push({player, deal: label, offers: offerRows(await selectDeal(player))});
     } catch (e) { deals.push({player, deal: label, error: e.message.slice(0, 120)}); }
   }
   return {deals};
 }
 
 /** Accept / reject / stall one offer from its row (club picks the row when a deal holds several). */
-export async function actOnOffer(player, club, action, {dryRun = false} = {}) {
+// check(row): a gate run on the row just read, before clicking (the approval for an accept): no second selection.
+export async function actOnOffer(player, club, action, {dryRun = false, check = null} = {}) {
   const name = {accept: 'accept-button', reject: 'cancel-reject-button', stall: 'stall-button'}[action];
   if (!name) throw new Error('action: accept | reject | stall');
   const s = await selectDeal(player), rows = offerRows(s);
   const row = club ? rows.find(r => r.club?.toLowerCase() === club.toLowerCase()) : rows.length === 1 ? rows[0] : null;
   if (!row) throw new Error(`${player}: name the club (--club): ${rows.map(r => `${r.club} ${r.stage}`).join(' | ')}`);
   if (!row.actions[action]) throw new Error(`${player} / ${row.club}: ${action} is not available (${row.stage})`);
+  if (check) check(row);
   if (dryRun) return {action, player, club: row.club, offer: row, dryRun: true};
-  const before = s.texts().find(t => /^\(?-?£/.test(t) && s.texts().indexOf(t) === s.texts().indexOf('Potential Transfer Budget Impact') + 1);
+  const before = budgetImpact(s);
   const target = x => { const c = x.items.find(i => i.name === 'ClubButton' && i.label === row.club && i.bounds[0] > 470); return c && x.items.find(i => i.name === name && Math.abs(i.bounds[1] - c.bounds[1]) < 20 && i.enabled !== false); };
   await clickWhere(target, `${player} ${row.club} ${action}`);
   await settle(900);
   const after = await Screen.read();
-  return {action, player, club: row.club, offer: row, budgetImpact: {before, after: after.texts()[after.texts().indexOf('Potential Transfer Budget Impact') + 1]}};
+  return {action, player, club: row.club, offer: row, budgetImpact: {before, after: budgetImpact(after)}};
 }

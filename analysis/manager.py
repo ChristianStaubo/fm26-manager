@@ -130,15 +130,22 @@ def our_squad(rows, today=None, min_age=16):
             and (not p.get('on_loan_at') or back_by(p, today))]
 
 
+PROSPECTS = {'max_age': 21, 'older_max_age': 23, 'older_min_pa': 160, 'min_pa': 130, 'list_min_value': 1e6,
+             **POLICY.get('selling', {}).get('prospects', {})}
+
+
+def is_prospect(age, pa):
+    """selling.prospects: 21 or under, or 23 or under with PA >= older_min_pa (the sell table's loan rule)."""
+    return age <= PROSPECTS['max_age'] or (age <= PROSPECTS['older_max_age'] and pa >= PROSPECTS['older_min_pa'])
+
+
 def developing(age, ca, pa):
     """A prospect still growing (user, 2026-10-19: "Dukic and Slatina are both super quality players, ideally
     they don't become backups, and develop and either play for us or we sell... I don't want to stunt their
     development on the bench"): a prospect by the sell table's definition (selling.prospects: <= 21, or <= 23
     with PA >= 160) with PA at least wonderkids.develop_min_headroom above his CA. He starts for us or plays
     on loan: never a backup or third (depth.roles)."""
-    P = {'max_age': 21, 'older_max_age': 23, 'older_min_pa': 160, **POLICY.get('selling', {}).get('prospects', {})}
-    prospect = age <= P['max_age'] or (age <= P['older_max_age'] and pa >= P['older_min_pa'])
-    return prospect and pa - ca >= POLICY.get('wonderkids', {}).get('develop_min_headroom', 10)
+    return is_prospect(age, pa) and pa - ca >= POLICY.get('wonderkids', {}).get('develop_min_headroom', 10)
 
 
 def squad_level(rows, today=None):

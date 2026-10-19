@@ -35,11 +35,21 @@ decides in between and writes why; **user** = needs an approval.
 | 15 | Staff signings nobody approved | — | — | | | — | **no tool**: Fajardo, Aguilar (contract stage) can't be cancelled by us |
 
 Global costs (104 min of window play, 2026-10-18): screen reads 39%, agent thinking 27%, fee ± clicks 10%,
-stops 8%. The bridge's change counter (`uiversion`, ~15 ms) only helps waits for elements appearing or going
-(`waitFor(..., {structural: true})`): FM refills the same elements in place for most updates.
+stops 8%. Tried and removed: polling Unity's Panel.version between reads (~15 ms): FM refills the same elements
+in place for most updates, so the counter misses them and waits got slower (activity read 48 s → 81 s).
 
 ## Order of work
 1. Bids (4, 3): direct fee entry; the bid judgement redesign; verify every outcome.
 2. Renewals (10): reads per step; verify the new contract.
 3. Listing and loans (6-8): re-time; wage-share reads.
 4. The rest, then hand back to the agent on a new save.
+
+## Follow-ups from the /simplify review (2026-10-19), not done while the agent was playing
+- One deal-state store: arranged / talks-cancelled / price-book promises as decision-log events read through
+  `deals/store.mjs` (today: small JSON files; promises overloaded on the price book).
+- One "pulled to Messages" guard in navigation (renew and activity each re-open on their own).
+- `menuChoose(paths)` in navigate.mjs instead of `peekActions({keepOpen})` + recover() before each early exit in fm buy.
+- `scrollIntoView` from the scroll container's bounds instead of LIST_TOP/LIST_BOTTOM pixels.
+- `decideSale` owns every sale rule (the £0 / loan-listed checks still sit in the screen handler).
+- buy_table: one depth chart per call (computed 3-4 times); `candidates`/`replacements` share one eligibility filter.
+- One shared `money()` formatter and name key (`fold`) across stores and reports.

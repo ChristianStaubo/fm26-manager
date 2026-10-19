@@ -125,14 +125,13 @@ export async function discussContract(name, club, {dryRun = false} = {}) {
   const s1 = await waitFor(x => !!contestTarget(x) || !!agreeTarget(x), {what: 'agent demands', timeout: 10000});
   const asked = readDemands(chat(s1));
   const {ui} = await import('../../game/bridge/client.mjs');
-  let after = asked;
+  let after = asked, s2 = s1;
   if (contestTarget(s1)) {
     const lines = chat(s1).join(' ');
     await ui.click(s1.tree, contestTarget(s1));
-    const r = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
-    after = {...asked, ...Object.fromEntries(Object.entries(readDemands(chat(r))).filter(([, v]) => v))};
+    s2 = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
+    after = {...asked, ...Object.fromEntries(Object.entries(readDemands(chat(s2))).filter(([, v]) => v))};
   }
-  const s2 = await Screen.read();
   if (agreeTarget(s2)) await ui.click(s2.tree, agreeTarget(s2));
   const entry = {action: 'discuss-contract', date: isoDate(s2.date()), name, asked: true, we: pick.label, demands: after, before: asked.wage};
   await log(entry);

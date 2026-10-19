@@ -198,7 +198,7 @@ try {
     case 'player': {
       const s = await fm.openPlayer(a1, flags.club), facts = fm.profileFacts(s);
       // An arranged move to us is recorded: the free-agent step then marks him done (capabilities/buy/arranged.mjs).
-      if (facts.arranged?.club === (await import('../capabilities/data.mjs')).club().club) (await import('../capabilities/buy/arranged.mjs')).record(a1, facts.arranged);
+      (await import('../capabilities/buy/arranged.mjs')).noteIfOurs(a1, facts.arranged);
       out({...facts, actions: await fm.peekActions(flags.menu || 'Transfer')});
       break;
     }
@@ -386,11 +386,9 @@ try {
       // accept|reject|stall "<player>" [--club C] acts on one offer from its row, staying on the tab.
       const act = await import('../game/screens/activity.mjs'), {gate} = await import('../capabilities/approvals.mjs');
       if (!a1) { out(await act.readActivity()); break; }
-      if (a1 === 'accept') {   // taking money for a player needs the approval (or his price): checked on the row's figures
-        const d = await act.actOnOffer(a2, flags.club, 'accept', {dryRun: true});
-        if (d.offer.kind === 'transfer') gate('incoming_offers', 'sell', a2, {price: d.offer.total ?? d.offer.upfront, what: `accept ${d.offer.club}'s ${d.offer.stage} for ${a2}`});
-      }
-      out(await act.actOnOffer(a2, flags.club, a1, {dryRun})); break;
+      // Taking money for a player needs the approval: checked on the row's figures before the click.
+      const check = a1 === 'accept' ? row => row.kind === 'transfer' && gate('incoming_offers', 'sell', a2, {price: row.total ?? row.upfront, what: `accept ${row.club}'s ${row.stage} for ${a2}`}) : null;
+      out(await act.actOnOffer(a2, flags.club, a1, {dryRun, check})); break;
     }
     case 'withdraw': { const {withdrawBid} = await import('../game/screens/transfer-activity.mjs'); out(await withdrawBid(a1)); break; }
     case 'deal': out(await deal(a1)); break;

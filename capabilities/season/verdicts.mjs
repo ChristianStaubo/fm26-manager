@@ -8,6 +8,7 @@
 // with rows left unanswered (verdictsMissing, capabilities/audit).
 // Store: local/reports/checkpoints/<date>-<name>.verdicts.jsonl (latest line per row wins).
 import {readFileSync, appendFileSync, existsSync} from 'node:fs';
+import {fold} from '../../game/ui/navigate.mjs';
 
 export const KINDS = ['act', 'propose', 'pass'];
 // Each step's rows test one capability's judgement (policy.autonomy).
@@ -25,10 +26,12 @@ export function rowsOf(report) {
   // answers only the rows that need it (2026-10-19: 39 of 63 rows were restated table outcomes, ~10 min).
   const add = (step, item, detail, auto) => item && out.push({step, item: String(item), detail, ...(auto ? {auto} : {})});
   // A player raised by an earlier step is answered there (Luiz was a free-agent, upgrade, bargain and audit row).
-  const named = new Set(), first = (step, name, detail, auto) => { const k = String(name).toLowerCase(); if (named.has(k)) return; named.add(k); add(step, name, detail, auto); };
+  // first(step, player, item, detail, auto): a row for the player's first appearance only.
+  const named = new Set(), seen = name => named.has(fold(name));
+  const first = (step, player, item, detail, auto) => { if (seen(player)) return; named.add(fold(player)); add(step, item, detail, auto); };
   for (const p of data('contracts')?.expiring || []) add('contracts', p.name, `${p.issue} (to ${p.expires}), ${money(p.value)}: ${p.do}`);
   for (const p of data('final_year')?.players || []) add('final_year', p.name, `final year, ${money(p.value)}: ${p.decision?.action ?? '?'}${p.decision?.reason ? ' (' + p.decision.reason + ')' : ''}`);
-  for (const p of data('free_agents')?.players || []) first('free_agents', p.name, `${p.age}, ${p.slot ?? p.positions}${p.ca ? `, CA ${p.ca}/PA ${p.pa}` : ''}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}: ${p.route ?? ''}`, p.arranged ? {verdict: 'act', why: `Done: transfer arranged, joining ${p.arranged.club} on ${p.arranged.date} (seen on his profile)`} : null);
+  for (const p of data('free_agents')?.players || []) first('free_agents', p.name, p.name, `${p.age}, ${p.slot ?? p.positions}${p.ca ? `, CA ${p.ca}/PA ${p.pa}` : ''}, worth ${money(p.worth)}${p.always_buy ? ', ALWAYS BUY' : ''}, ${p.contract_club || 'free'} to ${p.contract_until || '-'}: ${p.route ?? ''}`, p.arranged ? {verdict: 'act', why: `Done: transfer arranged, joining ${p.arranged.club} on ${p.arranged.date} (seen on his profile)`} : null);
   for (const p of data('wonderkids')?.players || []) add('wonderkids', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   for (const p of data('newgens')?.signable_now || []) add('newgens', p.name, `${p.age}, ${p.positions}, ${p.nation}, PA ${p.pa} CA ${p.ca}, ${p.club}, ${money(p.value)}`);
   // The squad step is the picture; the buy and sell tables decide. Its own needs (output-based upgrade
@@ -40,18 +43,18 @@ export function rowsOf(report) {
   for (const r of buys?.positions || []) for (const n of r.needs || [])
     add('buys', `${r.position} ${n.kind}${n.for ? ' for ' + n.for : ''}`, `${n.if_sold ? `only once ${n.if_sold} is sold; ` : ''}CA >= ${n.min_ca}: ${(n.candidates || []).slice(0, 3).map(c => `${c.name} (${c.age}, CA ${c.ca}, ${c.club}) ${money(c.value)}`).join(' · ') || 'none in range'}`);
   // Upgrades (user, 2026-10-18): one the season surplus pays for, or one a sale at that position funds.
-  for (const r of buys?.positions || []) for (const c of r.upgrade_option?.candidates || []) if ((c.buy || c.buy_if_sold) && !named.has(c.name.toLowerCase()))
-    add('buys', `${r.position} upgrade ${c.name}`, `${c.age}, CA ${c.ca}, ${c.club}, ${money(c.value)}: ${c.buy ? 'the season surplus pays' : `only once ${c.buy_if_sold.join(' or ')} is sold`} (starters ${r.starters.join(', ')})`);
-  for (const c of buys?.wonderkids || []) if (!named.has(c.name.toLowerCase())) named.add(c.name.toLowerCase()), add('buys', `wonderkid ${c.name}`, `PA ${c.pa}, ${c.positions}, ${c.club}, ${money(c.value)}${c.replaces ? `; replaces ${c.replaces} in the portfolio (he is sold)` : ''}`);
+  for (const r of buys?.positions || []) for (const c of r.upgrade_option?.candidates || []) if (c.buy || c.buy_if_sold)
+    first('buys', c.name, `${r.position} upgrade ${c.name}`, `${c.age}, CA ${c.ca}, ${c.club}, ${money(c.value)}: ${c.buy ? 'the season surplus pays' : `only once ${c.buy_if_sold.join(' or ')} is sold`} (starters ${r.starters.join(', ')})`);
+  for (const c of buys?.wonderkids || []) first('buys', c.name, `wonderkid ${c.name}`, `PA ${c.pa}, ${c.positions}, ${c.club}, ${money(c.value)}${c.replaces ? `; replaces ${c.replaces} in the portfolio (he is sold)` : ''}`);
   const bargains = data('bargains');
-  for (const c of (bargains?.undervalued || []).slice(0, 5)) first('bargains', c.name, `undervalued ${c.ratio}x (typical ${money(c.typical)}): ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
-  for (const c of (bargains?.buried || []).slice(0, 5)) first('bargains', c.name, `buried talent: ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
+  for (const c of (bargains?.undervalued || []).slice(0, 5)) first('bargains', c.name, c.name, `undervalued ${c.ratio}x (typical ${money(c.typical)}): ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
+  for (const c of (bargains?.buried || []).slice(0, 5)) first('bargains', c.name, c.name, `buried talent: ${c.age}, ${c.positions}, CA ${c.ca}/PA ${c.pa}, ${c.club}, ${money(c.value)}`);
   for (const x of sells || []) if (x.action !== 'keep') add('sells', x.name, `${x.action}${x.ask ? ' at ' + money(x.ask) : ''} (${x.role ?? ''})`,
     ['loan', 'let-go'].includes(x.action) ? {verdict: 'act', why: `${x.action === 'loan' ? 'Loan' : 'Let go'} by the sell table: ${x.why} (${x.age}, CA ${x.ca}/PA ${x.pa}, ${x.role})`} : null);
   const plan = data('plan');
   for (const b of plan?.buy || []) add('plan', `buy ${b.name}`, `${b.slot} ${b.role}, ${money(b.value)}, walk away ${money(b.walk_away)}`);
   for (const x of plan?.sell || []) add('plan', `sell ${x.name}`, (x.why || []).join('; '));
-  for (const d of data('audit')?.decide || []) { const fa = /^free agent (.+?) \(/.exec(d); if (!fa || !named.has(fa[1].toLowerCase())) add('audit', d.slice(0, 70), d); }
+  for (const d of data('audit')?.decide || []) { const fa = /^free agent (.+?) \(/.exec(d); if (!fa || !seen(fa[1])) add('audit', d.slice(0, 70), d); }
   return out;
 }
 

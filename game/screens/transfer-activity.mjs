@@ -1,7 +1,6 @@
 // Our current transfer activity: Recruitment → Transfer Activity. The authoritative list of
 // bids we made (and offers received), with status, plus the potential budget impact.
-import {goTo, click, clickWhere, waitFor, Screen, parseMoney, toggle, settle} from '../ui/index.mjs';
-import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
+import {goTo, click, clickWhere, waitFor, Screen, parseMoney, toggle, settle, isoDate} from '../ui/index.mjs';
 import {splitLabel, stageState} from '../../capabilities/deals/deals.mjs';
 
 export async function transferActivity() {
@@ -89,10 +88,8 @@ export const offersSummary = {
 // Withdraw our bid from Transfer Activity (mapped by the user, 2036-06-04, on a stray £17.25M offer for
 // Pepper): select the deal, tick the box at the foot of the pane by "N Active Offers" (Withdraw Offer stays
 // disabled until it is ticked), click Withdraw Offer. No confirmation follows, and the list keeps showing
-// "Offer Made" until the next day: the withdrawal is recorded (local/runs/withdrawn.json) so the offers
-// check doesn't flag it again today.
-const WITHDRAWN = new URL('../../local/runs/withdrawn.json', import.meta.url);
-export const withdrawn = () => { try { return JSON.parse(readFileSync(WITHDRAWN, 'utf8')); } catch { return {}; } };
+// "Offer Made" until the next day: recorded as talks ended today (capabilities/deals/cancelled.mjs), so the
+// offers check doesn't flag it and no bid reopens them today.
 /** The box by "N Active Offers" at the foot of a deal's pane: ticked, it enables Withdraw Offer. */
 export const offersBox = x => { const f = x.items.find(i => i.kind === 'text' && /Active Offers/.test(i.label || ''));
   return f ? x.items.find(i => i.kind === 'toggle' && !i.label && i.bounds[0] < 520 && Math.abs(i.bounds[1] - f.bounds[1]) < 20) : undefined; };
@@ -104,9 +101,7 @@ export async function withdrawBid(name) {
   await waitFor(x => x.buttons().some(b => b.name === 'withdraw-button' && b.enabled), {what: 'Withdraw Offer enabled', timeout: 5000});
   await clickWhere(x => x.buttons().find(b => b.name === 'withdraw-button' && b.enabled), 'Withdraw Offer');
   await settle(800);
-  const date = s.date()?.toISOString().slice(0, 10) ?? null, all = withdrawn();
-  all[name.toLowerCase()] = {name, offer: offer.label, date};
-  mkdirSync(new URL('.', WITHDRAWN), {recursive: true});
-  writeFileSync(WITHDRAWN, JSON.stringify(all, null, 1));
+  const date = isoDate(s.date());
+  (await import('../../capabilities/deals/cancelled.mjs')).recordCancelled(name, date, 'activity');   // dead today: no same-day re-bid
   return {action: 'withdraw', name, withdrawn: true, offer: offer.label, date, note: 'no confirmation; the list shows it until the next day'};
 }

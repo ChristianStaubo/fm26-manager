@@ -171,10 +171,11 @@ def table(rows, tactic, leaving=(), season_surplus=0, window='summer', departed=
         sellers = planned_at.get(pos, []) + [x['name'] for x in sorted(starters, key=lambda x: x['ca'])[:1]] + [x['name'] for x in players[n:] if x['name'] not in starters_all and not x.get('develop')]
         row = {'position': pos, 'weakest': weakest, '_sellers': sellers, 'starters': [f"{x['name']} {x['ca']}" for x in starters],
                'backup': ', '.join(f"{b['name']} {b['ca']}{'' if b['natural'] else ' (cover)'}" for b in found) or None, 'needs': []}
-        for x in left.get(pos, []):
-            # The starters before he left: the leavers plus the best of those still here (not the backup who moved up).
+        if left.get(pos):
+            # The starters before they left: the leavers plus the best of those still here (not the backup who moved up).
             kept = sorted(starters, key=lambda s: -s['ca'])[:max(0, n - len(left[pos]))]
             pos_avg = round(sum([s['ca'] for s in kept] + [y['ca'] for y in left[pos]]) / max(1, len(kept) + len(left[pos])))
+        for x in left.get(pos, []):
             rb = pos_avg - R['replace_range']
             row['needs'].append({'kind': 'replace', 'for': x['name'], 'min_ca': rb, 'position_avg': pos_avg, 'candidates': replacements(rows_now, slot, x['ca'], pos_avg),
                                  **({'if_sold': x['name']} if x['name'] in selling else {})})

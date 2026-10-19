@@ -7,7 +7,8 @@
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 
 const FILE = new URL('../../local/runs/arranged.json', import.meta.url);
-const key = n => (n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+import {fold as key} from '../../game/ui/navigate.mjs';
+import {club} from '../data.mjs';
 
 export function load() { try { return JSON.parse(readFileSync(FILE, 'utf8')); } catch { return {players: {}}; } }
 export function record(name, arranged, seen = null) {
@@ -18,3 +19,5 @@ export function record(name, arranged, seen = null) {
   return book.players[key(name)];
 }
 export const lookup = (name, book = load()) => book.players[key(name)] || null;
+/** A profile's "Transfer arranged" (profileFacts().arranged): recorded when the club is ours. */
+export const noteIfOurs = (name, arranged) => arranged?.club === club().club ? record(name, arranged) : null;

@@ -57,8 +57,8 @@ export const type = text => act(s => {
 });
 export const toggle = (select, checked, what = 'toggle') =>
   act(s => { const t = select(s); if (!t) throw missing(what); return ui.toggle(s.tree, s.node(t.id), checked); });
-export const setNumber = (select, number, what = 'number field') =>
-  act(s => { const f = select(s); if (!f) throw missing(what); return ui.number(s.tree, s.node(f.id), number); });
+export const setNumber = (select, number, what = 'number field', opts = {}) =>
+  act(s => { const f = select(s); if (!f) throw missing(what); return ui.number(s.tree, s.node(f.id), number); }, opts);
 export const key = name => ui.key(name);
 // Scroll the scroll view that contains select(screen)'s element by dy pixels (down is positive).
 export const scrollWithin = (select, dy, what = 'scroll anchor') =>
@@ -108,7 +108,7 @@ export async function setFee(anchor, amount, {mode = 'nearest', maxSteps = 60} =
     const opened = await waitFor(x => presets(x).length > 3, {what: `${anchor} presets`});
     const field = x => x.items.find(i => i.kind === 'number-field' && (x.floatingItems() || []).length > 0);
     if (field(opened)) {
-      await act(x => { const f = field(x); if (!f) throw missing(`${anchor} number field`); return ui.number(x.tree, x.node(f.id), amount); }, {recoverOnOcclusion: false});
+      await setNumber(field, amount, `${anchor} number field`, {recoverOnOcclusion: false});
       await waitFor(x => !(x.floatingItems() || []).length, {what: `${anchor} typed`, timeout: 3000}).catch(() => null);
     } else {
     const rows = presets(opened);

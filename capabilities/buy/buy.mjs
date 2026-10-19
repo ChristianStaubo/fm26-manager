@@ -12,7 +12,8 @@ import {Screen, waitFor, click, clickWhere, setFee, recover, openPlayer, actionP
 import {loadRules} from '../sell/decide.mjs';
 import {log, history} from '../log.mjs';
 import {gate, tolerance} from '../approvals.mjs';
-import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
+// Talks we ended today stay dead that game day (reopening them made a stray £17.25M Pepper offer, 2036-06-04).
+import {cancelledOn, recordCancelled, withdrawnFromActivityOn} from '../deals/cancelled.mjs';
 import {askAgent} from './ask.mjs';
 import {classify, saveReplyScreen} from '../deals/replies.mjs';
 
@@ -135,18 +136,11 @@ export async function lastQuote(name, date, rows) {
   if (!q || !date || !q.date || (Date.parse(date) - Date.parse(q.date)) / 864e5 > QUOTE_DAYS) return null;
   return {range: q.feeRange, from: `agent (${q.date})`};
 }
-// Talks we cancelled (Withdraw Offer on the offer screen) stay dead that game day: Make An Offer reopens them
-// pre-filled, and a £17.25M offer for Pepper went live from that dead form (2036-06-04). Not reopened until
-// the next game day (local/runs/talks-cancelled.json).
-const CANCELLED = new URL('../../local/runs/talks-cancelled.json', import.meta.url);
-const cancelledTalks = () => { try { return JSON.parse(readFileSync(CANCELLED, 'utf8')); } catch { return {}; } };
-function recordCancelled(name, date) { const all = cancelledTalks(); all[name.toLowerCase()] = date; mkdirSync(new URL('.', CANCELLED), {recursive: true}); writeFileSync(CANCELLED, JSON.stringify(all, null, 1)); }
 /** After a bid that made no deal, no offer for him may be live (the stray Pepper offer, 2036-06-04). */
 async function noStrayOffer(name, date) {
-  const {transferActivity, withdrawn} = await import('../../game/screens/transfer-activity.mjs');
+  const {transferActivity} = await import('../../game/screens/transfer-activity.mjs');
   const live = (await transferActivity()).rows.find(r => (r.player || '').toLowerCase() === name.toLowerCase() && /Offer Made/i.test(r.stage || ''));
-  const w = withdrawn()[name.toLowerCase()];
-  if (live && !(w && w.date === date)) throw new NeedsAnalyst(`Unexpected live offer for ${name} after a bid that made no deal: check it, and \`fm withdraw "${name}"\` if it isn't ours to keep`, {stray: live});
+  if (live && withdrawnFromActivityOn(name) !== date) throw new NeedsAnalyst(`Unexpected live offer for ${name} after a bid that made no deal: check it, and \`fm withdraw "${name}"\` if it isn't ours to keep`, {stray: live});
 }
 /** Talks we cancelled today, reopened by Make An Offer: a dead form (Pepper, 2036-06-04). */
 export const talksCancelled = x => (x.hasText(/have cancelled the deal/i) || x.buttons(/have cancelled the deal/i).length > 0) && x.buttons('Exit Talks').length > 0;   // the GM line is a button's label
@@ -343,8 +337,7 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   const facts = profileFacts(profile);
   // A transfer already arranged (to us, or elsewhere): no bid (Luiz, 2036-06-04).
   if (facts.arranged) {
-    const {record} = await import('./arranged.mjs'), {club: cfg} = await import('../data.mjs');
-    if (facts.arranged.club === cfg().club) record(name, facts.arranged);
+    (await import('./arranged.mjs')).noteIfOurs(name, facts.arranged);
     return {action: 'buy', name, club, outcome: 'arranged', arranged: facts.arranged};
   }
   // The agent's fee range is what the club will accept: use it, not the profile's range, which can
@@ -361,7 +354,7 @@ export async function buyPlayer(name, club, {open, max, rounds = 6, dryRun = fal
   if (approved && facts.valueRange && facts.valueRange[0] > approved.limit && await recover())
     throw new NeedsAnalyst(`${name}: his range starts at £${(facts.valueRange[0] / 1e6).toFixed(2)}M, above the approved £${(approved.limit / 1e6).toFixed(2)}M. Ask the user for a higher limit (formula walk-away £${(defaultMax(facts) / 1e6).toFixed(2)}M) or drop him.`,
       {approval: 'below-range', valueRange: facts.valueRange, approved: approved.limit, formulaMax: defaultMax(facts), agent});
-  if (!dryRun && cancelledTalks()[name.toLowerCase()] === isoDate(profile.date()) && await recover())
+  if (!dryRun && cancelledOn(name) === isoDate(profile.date()) && await recover())
     return {action: 'buy', name, club, outcome: 'talks-cancelled', why: 'we cancelled these talks today: bid again on a later game day (reopening them made a stray offer, 2036-06-04)'};
   // The menu is still open from the peek: click the entry in it (the rightmost: the submenu's, if there).
   const entry = x => x.items.filter(i => i.kind === 'button' && i.label === 'Make An Offer' && x.node(i.id)?.type === 'EntryElement').sort((a, b) => b.bounds[0] - a.bounds[0])[0];

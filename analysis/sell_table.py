@@ -35,7 +35,7 @@ import wage_bands
 
 S = m.POLICY['selling']
 T = S['sell_by_role_age']
-P = {'max_age': 21, 'older_max_age': 23, 'older_min_pa': 160, 'min_pa': 130, 'list_min_value': 1e6, **S.get('prospects', {})}
+P = m.PROSPECTS
 MAX_KID_WAGE = m.POLICY.get('buying', {}).get('table', {}).get('backup_max_wage', 80000)
 
 
@@ -59,7 +59,7 @@ def table(rows, tactic, leaving=()):
         b = band(age, d.get('position'))
         price = lambda r: round(value * T[r][b] / 50000) * 50000
         pa = m.intval(p, 'pa')
-        prospect = age <= P['max_age'] or (age <= P['older_max_age'] and pa >= P['older_min_pa'])
+        prospect = m.is_prospect(age, pa)
         gx = sr.num(p, 'goals_minus_xg')
         if gx >= S.get('overperformer_goals_over_xg', 99) and age >= S.get('overperformer_min_age', 99):
             action, why, ask = 'sell', f"lucky season: {sr.num(p, 'goals'):.0f} goals from {sr.num(p, 'xg'):.1f} xG; his value peaks now", price(role)

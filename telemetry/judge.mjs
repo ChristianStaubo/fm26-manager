@@ -37,7 +37,8 @@ for p in rows:
         pos, role = roles.get(p['name'], (None, 'surplus'))
         out[p['name']] = {'age': m.intval(p, 'age'), 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'wage': int(float(p['wage'] or 0)), 'expires': (p['contract_expires'] or '')[:10], 'role': role, 'position': pos}
 print(json.dumps(out))`;
-  try { return JSON.parse(execFileSync('python3', ['-c', code], {cwd: `${ROOT}analysis`, encoding: 'utf8', maxBuffer: 64 << 20})); } catch { return {}; }
+  // The export the analysis already uses (no re-export), at the live game date when fm passed one.
+  try { return JSON.parse(execFileSync('python3', ['-c', code], {cwd: `${ROOT}analysis`, encoding: 'utf8', maxBuffer: 64 << 20, env: process.env})); } catch { return {}; }
 }
 export function bidCase(e, squad = {}) {
   const o = e.offer || {}, d = e.decision || {}, p = squad[o.player] || {};
@@ -58,13 +59,13 @@ export async function judgeBids({last = 12, model = 'opus', runner = claudeRunne
   for (const e of rows) if (e.action === 'incoming-offer' && e.offer?.player && e.decision) bids.set(`${e.offer.player}|${e.offer.club}`, e);
   const cases = [...bids.values()].slice(-last), out = [], squad = squadFacts();
   mkdirSync(`${ROOT}local/runs`, {recursive: true});
-  for (const e0 of cases) {
+  // The cases are independent: three model calls at a time (12 one by one took ~10 min).
+  const judgeOne = async e0 => {
     const e = recompute ? {...e0, decision: decideSale({countersSoFar: 0, ...e0.offer})} : e0;
-    const prompt = bidCase(e, squad);
-    const v = await runner({system: RULES, prompt, schema: SCHEMA, model});
-    const r = {at: new Date().toISOString(), kind: recompute ? 'bid-recomputed' : 'bid', date: e.date, player: e.offer.player, club: e.offer.club, rule: e.decision.action, ruleAsk: e.decision.guaranteedAsk ?? null, judge: v};
-    appendFileSync(`${ROOT}local/runs/judge.jsonl`, JSON.stringify(r) + '\n');
-    out.push(r);
-  }
+    const v = await runner({system: RULES, prompt: bidCase(e, squad), schema: SCHEMA, model});
+    return {at: new Date().toISOString(), kind: recompute ? 'bid-recomputed' : 'bid', date: e.date, player: e.offer.player, club: e.offer.club, rule: e.decision.action, ruleAsk: e.decision.guaranteedAsk ?? null, judge: v};
+  };
+  for (let i = 0; i < cases.length; i += 3) out.push(...await Promise.all(cases.slice(i, i + 3).map(judgeOne)));
+  for (const r of out) appendFileSync(`${ROOT}local/runs/judge.jsonl`, JSON.stringify(r) + '\n');
   return {cases: out.length, agree: out.filter(r => r.judge?.agrees).length, disagree: out.filter(r => r.judge && !r.judge.agrees).map(r => ({player: r.player, club: r.club, date: r.date, rule: r.rule, judge: r.judge.decision, price: r.judge.price, why: r.judge.why})), failed: out.filter(r => !r.judge).length};
 }

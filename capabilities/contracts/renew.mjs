@@ -46,22 +46,18 @@ export async function renewalContext(name) {
 // profile → Actions → Contract → Enter Contract Negotiations, then the same talks as for a signing
 // (promises → contract form → salary ticks from his demand; personal-terms.mjs).
 export async function renewSelf(name, club, {dryRun = false, preview = false} = {}) {
-  const {openPlayer, peekActions, actionPath, profileFacts, parseMoney} = await import('../../game/ui/index.mjs');
+  const {Screen, openPlayer, peekActions, actionPath, profileFacts, parseMoney, recover} = await import('../../game/ui/index.mjs');
   const {negotiatePersonalTerms} = await import('./personal-terms.mjs');
+  if (dryRun) { await openPlayer(name, club); const {sub} = await peekActions('Contract'); return {action: 'renew-self', name, done: false, dryRun: true, options: sub}; }
   // First his agent (user, 2026-10-19): the chat states his demands, and Contest lowers them (Burton £86-105K →
   // £77-95K). Then the talks, inside that range. The chat is one-time; without it the talks go ahead as before.
-  const {discussContract} = await import('../buy/ask.mjs'), {recover} = await import('../../game/ui/index.mjs');
-  const chat = dryRun ? null : await discussContract(name, club);
+  const {discussContract} = await import('../buy/ask.mjs');
+  const chat = await discussContract(name, club);
   if (chat?.asked) await recover();   // End Chat: still on his profile
-  const {Screen} = await import('../../game/ui/index.mjs');
-  // His profile is open after the chat step: no second open, no separate menu peek (Burton's renewal
-  // opened the profile and the Actions menu three times in its first 20 s, 2036-07-06).
-  // ...unless the game pulled the view away (a required action sends it to Messages, 2036-07-06): re-open.
-  const here = await Screen.read(), onProfile = here.items.some(i => i.kind === 'menu' && i.label === 'Actions');
-  const profile = dryRun || !onProfile ? await openPlayer(name, club) : here;
-  if (dryRun) { const {sub} = await peekActions('Contract'); return {action: 'renew-self', name, done: false, dryRun: true, options: sub}; }
-  const facts = profileFacts(profile);
-  // Closing the chat can hand the view to a required action a moment later (Messages): re-open him and retry.
+  // His profile is open after the chat step: no second open, no separate menu peek (Burton's renewal opened
+  // the profile and the Actions menu three times in its first 20 s, 2036-07-06). Closing the chat can hand
+  // the view to a required action a moment later (Messages): then re-open him and retry once.
+  const facts = profileFacts(await Screen.read());
   const enter = () => actionPath(['Contract', 'Enter Contract Negotiations']);
   try { await enter(); }
   catch (e) {

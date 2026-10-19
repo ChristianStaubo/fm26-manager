@@ -26,7 +26,7 @@ from blackbox import BlackBox
 HERE = Path(__file__).resolve().parent
 RUNTIME = Path(os.environ.get('FM26_BRIDGE_DIR', '/tmp/fm26-bridge'))
 PROCESS = os.environ.get('FM26_PROCESS', 'Football Manager 26')
-OPS = {'status', 'inspect', 'uimetadata', 'uitree', 'uiversion', 'ui', 'reload', 'advance', 'open-required-action', 'blackbox', 'explore', 'direct'}
+OPS = {'status', 'inspect', 'uimetadata', 'uitree', 'ui', 'reload', 'advance', 'open-required-action', 'blackbox', 'explore', 'direct'}
 
 
 def agent_source():
