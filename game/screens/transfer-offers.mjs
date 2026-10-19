@@ -157,7 +157,7 @@ export const incomingOffer = {
       const instalments = Math.max(0, offer.guaranteed - offer.upfront);
       Object.assign(decision, {action: 'counter', upfront, guaranteedAsk: upfront + instalments, rule: {action: decision.action, upfront: decision.upfront, guaranteedAsk: decision.guaranteedAsk}, reason: `${decision.reason} (ask set by hand)`});
     }
-    const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision};
+    const entry = {action: 'incoming-offer', date: isoDate(d.date()), offer, decision, evidence: evidence(d)};
     if (decision.action === 'escalate' || dryRun) { await log({...entry, executed: false}); throw new NeedsAnalyst(`Offer for ${offer.player}: ${decision.reason}`, entry); }
     // Prices are totals, add-ons included (user, 2032-02-02: Güreler "£30M total comp"): a counter is
     // worth its guaranteed ask plus the add-ons the buyer already offered.
@@ -430,12 +430,18 @@ export const loanOfferPage = {
 // delegation still land here. Supervisor rule (2026-10-15, logged for the user's review): accept a
 // loan paying at least policy.selling.youth_loan_min_wage_share of his wage (he plays, he develops),
 // reject the rest. Players over youth_max_age are first-team: the user decides.
+// What a decision was read from (2026-10-19: Awudu's "conditional future fee of £4M" was on screen but not in
+// the log, which held only the parsed numbers): the visible text lines, kept with the decision.
+export const evidence = s => s.texts().filter(t => t && t.length <= 400).slice(0, 60);
 export function readYouthLoan(s) {
   const head = s.texts().map(t => /^(.+) loan offer for (.+)$/.exec(t)).find(Boolean);
   if (!head) return null;
   const val = label => s.after(label, i => i.kind === 'text')?.label;
   const age = Number(/^(\d+) year-old/.exec(s.texts().find(t => /^\d+ year-old /.test(t)) || '')?.[1] ?? NaN);
-  return {club: head[1], player: head[2], age, fee: parseMoney(val('Fee') ?? '') ?? 0,
+  // A future fee is a buy clause ("plus a conditional future fee of £4M to be paid at the end of the loan":
+  // Bournemouth for Awudu, 2036-07-28, read as a plain loan and accepted; the board blocked it as a cheap sale).
+  const future = parseMoney(val('Future Fee') ?? '') ?? parseMoney(/future fee of (£[\d.,]+[KM]?)/i.exec(s.texts().join(' '))?.[1] ?? '') ?? 0;
+  return {club: head[1], player: head[2], age, fee: parseMoney(val('Fee') ?? '') ?? 0, futureFee: future,
     wageShare: Number(/(\d+)%/.exec(val('Playing Salary Percentage') || '')?.[1] ?? NaN) / 100, duration: val('Duration'),
     // Read like a loan approach's (Awudu at Empoli, 2035-01-12: unread, so "no start promised (?)").
     playingTime: val('Agreed Playing Time')};
@@ -445,7 +451,7 @@ export const youthLoanOffer = {
   match: s => s.buttons('Accept').length === 1 && s.buttons('Reject').length === 1 && s.buttons('View Offer').length === 1 && !!readYouthLoan(s),
   async run(s, {dryRun = false} = {}) {
     const l = readYouthLoan(s);
-    const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l};
+    const entry = {action: 'youth-loan-offer', date: isoDate(s.date()), loan: l, evidence: evidence(s)};
     // A first-team player we listed (surplus) on loan with most of his wage paid: accept (Backhaus at
     // Mainz, 90%, 2032-07-23). Other first-team loans: the user decides.
     // He's already leaving on a deal we agreed (Bouhoudane to Espanyol; Frosinone bid after, 2032-07-31):
@@ -456,7 +462,7 @@ export const youthLoanOffer = {
       if (!await answerLoan(l.player, decision === 'accept' ? 'Accept' : 'Reject', readYouthLoan)) return {...entry, executed: false, skipped: 'offer no longer on screen'};
       await log({...entry, executed: true}); return entry;
     };
-    const v = await decideByTable({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.fee, duration: l.duration},
+    const v = await decideByTable({player: l.player, age: l.age, wageShare: l.wageShare, playingTime: l.playingTime, fees: l.fee, duration: l.duration, optionFee: l.futureFee},
       {date: entry.date, what: `Loan offer for ${l.player} (${l.club})`});
     Object.assign(entry, {type: v.type, listed: v.listed});
     return answer(v.action, v.reason);

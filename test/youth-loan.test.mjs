@@ -7,7 +7,7 @@ import {youthLoanOffer, readYouthLoan} from '../game/screens/transfer-offers.mjs
 
 test('youth loan offer: read, and rejected under 75% of his wage (Adelaide 70%)', async () => {
   const s = loadScreen('youth-loan-offer-adelaide');
-  assert.deepEqual(readYouthLoan(s), {club: 'Adelaide', player: 'Sullivan', age: 19, fee: 20000, wageShare: 0.7, duration: 'End of season', playingTime: 'First-Choice Goalkeeper'});
+  assert.deepEqual(readYouthLoan(s), {club: 'Adelaide', player: 'Sullivan', age: 19, fee: 20000, futureFee: 0, wageShare: 0.7, duration: 'End of season', playingTime: 'First-Choice Goalkeeper'});
   assert.equal(youthLoanOffer.match(s), true);
   const r = await youthLoanOffer.run(s, {dryRun: true});
   assert.equal(r.decision, 'reject');
@@ -73,4 +73,14 @@ test('"<Player> close to joining <Club>" is an outgoing confirmation (Alejandro 
   const {HANDLERS: ADMIN_HANDLERS} = await import('../game/screens/admin/handlers.mjs');
   const s = loadScreen('confirm-outgoing-close-to-joining');
   assert.equal(ADMIN_HANDLERS.find(h => h.match(s))?.name, 'confirm-outgoing');
+});
+
+test('a youth loan with a future fee is a buy clause: a prospect is not loaned with one (Awudu to Bournemouth, 2036-07-28)', async () => {
+  const {readYouthLoan} = await import('../game/screens/transfer-offers.mjs');
+  const {decideLoanOffer} = await import('../capabilities/sell/loan-table.mjs');
+  const l = readYouthLoan(loadScreen('youth-loan-future-fee-awudu'));
+  assert.equal(l.club, 'Bournemouth'); assert.equal(l.fee, 5e6); assert.equal(l.futureFee, 4e6);
+  const v = decideLoanOffer({type: 'prospect', listed: true, playingTime: l.playingTime, wageShare: l.wageShare, fees: l.fee, optionFee: l.futureFee});
+  assert.equal(v.action, 'reject');
+  assert.match(v.reason, /option to buy/);
 });
