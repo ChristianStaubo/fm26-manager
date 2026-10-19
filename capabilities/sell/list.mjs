@@ -100,7 +100,14 @@ export async function listPlayer(name, club, {price, deter = false, min, target,
     if (!facts.askingPrice) { await cancel(); throw new NeedsAnalyst(`No valuation shown for ${name}; pass --price`, facts); }
     // Not listed, yet the box holds an amount: a stored asking price from an earlier listing
     // (sticky), not his value. Only an Unspecified box means the header amount is an exact value.
-    if (askingBox(dialog) !== 'Unspecified') { await cancel(); throw new NeedsAnalyst(`${name} kept the asking price ${askingBox(dialog)} from an earlier listing: pass --price (see tasks/transfers/README.md)`, facts); }
+    // We never set an asking price (user rule), and there is no mapped way back to Unspecified: wait for
+    // bids at our minimum instead, like a player listing would upset (Froholdt kept £69M, 2038-05-30).
+    if (askingBox(dialog) !== 'Unspecified') {
+      await cancel();
+      const entry = {action: 'list-player', name, club, listed: false, waitForBids: true, why: `kept the asking price ${askingBox(dialog)} from an earlier listing (never re-priced: user rule); bids are answered at our minimum`};
+      if (!dryRun) await log(entry);
+      return entry;
+    }
     facts.valueRange = [facts.askingPrice, facts.askingPrice]; // exact valuation
   }
   // Default (user, 2026-10-08): record our minimum in the price book and list with the asking
