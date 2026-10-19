@@ -52,6 +52,8 @@ export const STEPS = {
     }
     for (const c of d.wonderkids || []) md.push(`wonderkid (PA ${c.pa}, ${c.positions}): ${name(c)} → ${c.on_arrival === 'squad' ? 'joins the squad (backup level)' : 'loan-listed on arrival (approve with --note "wonderkid")'}${c.replaces ? `; replaces ${c.replaces} in the portfolio (sold)` : ''}`);
     if (d.portfolio) md.push(`wonderkid portfolio: ${d.portfolio.held} held, room for ${d.portfolio.room}`);
+    // Every PA 180+ prospect at any fee, for the user to pick from (2026-10-19: van Eijden was above the fee cap).
+    if (d.wonderkid_watch?.length) md.push(`watch list (PA 180+, any fee): ${d.wonderkid_watch.slice(0, 12).map(c => `${c.name} (${c.age}, ${c.positions}, ${c.ca}/${c.pa}, ${c.club}) ${money(c.value)}`).join(' · ')}`);
     return {data: d, md};
   },
   // The sell (listing) table (analysis/sell_table.py): who to list for sale or loan, and at what price.
