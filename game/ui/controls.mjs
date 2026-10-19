@@ -102,7 +102,16 @@ export async function setFee(anchor, amount, {mode = 'nearest', maxSteps = 60} =
 
   if (value(await Screen.read()) !== amount) {
     await clickWhere(x => { const c = ctl(x); return c?.kind === 'button' ? c : null; }, `${anchor} box`);
-    const rows = presets(await waitFor(x => presets(x).length > 3, {what: `${anchor} presets`}));
+    // Type it (mapped 2026-10-19 on Ortiz): the box opens its presets AND a number field holding the exact
+    // fee; setting that field closes the list and FM snaps the amount to its increment (£2.78M → £2.8M).
+    // The ± steps below then land at or under (atMost) or nearest. Pepper's bids took 6-12 clicks before.
+    const opened = await waitFor(x => presets(x).length > 3, {what: `${anchor} presets`});
+    const field = x => x.items.find(i => i.kind === 'number-field' && (x.floatingItems() || []).length > 0);
+    if (field(opened)) {
+      await act(x => { const f = field(x); if (!f) throw missing(`${anchor} number field`); return ui.number(x.tree, x.node(f.id), amount); }, {recoverOnOcclusion: false});
+      await waitFor(x => !(x.floatingItems() || []).length, {what: `${anchor} typed`, timeout: 3000}).catch(() => null);
+    } else {
+    const rows = presets(opened);
     let index = 0, target = rows[0];
     rows.forEach((v, k) => { if (v !== null && v <= amount && v >= target) { index = k; target = v; } });
     // The list's choices have one more entry than the visible rows (£60M: row 18 = choice 19).
@@ -112,6 +121,7 @@ export async function setFee(anchor, amount, {mode = 'nearest', maxSteps = 60} =
       const got = value(await waitFor(x => value(x) === target, {timeout: 3000, what: `${anchor} preset`}).catch(() => Screen.read()));
       if (got === target) break;
       index += (got ?? 0) < target ? 1 : -1;
+    }
     }
   }
   const step = (x, sign) => { const k = x.items.indexOf(ctl(x)); return x.items.slice(k + 1, k + 5).find(i => i.kind === 'button' && i.label === sign); };
