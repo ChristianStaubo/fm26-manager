@@ -22,8 +22,10 @@ before anything else (details: `config/README.md`):
    and league names exactly as the CSV writes them (`club`, `competition` columns).
 3. Write `config/club.json` (`club`, `league`, `save_pattern`) and `config/tactic.json` (their
    formation's slots, roles and current starters; ask, or read Match Day → Match Squad).
-4. Run `node cli/fm.mjs squad --fresh` and check the squad it prints is theirs.
-5. Walk them through `playbook/PLAYBOOK.md`: these are our rules, and they may want their own.
+4. Ask how they want players judged and set `config/club.json` "mode": `moneyball` (only what a manager sees:
+   attributes, stats, value) or `ability` (FM's hidden CA/PA). `fm mode` shows it; PLAYBOOK §1a explains.
+5. Run `node cli/fm.mjs squad --fresh` and check the squad it prints is theirs.
+6. Walk them through `playbook/PLAYBOOK.md`: these are our rules, and they may want their own.
    If their formation isn't a 4-2-3-1, `fm window` needs its `SLOTS` edited.
 
 ## Layout

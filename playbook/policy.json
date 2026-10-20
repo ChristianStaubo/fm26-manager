@@ -249,8 +249,7 @@
     "keep_current": true
   },
   "information": {
-    "hide_hidden_attributes": true,
-    "_why": "User 2026-10-09: a real manager never sees FM's CA/PA. The manager judges ability by visible attributes (1-20), stats, value, wage, age and contract."
+    "_why": "User 2026-10-09: a real manager never sees FM's CA/PA. Now a mode (2026-10-20): config/club.json \"mode\" = ability (CA/PA) or moneyball (visible attributes, stats, value, age only; the agent's export has no CA/PA). analysis/quality.py."
   },
   "free_agents": {"always_buy_max_age": 27,
     "wonderkid_max_age": 23,

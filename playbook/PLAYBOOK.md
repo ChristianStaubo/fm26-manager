@@ -21,20 +21,23 @@ These are the user's rules (decided 2026-10-09).
 - Baseline (claude-2): 2025/26 finished **9th, 55 points**. Over ~3 seasons, finish higher than
   that with a positive transfer balance.
 
-## 1a. How we judge players: CA and PA for now (user, 2026-10-16 and 2026-10-18)
-- **Now:** FM's **current ability (CA)** is the measure of quality and **potential ability (PA)** of growth.
-  It is the simple version for this experiment ("super good scouting, not a super good data analyst"),
-  so the checkpoints, decision tables and state machines can be made reliable first.
-  - On CA/PA already: the depth chart, the buy table (backup level = squad average CA - 25), the sell
-    table, bargains, wonderkids (PA 175+), newgens, the final-year table, free agents (2026-10-18: worth
-    = what players of his CA and age cost; a free wonderkid is always a buy).
-  - Still on the earlier Moneyball measures (to switch, or keep, when they disagree with CA/PA): the
-    squad step's "upgrade" need and the suggested XI (match output vs the league), the summer
-    `fm plan` / `fm window` scores (attributes + stats).
-- **Later: a Moneyball variant.** Once the whole season runs unsupervised on CA/PA, a second variant
-  plays without access to CA or PA: it judges players from their match stats in the context of our
-  tactic, and their role attributes, as at the start of the experiment (`docs/analysis/`). Same
-  checkpoints, tables and state machines; only the measure changes (docs/next-steps.md).
+## 1a. How we judge players: two modes (user, 2026-10-16/18; modes 2026-10-20)
+Every table compares two numbers per player on FM's 0-200 scale: his **level** (how good now) and his
+**ceiling** (how good he can become). The mode decides where they come from (`config/club.json` "mode",
+or `--mode` on one command; `analysis/quality.py`):
+- **ability** (what run 3 played): level = FM's hidden **current ability (CA)**, ceiling = **potential
+  ability (PA)**. The simple version: "super good scouting, not a super good data analyst".
+- **moneyball**: only what a manager sees in FM: attributes, match stats (against his league, scaled by
+  the league's strength), market value, age. CA and PA are never read: the agent's export has no such
+  columns and every output says level / ceiling. Level comes from the attributes plus what he produces;
+  ceiling from level, age and value. Both are calibrated once against a full export
+  (`analysis/calibrate_quality.py`, a developer tool) and mapped onto CA/PA's spread, so every number
+  in this playbook (backup = squad level - 25, wonderkids 180+, …) means the same in both modes.
+  Fit on 33,386 players: level vs CA 0.92 rank correlation (median error 6); ceiling vs PA (21 and
+  under) 0.79. Spotting a future star is harder without PA, as it is for a real manager.
+- Same checkpoints, tables, rules, approvals and state machines in both; only the two numbers change.
+  Still on match output in both modes: the squad step's "upgrade" need, the suggested XI and the summer
+  `fm plan` / `fm window` scores.
 
 ## 1b. The season cycle (user, 2026-10-15; as code 2031-05-28)
 The order of steps lives in **`playbook/cycle.json`** and runs as code: `fm cycle` holidays to the next

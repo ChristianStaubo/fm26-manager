@@ -57,7 +57,10 @@ and why, from `fm plan`, `fm price`, `fm buy --dry-run`), stop with outcome `app
   `fm withdraw "<player>"` takes back a bid (no confirmation; gone the next day).
 - An arranged transfer ("Transfer arranged" on the profile) is done: never re-offer.
 - Renewals: `fm renew` asks the agent first (keen → Contest → Agree), then negotiates inside his range.
-- Prospects with PA 10+ above CA start for us or go on loan, never on the bench.
+- Prospects with a ceiling 10+ above their level start for us or go on loan, never on the bench.
+- The mode (`fm mode`): ability judges by FM's CA/PA, moneyball only by what a manager sees. In moneyball
+  mode use `fm` commands for every number (they say level / ceiling), never open `local/dev/` or run the
+  calibration, and never look for CA/PA anywhere.
 
 ## Listing for sale
 `fm sell "<name>" --club <club> --min <approved minimum>`: the asking price stays **Unspecified** (user rule);
