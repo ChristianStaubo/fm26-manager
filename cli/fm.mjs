@@ -35,6 +35,7 @@ import * as incidents from '../telemetry/incidents.mjs';
 import {readTrace, traceStats, loopStats, readJournal, FINISHED} from '../telemetry/stats.mjs';
 
 const HELP = `fm <command> [args] [--flags]
+  mode                           how players are judged: ability (CA/PA) or moneyball (visible data only); --mode X on any command
 
 Look
   status                         game progression state (CanContinue, NeedAction, …)
@@ -160,6 +161,11 @@ const flags = {}, pos = [];
 for (let i = 0; i < argv.length; i++) {
   if (argv[i].startsWith('--')) { const k = argv[i].slice(2); flags[k] = argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[++i] : true; }
   else pos.push(argv[i]);
+}
+// The mode (analysis/quality.py): how players are judged, for this command and the analysis it runs.
+if (flags.mode) {
+  if (!['ability', 'moneyball'].includes(flags.mode)) { console.error('--mode ability | moneyball'); process.exit(1); }
+  process.env.FM_MODE = flags.mode;
 }
 const [cmd, a1, a2] = pos;
 const outcome = journal(argv);
@@ -322,6 +328,11 @@ try {
     case 'value': {
       const range = flags.range ? String(flags.range).split(',').map(num) : undefined;
       out(analysis('evaluate_offer.py', ['--price'], {fresh: !!flags.fresh, input: JSON.stringify({player: a1, date: await gameDate() ?? new Date().toISOString().slice(0, 10), ...(range ? {value_range: range} : {})})}));
+      break;
+    }
+    case 'mode': {
+      const m = process.env.FM_MODE || JSON.parse((await import('node:fs')).readFileSync(new URL('../config/club.json', import.meta.url), 'utf8')).mode || 'ability';
+      out({mode: m, judged_by: m === 'moneyball' ? 'visible attributes, match stats, value, age (no CA/PA)' : "FM's current / potential ability (CA / PA)", set_in: 'config/club.json "mode", or --mode on one command'});
       break;
     }
     case 'dynamics': out(await dynamics()); break;

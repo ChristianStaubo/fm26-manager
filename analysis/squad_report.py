@@ -88,7 +88,9 @@ def load(path):
         if n90 and p.get('pressures_att'):
             p['pressures_cmp_p90'] = num(p, 'pressures_att') * num(p, 'pressure_pct') / 100 / n90
     add_goals_prevented(rows)
-    return rows
+    # The mode (ability / moneyball) decides what a player's level and ceiling are (analysis/quality.py).
+    import quality
+    return quality.apply(rows)
 
 
 def add_goals_prevented(rows):

@@ -4,5 +4,7 @@
   "league": "Premier League",
   "save_pattern": "claude-3*.fm",
   "_save_pattern": "Glob for the save in the FM26 games folder; 'latest' picks the newest match. Name saves after the experiment (e.g. claude-1.fm) and set e.g. \"claude-*.fm\".",
-  "goal": "Moneyball: generate transfer profit while competing; buy output the market underprices, sell what it overprices."
+  "goal": "Moneyball: generate transfer profit while competing; buy output the market underprices, sell what it overprices.",
+  "mode": "ability",
+  "_mode": "How Claude judges players: \"ability\" (FM's hidden CA/PA) or \"moneyball\" (only what a manager sees: attributes, stats, value, age). See analysis/quality.py."
 }
