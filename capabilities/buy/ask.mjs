@@ -8,7 +8,7 @@
 // and the player's demands; the profile's value range then updates to that range.
 // Then Contest the demands (user): he lowers his wage demand or stays firm.
 // One-time per player: once asked, the action is gone from his menu.
-import {Screen, waitFor, click, openPlayer, actionPath, peekActions, profileFacts, parseMoney, isoDate} from '../../game/ui/index.mjs';
+import {Screen, waitFor, click, settle, openPlayer, actionPath, peekActions, profileFacts, parseMoney, isoDate} from '../../game/ui/index.mjs';
 import {log} from '../log.mjs';
 
 export const ASK = 'Ask Agent About Availability';
@@ -28,6 +28,21 @@ const chat = s => { const t = s.texts(), i = t.lastIndexOf('Quick Chat'); return
 // FIRST reply under "Contest". Never Agree.
 const header = (s, title) => s.tree.nodes.find(n => n.visible && n.name === 'GroupTitle' && (n.text || '').trim() === title);
 export const contestTarget = s => replyUnder(s, 'Contest');
+// Click a reply in the chat (find: screen → its node) on a fresh read, again if the panel was still
+// re-rendering ("UI content changed": Ahmed Mohammed's Contest, 2039-01-04, left the chat open over the
+// profile and every later Actions menu was occluded). True once clicked, or once the reply is gone after a try.
+export async function clickReply(find) {
+  const {ui} = await import('../../game/bridge/client.mjs');
+  for (let k = 0; k < 4; k++) {
+    const s = await Screen.read(), node = find(s);
+    if (!node) return k > 0;
+    try { await ui.click(s.tree, node); return true; }
+    catch (e) { if (!/UI content changed|occluded/.test(e.message)) throw e; await settle(400); }
+  }
+  return false;
+}
+// A chat with <name>'s agent already open (left by a failed step): continue it instead of opening another.
+export const chatOpenFor = (s, name) => s.texts().includes('Quick Chat') && s.texts().some(t => t.endsWith("'s agent") && name.split(/\s+/).some(part => part.length > 2 && t.startsWith(part)));
 // After Contest (user, 2031-01-01): Agree to the (lowered) demands: contract talks follow, which for
 // an expiring contract is a pre-contract.
 export const agreeTarget = s => replyUnder(s, 'Agree');
@@ -76,12 +91,11 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
   // Contest (user, 2026-10-15): after our answer the agent states the demands with Agree / Contest /
   // Stall. The user's step is Contest: he either lowers his wage demand or stays firm. Never Agree.
   let contested = null;
-  const {ui} = await import('../../game/bridge/client.mjs');
   const s1 = await Screen.read();
   const contestNode = contestTarget(s1);
   if (contestNode) {
     const before = readReply(chat(s1)), lines = chat(s1).join(' ');
-    await ui.click(s1.tree, contestNode);
+    await clickReply(contestTarget);
     const r = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
     const after = readReply(chat(r));
     contested = {wageBefore: before.wage, wageAfter: after.wage, firm: after.wage == null || after.wage >= (before.wage ?? Infinity)};
@@ -91,8 +105,8 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
   // (Holbem's agent, 2038-05-30), Agree all the same: left open, the chat card covers the profile and the
   // next Actions menu is "occluded by CardContainer". The wage is still negotiated in the contract talks.
   const s2 = contestNode ? await Screen.read() : s1, agree = agreeTarget(s2);
-  if (agree) {
-    await ui.click(s2.tree, agree); await new Promise(res => setTimeout(res, 2000));
+  if (agree && await clickReply(agreeTarget)) {
+    await new Promise(res => setTimeout(res, 2000));
     transcript.push({we: contestNode ? 'Agree' : 'Agree (no Contest offered)'});
     if (contested) contested.agreed = true;
   }
@@ -119,27 +133,31 @@ export function readDemands(lines) {
   return {wage: wage ? [parseMoney(wage[1]), parseMoney(wage[2])] : null, until: until ? until[1] : null, role};
 }
 export async function discussContract(name, club, {dryRun = false} = {}) {
-  await openPlayer(name, club);
-  if (dryRun) return {action: 'discuss-contract', name, asked: false, dryRun: true};
-  // Straight to the menu entry (a separate peek opened the Actions menu twice, 2036-07-06); a missing
-  // entry (one-time: already discussed) comes back as NeedsAnalyst with the menu's entries.
-  try { await actionPath([DISCUSS]); }
-  catch (e) { if (e.details?.available) return {action: 'discuss-contract', name, asked: false, why: 'not offered (already discussed, or not available)'}; throw e; }
-  const s0 = await waitFor(x => options(x, name).length >= 2, {what: 'agent chat', timeout: 10000});
-  const pick = options(s0, name)[1];
-  await click(pick.label);
+  // The chat may still be open from a step that failed (it covers the profile): carry on from it.
+  const open = chatOpenFor(await Screen.read(), name) && (contestTarget(await Screen.read()) || agreeTarget(await Screen.read()));
+  let pick = null;
+  if (!open) {
+    await openPlayer(name, club);
+    if (dryRun) return {action: 'discuss-contract', name, asked: false, dryRun: true};
+    // Straight to the menu entry (a separate peek opened the Actions menu twice, 2036-07-06); a missing
+    // entry (one-time: already discussed) comes back as NeedsAnalyst with the menu's entries.
+    try { await actionPath([DISCUSS]); }
+    catch (e) { if (e.details?.available) return {action: 'discuss-contract', name, asked: false, why: 'not offered (already discussed, or not available)'}; throw e; }
+    const s0 = await waitFor(x => options(x, name).length >= 2, {what: 'agent chat', timeout: 10000});
+    pick = options(s0, name)[1];
+    await click(pick.label);
+  } else if (dryRun) return {action: 'discuss-contract', name, asked: false, dryRun: true, chatOpen: true};
   const s1 = await waitFor(x => !!contestTarget(x) || !!agreeTarget(x), {what: 'agent demands', timeout: 10000});
   const asked = readDemands(chat(s1));
-  const {ui} = await import('../../game/bridge/client.mjs');
   let after = asked, s2 = s1;
   if (contestTarget(s1)) {
     const lines = chat(s1).join(' ');
-    await ui.click(s1.tree, contestTarget(s1));
+    await clickReply(contestTarget);
     s2 = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
     after = {...asked, ...Object.fromEntries(Object.entries(readDemands(chat(s2))).filter(([, v]) => v))};
   }
-  if (agreeTarget(s2)) await ui.click(s2.tree, agreeTarget(s2));
-  const entry = {action: 'discuss-contract', date: isoDate(s2.date()), name, asked: true, we: pick.label, demands: after, before: asked.wage};
+  if (agreeTarget(await Screen.read())) await clickReply(agreeTarget);
+  const entry = {action: 'discuss-contract', date: isoDate(s2.date()), name, asked: true, we: pick?.label ?? '(chat already open)', demands: after, before: asked.wage};
   await log(entry);
   return entry;
 }

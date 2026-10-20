@@ -116,3 +116,11 @@ test('Transfer Activity: a pre-contract deal ("End Of Contract", no club or stag
   assert.equal(offerRows(s)[0].club, null);
   assert.equal(filled(s), true);
 });
+
+test('A renewal chat left open over the profile is recognised for that player, with its replies (Ahmed Mohammed, 2039-01-04)', async () => {
+  const {chatOpenFor, contestTarget, agreeTarget} = await import('../capabilities/buy/ask.mjs');
+  const s = loadScreen('renew-chat-open');
+  assert.equal(chatOpenFor(s, 'Ahmed Mohammed'), true);
+  assert.equal(chatOpenFor(s, 'Declan Holbem'), false);
+  assert.ok(contestTarget(s) && agreeTarget(s));
+});
