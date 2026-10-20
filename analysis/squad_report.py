@@ -353,7 +353,7 @@ def latest_save(pattern=CLUB_CONFIG.get('save_pattern', '*.fm')):
     return saves[-1]
 
 
-def export_save(save='latest'):
+def export_save(save='latest', full=False):
     """Export a save ('latest' = newest save matching config/club.json) with FM26 Scout, players + club finances, unless the
     cached export is newer. Returns the player CSV path."""
     exporter = SCOUT / 'fm26_export.py'

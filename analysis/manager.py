@@ -469,7 +469,7 @@ def league_strength(rows):
         if p['competition']:
             by.setdefault(p['competition'], []).append(attr_all(p))
     avg = {k: st.mean(sorted(v, reverse=True)[:200]) for k, v in by.items() if len(v) >= 150}
-    base = avg.get(LEAGUE) or max(avg.values())
+    base = avg.get(LEAGUE) or max(avg.values(), default=1)
     return {k: v / base for k, v in avg.items()}
 
 
