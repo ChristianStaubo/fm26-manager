@@ -22,7 +22,7 @@ import {log} from '../capabilities/log.mjs';
 import {summarize} from '../capabilities/season/autopilot.mjs';
 import * as pricebook from '../capabilities/value/pricebook.mjs';
 import {register} from '../game/screens/admin/registration.mjs';
-import {analysis, note, gameDate} from '../capabilities/data.mjs';
+import {analysis, note, gameDate, relabel} from '../capabilities/data.mjs';
 import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
@@ -171,7 +171,9 @@ const [cmd, a1, a2] = pos;
 const outcome = journal(argv);
 const num = v => v === undefined ? undefined : Number(String(v).replace(/[£,_]/g, '').replace(/m$/i, 'e6').replace(/k$/i, 'e3'));
 const dryRun = !!flags['dry-run'];
-const out = v => console.log(typeof v === 'string' ? v : JSON.stringify(v, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x, 2));
+// Everything printed goes through relabel: in moneyball mode it says level / ceiling, never CA / PA.
+const out = v => { const r = relabel(JSON.parse(JSON.stringify(v ?? null, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x)));
+  console.log(typeof r === 'string' ? r : JSON.stringify(r, null, 2)); };
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
 const ACTING = new Set(['activity', 'withdraw', 'unlist', 'loanlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
@@ -332,7 +334,7 @@ try {
     }
     case 'mode': {
       const m = process.env.FM_MODE || JSON.parse((await import('node:fs')).readFileSync(new URL('../config/club.json', import.meta.url), 'utf8')).mode || 'ability';
-      out({mode: m, judged_by: m === 'moneyball' ? 'visible attributes, match stats, value, age (no CA/PA)' : "FM's current / potential ability (CA / PA)", set_in: 'config/club.json "mode", or --mode on one command'});
+      console.log(JSON.stringify({mode: m, judged_by: m === 'moneyball' ? 'visible attributes, match stats, value, age: level and ceiling are estimated (FM\'s hidden abilities are never read)' : "FM's current / potential ability (CA / PA)", set_in: 'config/club.json "mode", or --mode on one command'}, null, 2));
       break;
     }
     case 'dynamics': out(await dynamics()); break;

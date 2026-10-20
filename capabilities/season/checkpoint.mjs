@@ -157,8 +157,12 @@ export async function runCheckpoint(name, {budget, lens, maxAge, date, save = tr
   if (write) {
     mkdirSync(REPORTS, {recursive: true});
     const base = `${REPORTS}/${date}-${name}`;
-    writeFileSync(`${base}.json`, JSON.stringify(report, null, 1));
-    writeFileSync(`${base}.md`, md.join('\n'));
+    // Moneyball mode: the report says level / ceiling (capabilities/data.mjs relabel). The JSON keeps its keys
+    // (other steps read it back) with a note on what 'ca' / 'pa' hold there.
+    const {relabel, relabelText, mode} = await import('../data.mjs');
+    const json = mode() === 'moneyball' ? {_mode: "moneyball: the 'ca' / 'pa' fields hold each player's estimated level / ceiling from visible data; FM's hidden abilities are never read", ...relabelText(report)} : report;
+    writeFileSync(`${base}.json`, JSON.stringify(json, null, 1));
+    writeFileSync(`${base}.md`, relabel(md.join('\n')));
     report.files = [`${base}.md`.replace(ROOT, ''), `${base}.json`.replace(ROOT, '')];
   }
   const {rowsOf} = await import('./verdicts.mjs'), n = rowsOf(report).length;

@@ -44,3 +44,26 @@ print(json.dumps({'header': next(csv.reader(open(dst))), 'hidden_src': sr.has_hi
   assert.equal(d.hidden_src, true); assert.equal(d.hidden_dst, false);
   assert.ok(!/187|193/.test(d.text));
 });
+
+test('relabel: moneyball output says level / ceiling, keys and text; ability output is untouched', async () => {
+  const {relabel, relabelText} = await import('../capabilities/data.mjs');
+  const d = {name: 'Paris', ca: 151, pa: 180, min_ca: 147, buy_min_pa: 180, backup_level: 128, why: 'CA 151 vs his CA 150; PA 180'};
+  assert.deepEqual(relabel(d, 'moneyball'), {name: 'Paris', level: 151, ceiling: 180, min_level: 147, buy_min_ceiling: 180, backup_level: 128, why: 'level 151 vs his level 150; ceiling 180'});
+  assert.equal(relabelText(d, 'moneyball').ca, 151, 'files other code reads back keep their keys');
+  assert.deepEqual(relabel(d, 'ability'), d);
+});
+
+// The no-leak check on real data: the agent's commands in moneyball mode never print CA / PA. Needs a save
+// (skipped without one, e.g. in CI).
+const fmOut = args => execFileSync('node', ['cli/fm.mjs', ...args, '--mode', 'moneyball'], {cwd: ROOT, encoding: 'utf8', timeout: 600000, stdio: ['ignore', 'pipe', 'ignore']});
+let haveSave = true;
+try { execFileSync('python3', ['-c', 'import squad_report as sr; sr.latest_save()'], {cwd: `${ROOT}analysis`, stdio: 'ignore'}); } catch { haveSave = false; }
+test('no leak: fm squad / free / xi / scout in moneyball mode print no CA or PA', {skip: !haveSave && 'no FM save on this machine'}, () => {
+  for (const args of [['squad'], ['free', '--top', '10'], ['xi'], ['scout']]) {
+    const o = fmOut(args);
+    assert.ok(o.length > 100, `fm ${args.join(' ')} printed something`);
+    assert.doesNotMatch(o, /\bCA\b|\bPA\b|"ca"|"pa"|"growth"/, `fm ${args.join(' ')}`);
+  }
+  const header = execFileSync('python3', ['-c', 'import os; os.environ["FM_MODE"]="moneyball"; import squad_report as sr; p = sr.export_save("latest"); print(open(p).readline())'], {cwd: `${ROOT}analysis`, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
+  assert.ok(!header.split(',').some(c => ['ca', 'pa', 'growth'].includes(c.trim())), 'the agent\'s export has no hidden columns');
+});

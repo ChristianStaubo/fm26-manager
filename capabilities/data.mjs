@@ -36,6 +36,26 @@ export async function gameDate() {
 
 // The mode (analysis/quality.py): ability (CA/PA) or moneyball (visible data only).
 export const mode = () => process.env.FM_MODE || club().mode || 'ability';
+// What reaches the agent in moneyball mode says level / ceiling, never CA / PA (the rows only ever hold
+// estimates there; this is the wording). Keys: ca → level, pa → ceiling (also inside min_ca, buy_min_pa…);
+// text: "CA 151" → "level 151". Ability mode: unchanged.
+const KEY = k => k.replace(/(^|_)ca(?=_|$)/g, '$1level').replace(/(^|_)pa(?=_|$)/g, '$1ceiling');
+const TEXT = t => t.replace(/\bCA\b/g, 'level').replace(/\bPA\b/g, 'ceiling');
+/** The text only (values that are strings), keys unchanged: for files other code reads back. */
+export function relabelText(v, m = mode()) {
+  if (m !== 'moneyball') return v;
+  if (typeof v === 'string') return TEXT(v);
+  if (Array.isArray(v)) return v.map(x => relabelText(x, m));
+  if (v && typeof v === 'object' && v.constructor === Object) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, relabelText(x, m)]));
+  return v;
+}
+export function relabel(v, m = mode()) {
+  if (m !== 'moneyball') return v;
+  if (typeof v === 'string') return TEXT(v);
+  if (Array.isArray(v)) return v.map(x => relabel(x, m));
+  if (v && typeof v === 'object' && v.constructor === Object) return Object.fromEntries(Object.entries(v).map(([k, x]) => [KEY(k), relabel(x, m)]));
+  return v;
+}
 export function analysis(script, args = [], {fresh = false, input, date} = {}) {
   // Moneyball: the export goes through squad_report.export_save, which keeps the agent's copy free of CA/PA;
   // a cached file passed straight in could be a full export from an ability-mode run.
