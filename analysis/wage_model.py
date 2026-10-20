@@ -13,7 +13,7 @@ and "Important Player"; the user's read: £60-85K, Squad Player at most).
 
 The role is where he would land in our depth chart if he joined (depth.roles), unless --role is given.
 
-Usage: python3 analysis/wage_model.py --player "<name>" [--role starter|backup|third|prospect]
+Usage: python3 analysis/wage_model.py --player "<name>" [--role starter|backup|third|prospect] [--csv EXPORT]
 """
 import argparse
 import json
@@ -83,8 +83,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--player', required=True)
     ap.add_argument('--role', choices=['starter', 'backup', 'third', 'prospect'])
+    ap.add_argument('--csv', help='an existing export (default: the latest save)')
     a = ap.parse_args()
-    rows, tactic = m.load()
+    rows, tactic = m.load(a.csv)
     print(json.dumps(model(rows, tactic, a.player, a.role)))
 
 

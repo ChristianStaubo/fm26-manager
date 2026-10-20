@@ -76,26 +76,25 @@ export async function askAgent(name, club, {dryRun = false} = {}) {
   // Contest (user, 2026-10-15): after our answer the agent states the demands with Agree / Contest /
   // Stall. The user's step is Contest: he either lowers his wage demand or stays firm. Never Agree.
   let contested = null;
+  const {ui} = await import('../../game/bridge/client.mjs');
   const s1 = await Screen.read();
   const contestNode = contestTarget(s1);
   if (contestNode) {
     const before = readReply(chat(s1)), lines = chat(s1).join(' ');
-    const {ui} = await import('../../game/bridge/client.mjs');
     await ui.click(s1.tree, contestNode);
     const r = await waitFor(x => chat(x).join(' ') !== lines, {what: 'agent reply to Contest', timeout: 10000}).catch(() => Screen.read());
     const after = readReply(chat(r));
     contested = {wageBefore: before.wage, wageAfter: after.wage, firm: after.wage == null || after.wage >= (before.wage ?? Infinity)};
     transcript.push({we: 'Contest'}, {agent: chat(r).slice(0, 12)});
-    // Then Agree to the (lowered) demands (user, 2031-01-01).
-    const s2 = await Screen.read(), agree = agreeTarget(s2);
-    if (agree) { await ui.click(s2.tree, agree); await new Promise(res => setTimeout(res, 2000)); transcript.push({we: 'Agree'}); contested.agreed = true; }
   }
-  else {
-    // No Contest offered, only Agree / Stall (Holbem's agent, 2038-05-30: "a lower salary offer won't
-    // affect…"): Agree, as after a Contest. Left open, the chat card covers the profile and the next
-    // Actions menu is "occluded by CardContainer". The wage is still negotiated in the contract talks.
-    const agree = agreeTarget(s1);
-    if (agree) { const {ui} = await import('../../game/bridge/client.mjs'); await ui.click(s1.tree, agree); await new Promise(res => setTimeout(res, 2000)); transcript.push({we: 'Agree (no Contest offered)'}); }
+  // Then Agree to the (lowered) demands (user, 2031-01-01). With no Contest offered, only Agree / Stall
+  // (Holbem's agent, 2038-05-30), Agree all the same: left open, the chat card covers the profile and the
+  // next Actions menu is "occluded by CardContainer". The wage is still negotiated in the contract talks.
+  const s2 = contestNode ? await Screen.read() : s1, agree = agreeTarget(s2);
+  if (agree) {
+    await ui.click(s2.tree, agree); await new Promise(res => setTimeout(res, 2000));
+    transcript.push({we: contestNode ? 'Agree' : 'Agree (no Contest offered)'});
+    if (contested) contested.agreed = true;
   }
   const s = await Screen.read();
   const reply = readReply(chat(s));
