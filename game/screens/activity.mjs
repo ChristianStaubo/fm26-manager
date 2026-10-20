@@ -39,16 +39,20 @@ async function open() {
 
 /** Select one deal (scrolling it into view first); returns the screen with it selected. Three reads a deal
  *  (find, click, confirm + rows): it was ~9.5 (86 for 9 deals, 2026-10-19). */
+// Filled in: an offer row with its club and stage, or a pre-contract's "End Of Contract" row, which has
+// neither (Jaló, 2039-01-04: waiting for a club there looped forever and hung fm activity).
+export const filled = s => offerRows(s).some(r => (r.club && r.stage) || /^End Of Contract/i.test(r.terms || ''));
 export async function selectDeal(player) {
   const pick = x => dealToggles(x).find(i => i.label.toLowerCase().startsWith(player.toLowerCase()));
   let s = await Screen.read();
   for (let k = 0; ; k++) {
+    if (k >= 12) throw new Error(`Deal "${player}" would not show its offers after ${k} tries`);
     if (!onPage(s) || !pick(s)) {   // pulled away (a required action → Messages), or the list is mid-render
       if (k >= 4) throw new Error(`No deal for "${player}": ${dealToggles(s).map(i => i.label).join(' | ')}`);
       if (!onPage(s)) await transferActivity(); else await settle(400);
       s = await Screen.read(); continue;
     }
-    if (pick(s).checked && offerRows(s).some(r => r.club && r.stage)) return s;
+    if (pick(s).checked && filled(s)) return s;
     const top = pick(s).bounds[1], bottom = top + pick(s).bounds[3];
     if (bottom > LIST_BOTTOM || top < LIST_TOP) {
       const shown = x => dealToggles(x).find(i => i.bounds[1] >= LIST_TOP && i.bounds[1] + i.bounds[3] <= LIST_BOTTOM);
@@ -59,7 +63,7 @@ export async function selectDeal(player) {
     catch (e) { if (k >= 4 || !/UI content changed|occluded/.test(e.message)) throw e; }
     // Wait for the pane to show him (cheap polls between reads: screen.mjs waitFor).
     // ...filled in, not just laid out (the row's club and stage arrive a moment later: Omondi read empty).
-    s = await waitFor(x => pick(x)?.checked && offerRows(x).some(r => r.club && r.stage), {what: `deal ${player} selected`, timeout: 5000}).catch(() => Screen.read());
+    s = await waitFor(x => pick(x)?.checked && filled(x), {what: `deal ${player} selected`, timeout: 5000}).catch(() => Screen.read());
   }
 }
 

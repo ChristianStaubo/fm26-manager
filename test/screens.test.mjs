@@ -109,3 +109,10 @@ test('Agent chat with Agree / Stall but no Contest (Holbem, 2038-05-30): the Agr
   assert.equal(contestTarget(s), null);
   assert.ok(agreeTarget(s), 'an Agree reply to click');
 });
+
+test('Transfer Activity: a pre-contract deal ("End Of Contract", no club or stage) counts as shown (Jaló hung fm activity, 2039-01-04)', async () => {
+  const {filled, offerRows} = await import('../game/screens/activity.mjs');
+  const s = loadScreen('activity-precontract-jalo');
+  assert.equal(offerRows(s)[0].club, null);
+  assert.equal(filled(s), true);
+});
