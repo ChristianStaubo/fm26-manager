@@ -22,7 +22,7 @@ import {log} from '../capabilities/log.mjs';
 import {summarize} from '../capabilities/season/autopilot.mjs';
 import * as pricebook from '../capabilities/value/pricebook.mjs';
 import {register} from '../game/screens/admin/registration.mjs';
-import {analysis, note, gameDate, relabel} from '../capabilities/data.mjs';
+import {analysis, note, gameDate, relabel, mode, MODES} from '../capabilities/data.mjs';
 import {dynamics} from '../game/screens/dynamics.mjs';
 import {journal} from './journal.mjs';
 import {doctor} from './doctor.mjs';
@@ -164,16 +164,20 @@ for (let i = 0; i < argv.length; i++) {
 }
 // The mode (analysis/quality.py): how players are judged, for this command and the analysis it runs.
 if (flags.mode) {
-  if (!['ability', 'moneyball'].includes(flags.mode)) { console.error('--mode ability | moneyball'); process.exit(1); }
+  if (!MODES.includes(flags.mode)) { console.error(`--mode ${MODES.join(' | ')}`); process.exit(1); }
   process.env.FM_MODE = flags.mode;
 }
 const [cmd, a1, a2] = pos;
 const outcome = journal(argv);
 const num = v => v === undefined ? undefined : Number(String(v).replace(/[£,_]/g, '').replace(/m$/i, 'e6').replace(/k$/i, 'e3'));
 const dryRun = !!flags['dry-run'];
-// Everything printed goes through relabel: in moneyball mode it says level / ceiling, never CA / PA.
-const out = v => { const r = relabel(JSON.parse(JSON.stringify(v ?? null, (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x)));
-  console.log(typeof r === 'string' ? r : JSON.stringify(r, null, 2)); };
+// Everything printed goes through relabel: in moneyball mode it says level / ceiling, never CA / PA (the
+// round trip through JSON drops the screens and leaves plain objects for relabel to walk).
+const noScreen = (k, x) => k === 'screen' && x instanceof fm.Screen ? undefined : x;
+const out = v => {
+  if (typeof v === 'string' || mode() !== 'moneyball') return console.log(typeof v === 'string' ? relabel(v) : JSON.stringify(v, noScreen, 2));
+  console.log(JSON.stringify(relabel(JSON.parse(JSON.stringify(v ?? null, noScreen))), null, 2));
+};
 
 // One operator at a time: a running fm watch invalidates the snapshots acting commands rely on.
 const ACTING = new Set(['activity', 'withdraw', 'unlist', 'loanlist', 'precontract', 'save', 'recover', 'click', 'key', 'continue', 'run', 'holiday', 'register', 'press', 'sell', 'buy', 'ask', 'renew', 'move', 'player']);
@@ -333,7 +337,7 @@ try {
       break;
     }
     case 'mode': {
-      const m = process.env.FM_MODE || JSON.parse((await import('node:fs')).readFileSync(new URL('../config/club.json', import.meta.url), 'utf8')).mode || 'ability';
+      const m = mode();
       console.log(JSON.stringify({mode: m, judged_by: m === 'moneyball' ? 'visible attributes, match stats, value, age: level and ceiling are estimated (FM\'s hidden abilities are never read)' : "FM's current / potential ability (CA / PA)", set_in: 'config/club.json "mode", or --mode on one command'}, null, 2));
       break;
     }

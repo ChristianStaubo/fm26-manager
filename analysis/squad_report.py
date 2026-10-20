@@ -26,6 +26,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import quality  # noqa: E402  (the mode: what a player's level and ceiling are)
+
 ROOT = Path(__file__).resolve().parents[1]
 SCOUT = Path(os.environ.get('FM26_SCOUT_PATH', ROOT.parent / 'fm26-scout'))
 
@@ -90,7 +93,6 @@ def load(path):
             p['pressures_cmp_p90'] = num(p, 'pressures_att') * num(p, 'pressure_pct') / 100 / n90
     add_goals_prevented(rows)
     # The mode (ability / moneyball) decides what a player's level and ceiling are (analysis/quality.py).
-    import quality
     return quality.apply(rows)
 
 
@@ -361,7 +363,6 @@ def export_save(save='latest', full=False):
     The mode (analysis/quality.py) decides what that file holds. Ability: the full export. Moneyball: the same
     file WITHOUT the hidden columns (CA, PA, growth), so nothing the agent reads or runs can see them; the full
     export is kept apart in local/dev/exports/ for the developer's calibration (full=True returns it)."""
-    import quality
     exporter = SCOUT / 'fm26_export.py'
     if not exporter.exists():
         sys.exit(f'FM26 Scout not found at {SCOUT}; set FM26_SCOUT_PATH')
@@ -390,22 +391,19 @@ def export_save(save='latest', full=False):
 
 
 def has_hidden(path):
-    import quality
     with open(path, encoding='utf-8') as f:
         return any(c in quality.HIDDEN for c in next(csv.reader(f), []))
 
 
 def strip_hidden(src, dst):
     """Copy a player export without the hidden columns (moneyball mode)."""
-    import quality
     dst.parent.mkdir(parents=True, exist_ok=True)
     with open(src, encoding='utf-8', newline='') as f, open(dst, 'w', encoding='utf-8', newline='') as g:
-        r = csv.DictReader(f)
-        keep = [c for c in r.fieldnames if c not in quality.HIDDEN]
-        w = csv.DictWriter(g, fieldnames=keep, extrasaction='ignore')
-        w.writeheader()
-        for row in r:
-            w.writerow(row)
+        r, w = csv.reader(f), csv.writer(g)
+        header = next(r)
+        keep = [i for i, c in enumerate(header) if c not in quality.HIDDEN]
+        for row in [header, *r]:
+            w.writerow([row[i] for i in keep if i < len(row)])
 
 
 def main():

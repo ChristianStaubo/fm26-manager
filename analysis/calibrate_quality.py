@@ -22,6 +22,7 @@ from pathlib import Path
 
 os.environ['FM_MODE'] = 'ability'   # the full export, with CA / PA: this tool's whole point
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import manager as m  # noqa: E402
 import quality as q  # noqa: E402
 import squad_report as sr  # noqa: E402
 
@@ -61,7 +62,7 @@ def spearman(a, b):
 
 
 def calibrate(rows, output_weight=4.0, young_max_age=23):
-    iv = lambda p, k: int(p[k]) if str(p.get(k) or '').isdigit() else None
+    iv = lambda p, k: m.intval(p, k, None)
     rows = [p for p in rows if not (p.get('club') or '').startswith('club#') and (iv(p, 'ca') or 0) >= 40 and iv(p, 'age')]
     f = q.features(rows)
     out = [p for p in rows if not f[p['key']]['gk']]
@@ -78,7 +79,7 @@ def calibrate(rows, output_weight=4.0, young_max_age=23):
         ps = [p for p in rows if sel(p)]
         X = [[1, level[p['key']], iv(p, 'age'), f[p['key']]['log_value'], f[p['key']]['log_value'] ** 2] for p in ps]
         cal['ceiling'][group] = c = ols(X, [iv(p, 'pa') for p in ps])
-        cal['ceiling'].setdefault('quantiles', {})[group] = quantile_table([sum(a * b for a, b in zip(c, x)) for x in X], [iv(p, 'pa') for p in ps])
+        cal['ceiling'].setdefault('quantiles', {})[group] = quantile_table([q._dot(c, x) for x in X], [iv(p, 'pa') for p in ps])
     est = {p['key']: q.estimate(f[p['key']], cal) for p in rows}
     young = [p for p in rows if iv(p, 'age') <= 21]
     top = sorted(young, key=lambda p: -est[p['key']][1])[:50]

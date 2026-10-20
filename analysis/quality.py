@@ -16,6 +16,7 @@ and rules are the same in both modes; only what fills those two fields changes:
 
 The mode: env FM_MODE (fm --mode X sets it for one command), else config/club.json "mode", else ability.
 """
+import functools
 import json
 import os
 from pathlib import Path
@@ -24,26 +25,12 @@ ROOT = Path(__file__).resolve().parent.parent
 MODES = ('ability', 'moneyball')
 
 
+@functools.cache
 def mode():
     m = os.environ.get('FM_MODE') or json.loads((ROOT / 'config' / 'club.json').read_text()).get('mode') or 'ability'
     if m not in MODES:
         raise SystemExit(f'Unknown mode "{m}": use one of {", ".join(MODES)} (config/club.json "mode" or --mode)')
     return m
-
-
-def labels(m=None):
-    """What the two numbers are called in reports."""
-    return ('CA', 'PA') if (m or mode()) == 'ability' else ('level', 'ceiling')
-
-
-def level(p):
-    s = str(p.get('ca') or '')
-    return int(s) if s.lstrip('-').isdigit() else -1
-
-
-def ceiling(p):
-    s = str(p.get('pa') or '')
-    return int(s) if s.lstrip('-').isdigit() else -1
 
 
 CALIBRATION = ROOT / 'playbook' / 'quality_calibration.json'
@@ -60,6 +47,11 @@ def features(rows):
     gk_attrs = sr.ROLES['GK'][2]
     strength = m.league_strength(rows)
     # Output percentile in his league, his best role among his positions (players with enough minutes).
+    # Ranked within each league's own rows (ranking against all rows rescanned ~47k rows per league x role).
+    by_league = {}
+    for p in rows:
+        if p.get('competition'):
+            by_league.setdefault(p['competition'], []).append(p)
     out_pct, cache = {}, {}
     for p in rows:
         if not p.get('competition') or p['mins'] < sr.MIN_MINUTES:
@@ -70,7 +62,7 @@ def features(rows):
                 continue
             key = (role, p['competition'])
             if key not in cache:
-                cache[key] = sr.ranked(rows, role, p['competition'])[1]
+                cache[key] = sr.ranked(by_league[p['competition']], role, p['competition'])[1]
             r = cache[key].get(p['key'])
             if r:
                 pct = 100 * (1 - (r[4] - 1) / max(1, len(cache[key])))
@@ -82,7 +74,7 @@ def features(rows):
         gk = 'GK' in p['pos'] and sr.num(p, 'pos_GK') >= 15
         roles = [r for r, (pos, _, _) in sr.ROLES.items() if p['pos'] & pos and (r == 'GK') == gk]
         role_attr = max((stt.mean(sr.num(p, a) for a in sr.ROLES[r][2]) for r in roles), default=None)
-        age = int(p['age']) if str(p.get('age') or '').isdigit() else None
+        age = m.intval(p, 'age', None)
         out[p['key']] = {'gk': gk, 'attr_all': m.attr_all(p), 'gk_attr': stt.mean(sr.num(p, a) for a in gk_attrs),
                          'role_attr': role_attr if role_attr is not None else m.attr_all(p),
                          'out_pct': out_pct.get(p['key']), 'strength': strength.get(p.get('competition'), None),

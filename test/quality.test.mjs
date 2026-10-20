@@ -46,11 +46,11 @@ print(json.dumps({'header': next(csv.reader(open(dst))), 'hidden_src': sr.has_hi
 });
 
 test('relabel: moneyball output says level / ceiling, keys and text; ability output is untouched', async () => {
-  const {relabel, relabelText} = await import('../capabilities/data.mjs');
+  const {relabel} = await import('../capabilities/data.mjs');
   const d = {name: 'Paris', ca: 151, pa: 180, min_ca: 147, buy_min_pa: 180, backup_level: 128, why: 'CA 151 vs his CA 150; PA 180'};
-  assert.deepEqual(relabel(d, 'moneyball'), {name: 'Paris', level: 151, ceiling: 180, min_level: 147, buy_min_ceiling: 180, backup_level: 128, why: 'level 151 vs his level 150; ceiling 180'});
-  assert.equal(relabelText(d, 'moneyball').ca, 151, 'files other code reads back keep their keys');
-  assert.deepEqual(relabel(d, 'ability'), d);
+  assert.deepEqual(relabel(d, {m: 'moneyball'}), {name: 'Paris', level: 151, ceiling: 180, min_level: 147, buy_min_ceiling: 180, backup_level: 128, why: 'level 151 vs his level 150; ceiling 180'});
+  assert.equal(relabel(d, {keys: false, m: 'moneyball'}).ca, 151, 'files other code reads back keep their keys');
+  assert.deepEqual(relabel(d, {m: 'ability'}), d);
 });
 
 // The no-leak check on real data: the agent's commands in moneyball mode never print CA / PA. Needs a save
