@@ -21,6 +21,7 @@ import datetime as dt
 import json
 import os
 import statistics as st
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -355,19 +356,56 @@ def latest_save(pattern=CLUB_CONFIG.get('save_pattern', '*.fm')):
 
 def export_save(save='latest', full=False):
     """Export a save ('latest' = newest save matching config/club.json) with FM26 Scout, players + club finances, unless the
-    cached export is newer. Returns the player CSV path."""
+    cached export is newer. Returns the player CSV path (local/exports/<save>.csv).
+
+    The mode (analysis/quality.py) decides what that file holds. Ability: the full export. Moneyball: the same
+    file WITHOUT the hidden columns (CA, PA, growth), so nothing the agent reads or runs can see them; the full
+    export is kept apart in local/dev/exports/ for the developer's calibration (full=True returns it)."""
+    import quality
     exporter = SCOUT / 'fm26_export.py'
     if not exporter.exists():
         sys.exit(f'FM26 Scout not found at {SCOUT}; set FM26_SCOUT_PATH')
     save = latest_save() if save == 'latest' else Path(save)
     print(f'Save: {save.name}', file=sys.stderr)
-    csv_path = ROOT / 'local' / 'exports' / f'{Path(save).stem}.csv'
-    # Re-export when the save or FM26 Scout itself is newer (a fixed exporter must not be served a stale CSV).
+    stem = Path(save).stem
+    csv_path = ROOT / 'local' / 'exports' / f'{stem}.csv'
+    moneyball = quality.mode() == 'moneyball'
+    full_path = ROOT / 'local' / 'dev' / 'exports' / f'{stem}.csv' if (moneyball or full) else csv_path
+    # Re-export when the save or FM26 Scout itself is newer (a fixed exporter must not be served a stale CSV),
+    # or when the file there lacks the hidden columns a full export needs (written in moneyball mode).
     newest = max([Path(save).stat().st_mtime] + [f.stat().st_mtime for f in SCOUT.glob('fm26_*.py')])
-    if not csv_path.exists() or csv_path.stat().st_mtime < newest:
-        csv_path.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run([sys.executable, str(exporter), str(save), '--clubs', '-o', str(csv_path)], check=True)
+    if not full_path.exists() or full_path.stat().st_mtime < newest or not has_hidden(full_path):
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([sys.executable, str(exporter), str(save), '--clubs', '-o', str(full_path)], check=True)
+    if full or not moneyball:
+        return full_path
+    # Moneyball: the agent's copy, hidden columns removed (rewritten when the full export is newer, or when an
+    # ability-mode export with CA/PA sits there).
+    if not csv_path.exists() or csv_path.stat().st_mtime < full_path.stat().st_mtime or has_hidden(csv_path):
+        strip_hidden(full_path, csv_path)
+        clubs = full_path.with_name(f'{stem}_clubs.csv')
+        if clubs.exists():
+            shutil.copyfile(clubs, csv_path.with_name(f'{stem}_clubs.csv'))
     return csv_path
+
+
+def has_hidden(path):
+    import quality
+    with open(path, encoding='utf-8') as f:
+        return any(c in quality.HIDDEN for c in next(csv.reader(f), []))
+
+
+def strip_hidden(src, dst):
+    """Copy a player export without the hidden columns (moneyball mode)."""
+    import quality
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with open(src, encoding='utf-8', newline='') as f, open(dst, 'w', encoding='utf-8', newline='') as g:
+        r = csv.DictReader(f)
+        keep = [c for c in r.fieldnames if c not in quality.HIDDEN]
+        w = csv.DictWriter(g, fieldnames=keep, extrasaction='ignore')
+        w.writeheader()
+        for row in r:
+            w.writerow(row)
 
 
 def main():

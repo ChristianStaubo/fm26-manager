@@ -31,3 +31,16 @@ print(json.dumps({k: [int(r['ca']), int(r['pa'])] for k, r in out.items()} | {'l
 test('an unknown mode is refused', () => {
   assert.throws(() => run(`import quality as q; q.mode()`, 'scouting'));
 });
+
+test('moneyball export: the agent\'s copy has no CA / PA / growth columns', () => {
+  const d = run(`import json, csv, tempfile, pathlib, squad_report as sr
+t = pathlib.Path(tempfile.mkdtemp())
+src, dst = t / 'full.csv', t / 'agent.csv'
+with open(src, 'w', newline='') as f:
+    w = csv.writer(f); w.writerow(['name', 'ca', 'pa', 'growth', 'value']); w.writerow(['X', '187', '193', '6', '1000'])
+sr.strip_hidden(src, dst)
+print(json.dumps({'header': next(csv.reader(open(dst))), 'hidden_src': sr.has_hidden(src), 'hidden_dst': sr.has_hidden(dst), 'text': dst.read_text()}))`, 'moneyball');
+  assert.deepEqual(d.header, ['name', 'value']);
+  assert.equal(d.hidden_src, true); assert.equal(d.hidden_dst, false);
+  assert.ok(!/187|193/.test(d.text));
+});

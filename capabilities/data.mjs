@@ -34,8 +34,12 @@ export async function gameDate() {
   try { return JSON.parse(readFileSync(DATE_FILE, 'utf8')).date; } catch { return null; }
 }
 
+// The mode (analysis/quality.py): ability (CA/PA) or moneyball (visible data only).
+export const mode = () => process.env.FM_MODE || club().mode || 'ability';
 export function analysis(script, args = [], {fresh = false, input, date} = {}) {
-  const csv = !fresh && existsSync(exportPath()) ? ['--csv', exportPath()] : [];
+  // Moneyball: the export goes through squad_report.export_save, which keeps the agent's copy free of CA/PA;
+  // a cached file passed straight in could be a full export from an ability-mode run.
+  const csv = !fresh && mode() !== 'moneyball' && existsSync(exportPath()) ? ['--csv', exportPath()] : [];
   const out = execFileSync('python3', [`analysis/${script}`, ...args, ...csv],
     {cwd: ROOT, input, stdio: [input ? 'pipe' : 'ignore', 'pipe', 'pipe'], timeout: 600000, maxBuffer: 64 << 20,
      env: {...process.env, ...(date ? {FM_GAME_DATE: date} : {})}});
