@@ -107,6 +107,15 @@ export function reduce(deals = {}, obs, policy = {}) {
   return {deals: out, alerts};
 }
 
+/** A signing at 'contract' whose contract at his club ends by the coming 30 June is a pre-contract: it waits
+ *  for his answer (or 1 July) for weeks, so it is reported, not a stop (Jaló, 2039-01: the user's own
+ *  pre-contract stopped every fm cycle after 3 days). endsOf: player → 'YYYY-MM-DD' (his contract end). */
+export function preContracts(alerts, endsOf, date) {
+  const june = `${Number(date.slice(0, 4)) + (date.slice(5) > '06-30' ? 1 : 0)}-06-30`;
+  return alerts.map(a => a.kind === 'stuck' && a.dir === 'in' && a.state === 'contract' && endsOf[a.player] && endsOf[a.player] <= june
+    ? {...a, stop: false, preContract: true} : a);
+}
+
 /** A vanished deal resolved from the export: on our books (in) / gone from them (out) → completed. */
 export function resolve(deals, player, completed, date) {
   const d = deals[key(player)];

@@ -1,7 +1,7 @@
 // The deals file (local/runs/deals.json) and one daily observation: Transfer Activity + our own
 // actions from the decision log since the last observation → reduce → alerts.
 import {readFileSync, writeFileSync, mkdirSync, statSync} from 'node:fs';
-import {reduce, resolve} from './deals.mjs';
+import {reduce, resolve, preContracts} from './deals.mjs';
 import {history} from '../log.mjs';
 import {loadPolicy} from '../sell/decide.mjs';
 import {addDays} from '../season/season.mjs';
@@ -78,7 +78,17 @@ export async function observe(date, rows) {
   const fromDate = addDays(date, -45);
   const r = reduce(data.deals, {date, rows, events: events(entries, data.at, {fromDate})}, loadPolicy().deals || {});
   save({deals: r.deals, observed: date, at: new Date().toISOString()});
-  return r;
+  const signings = r.alerts.filter(a => a.kind === 'stuck' && a.dir === 'in' && a.state === 'contract').map(a => a.player);
+  return signings.length ? {...r, alerts: preContracts(r.alerts, await contractEnds(signings), date)} : r;
+}
+
+/** Players' contract ends at their clubs (YYYY-MM-DD) from the save export. */
+async function contractEnds(names) {
+  try {
+    const {exportPath} = await import('../data.mjs'), {execFileSync} = await import('node:child_process');
+    const code = 'import csv, json, sys\nwant = set(json.loads(sys.argv[2]))\nprint(json.dumps({p["name"]: (p["contract_expires"] or "")[:10] for p in csv.DictReader(open(sys.argv[1], encoding="utf8")) if p["name"] in want}))';
+    return JSON.parse(execFileSync('python3', ['-c', code, exportPath(), JSON.stringify(names)], {encoding: 'utf8'}));
+  } catch { return {}; }
 }
 
 /** We looked at a stuck deal and it's fine for now: no stuck alert until `until` (YYYY-MM-DD). */

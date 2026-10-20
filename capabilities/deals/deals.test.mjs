@@ -119,3 +119,12 @@ test('terms agreed at contract: the player is considering, 7 days before stuck (
   r = reduce(r.deals, {date: '2035-01-09', rows: [{player: 'Harry Gray', stage: 'Contract'}]});
   assert.equal(r.alerts.find(a => a.kind === 'stuck')?.stop, true);
 });
+
+test('a signing waiting at contract whose contract ends by the coming 30 June is a pre-contract: reported, not a stop (Jaló, 2039-01)', async () => {
+  const {preContracts} = await import('./deals.mjs');
+  const alerts = [{kind: 'stuck', player: 'Pedro Jaló', state: 'contract', dir: 'in', days: 5, stop: true},
+    {kind: 'stuck', player: 'Fee Signing', state: 'contract', dir: 'in', days: 5, stop: true}];
+  const r = preContracts(alerts, {'Pedro Jaló': '2039-06-30', 'Fee Signing': '2042-06-30'}, '2039-01-09');
+  assert.deepEqual(r.map(a => a.stop), [false, true]);
+  assert.equal(r[0].preContract, true);
+});
