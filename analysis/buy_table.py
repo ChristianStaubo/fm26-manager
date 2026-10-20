@@ -95,28 +95,36 @@ def replacements(rows, slot, leaver_ca, pos_avg, n=8):
 BRITISH_IRISH = {'England', 'Wales', 'Scotland', 'Northern Ireland', 'Republic of Ireland'}
 
 
+def _prospect(p, min_pa):
+    """A prospect at another club: PA >= min_pa, aged wonderkid_min_age-wonderkid_max_age, and able to join
+    (18+ unless British/Irish: foreign under-18s can't). His row for the tables, or None."""
+    if p['contract_club'] in (m.CLUB, '') or (p['club'] or '').startswith('club#'):
+        return None
+    age, pa = m.intval(p, 'age'), m.intval(p, 'pa')
+    if pa < min_pa or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age'] or (age < 18 and p.get('nation') not in BRITISH_IRISH):
+        return None
+    return {'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p.get('positions', ''),
+            'nation': p.get('nation'), 'value': int(float(p['value'] or 0)), 'wage': int(float(p['wage'] or 0))}
+
+
 def wonderkids(rows):
     """Summer only (user, 2034-07-03: "a good use of our funds"): prospects with PA >= wonderkid_min_pa,
     aged wonderkid_min_age-wonderkid_max_age (18+ unless British/Irish: foreign under-18s can't join), at
     most wonderkid_max_fee, wage <= backup_max_wage; the best PA first, cheaper on ties; up to
     wonderkids_per_window. They go on the loan list when they join unless they'd start."""
+    # Bought (with a fee) only at buy_min_pa: a couple of good ones (user, 2026-10-18). A free one at
+    # wonderkid_min_pa is always a buy (free_agents.py).
+    min_pa = max(R['wonderkid_min_pa'], m.POLICY.get('wonderkids', {}).get('buy_min_pa', 0))
     out = []
     for p in rows:
-        if p['contract_club'] in (m.CLUB, '') or (p['club'] or '').startswith('club#') or p.get('on_loan_at'):
-            continue
-        age, pa, value = m.intval(p, 'age'), m.intval(p, 'pa'), float(p['value'] or 0)
-        # Bought (with a fee) only at buy_min_pa: a couple of good ones (user, 2026-10-18). A free one at
-        # wonderkid_min_pa is always a buy (free_agents.py).
-        if pa < max(R['wonderkid_min_pa'], m.POLICY.get('wonderkids', {}).get('buy_min_pa', 0)) or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age']:
-            continue
-        if age < 18 and p.get('nation') not in BRITISH_IRISH:
+        c = None if p.get('on_loan_at') else _prospect(p, min_pa)
+        if not c:
             continue
         # A generational one (PA >= wonderkid_exceptional_pa: van Eijden, 18, 152/198, £72M) at any fee: a stated exception.
-        exceptional = pa >= R.get('wonderkid_exceptional_pa', 999)
-        if not 0 < value or not exceptional and (value > R['wonderkid_max_fee'] or float(p['wage'] or 0) > R['backup_max_wage']):
+        exceptional = c['pa'] >= R.get('wonderkid_exceptional_pa', 999)
+        if not 0 < float(p['value'] or 0) or not exceptional and (float(p['value'] or 0) > R['wonderkid_max_fee'] or float(p['wage'] or 0) > R['backup_max_wage']):
             continue
-        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p.get('positions', ''),
-                    'nation': p.get('nation'), 'value': int(value), 'wage': int(float(p['wage'] or 0)), **({'exceptional': True} if exceptional else {})})
+        out.append({**c, **({'exceptional': True} if exceptional else {})})
     out.sort(key=lambda c: (-c['pa'], c['value']))
     return out[:R['wonderkids_per_window']]
 
@@ -125,15 +133,7 @@ def wonderkid_watch(rows, top=20):
     """Every prospect at buy_min_pa+ (16-21; 18+ unless British/Irish) at any fee, best PA first: the user picks
     from it (2026-10-19: "anyone over like 180 PA we should consider"; van Eijden was outside the fee cap)."""
     min_pa = m.POLICY.get('wonderkids', {}).get('buy_min_pa', R['wonderkid_min_pa'])
-    out = []
-    for p in rows:
-        if p['contract_club'] in (m.CLUB, '') or (p['club'] or '').startswith('club#'):
-            continue
-        age, pa = m.intval(p, 'age'), m.intval(p, 'pa')
-        if pa < min_pa or not R['wonderkid_min_age'] <= age <= R['wonderkid_max_age'] or (age < 18 and p.get('nation') not in BRITISH_IRISH):
-            continue
-        out.append({'name': p['name'], 'club': p['contract_club'], 'age': age, 'ca': m.intval(p, 'ca'), 'pa': pa, 'positions': p.get('positions', ''),
-                    'nation': p.get('nation'), 'value': int(float(p['value'] or 0)), 'wage': int(float(p['wage'] or 0))})
+    out = [c for c in (_prospect(p, min_pa) for p in rows) if c]
     out.sort(key=lambda c: (-c['pa'], -c['ca']))
     return out[:top]
 

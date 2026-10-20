@@ -204,6 +204,13 @@ try {
       const before = decision ? summarize(await fm.Screen.read()) : null;
       out(await fm.click(a1, {name: flags.name}));
       if (decision) await log({action: 'manual-click', label: a1, date: before.date, screen: before.texts.slice(0, 6)});
+      // Confirming "Cancel Negotiations" ends a signing's talks: recorded where it happens (the audit then
+      // knows the agreed fee bought nobody; nothing re-opens his talks today). Ortiz, 2036-07-10.
+      const talks = a1 === 'Confirm' && before?.texts.includes('Cancel Negotiations') && before.texts.map(t => /^\((.+)\)$/.exec(t)?.[1]).find(Boolean);
+      if (talks) {
+        (await import('../capabilities/deals/cancelled.mjs')).recordCancelled(talks, before.date, 'offer-screen');
+        await log({action: 'talks-cancelled', player: talks, date: before.date, by: 'manual-click'});
+      }
       break;
     }
     case 'key': out(await fm.key(a1)); break;

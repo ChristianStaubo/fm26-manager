@@ -18,6 +18,7 @@ import json
 import manager as m
 
 ROLES = ['starter', 'backup', 'third', 'surplus']
+NATURAL = 18   # FM's position rating (1-20) from which a player is a natural there
 
 
 def best_rating(p, slot):
@@ -37,12 +38,17 @@ def chart(rows, tactic):
         # ...and only there: he can cover elsewhere but starts where the user plays him (2038-01-01: Luiz, a
         # natural LB, plays DM; the chart kept him at LB where he was "most needed").
         plays = tactic.get('plays', {})
-        rate = lambda p: 20 if plays.get(p['name']) == pos else min(best_rating(p, slot), 17) if p['name'] in plays else best_rating(p, slot)
-        able = [p for p in ours if rate(p) >= 15]
-        ranked = sorted(able, key=lambda p: (rate(p) < 18, -m.intval(p, 'ca')))
+
+        def rate(p):
+            if plays.get(p['name']) == pos:
+                return 20
+            r = best_rating(p, slot)
+            return min(r, NATURAL - 1) if p['name'] in plays else r   # played elsewhere: covers here, never starts
+        rated = [(p, rate(p)) for p in ours]
+        ranked = sorted(((p, r) for p, r in rated if r >= 15), key=lambda pr: (pr[1] < NATURAL, -m.intval(pr[0], 'ca')))
         out[pos] = {'slots': len(slots), 'players': [
-            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': rate(p) >= 18,
-             **({'develop': True} if m.developing(m.intval(p, 'age'), m.intval(p, 'ca'), m.intval(p, 'pa')) else {})} for p in ranked]}
+            {'name': p['name'], 'ca': m.intval(p, 'ca'), 'pa': m.intval(p, 'pa'), 'age': m.intval(p, 'age'), 'natural': r >= NATURAL,
+             **({'develop': True} if m.developing(m.intval(p, 'age'), m.intval(p, 'ca'), m.intval(p, 'pa')) else {})} for p, r in ranked]}
     return unique_starters(out)
 
 
